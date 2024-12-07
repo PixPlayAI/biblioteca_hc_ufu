@@ -1,0 +1,12 @@
+tree -L 5 -I "node_modules|dist|build|icons"
+Nome do repositório:  biblioteca_hc_ufu
+
+
+git reset --hard <commit-hash>
+
+git reset --hard 772751beccfe6c6a3fa89507dbdd13ff760a22c6
+
+git add .
+git commit -m "Updating to modified version"
+git push origin main --force
+v2
