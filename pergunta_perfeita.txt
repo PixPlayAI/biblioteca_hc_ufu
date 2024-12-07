@@ -1,0 +1,49 @@
+**PICO:**
+Em adultos obesos, uma dieta de baixo carboidrato, quando comparada a uma dieta de baixo teor de gordura, resulta em maior perda de peso?
+
+---
+
+**PICOT:**
+Em adultos com hipertensão arterial, a prática de exercícios aeróbicos regulares, em comparação à ausência de exercícios, reduz significativamente a pressão arterial sistólica após 12 semanas de intervenção?
+
+---
+
+**SPIDER:**
+Entre enfermeiras recém-graduadas em hospitais de grande porte, como elas percebem e descrevem a experiência da primeira semana de trabalho, analisada por meio de entrevistas semiestruturadas, avaliando o impacto psicológico dessa transição?
+
+---
+
+**PEO:**
+Entre mulheres grávidas, como a exposição ao fumo passivo durante a gestação está associada ao risco de baixo peso ao nascer, analisando essa relação em um estudo observacional sem grupos de comparação, como um estudo de coorte que acompanhe gestantes ao longo do tempo ou um caso-controle que investigue apenas a associação direta entre exposição e desfecho?
+
+---
+
+**PECO:**
+Em adolescentes, a exposição a ambientes com alto nível de poluição sonora urbana, em comparação a ambientes com menor nível de ruído, está associada a um maior risco de problemas de sono?
+
+---
+
+**PICOS:**
+Em pacientes adultos com depressão maior, a psicoterapia cognitivo-comportamental, comparada ao uso de antidepressivos convencionais, melhora significativamente a remissão dos sintomas depressivos, conforme avaliado em ensaios clínicos randomizados, que são utilizados como base para examinar essa eficácia em um contexto controlado e rigoroso?
+
+---
+
+**PIRO:**
+Em pacientes com suspeita de apneia obstrutiva do sono, o uso de um dispositivo portátil de monitoramento do sono é capaz de detectar a presença da condição com acurácia similar à polissonografia em laboratório, resultando em um diagnóstico confiável?
+
+---
+
+**PCC:**
+Entre idosos institucionalizados, quais são as barreiras e facilitadores (conceito central) para o acesso a cuidados paliativos, no contexto de instituições de longa permanência no Brasil?
+
+---
+
+**PICOTE:**
+Em idosos com diabetes tipo 2, um programa de exercícios físicos supervisionados, comparado à recomendação de exercícios em casa, melhora o controle glicêmico após seis meses, em ambientes urbanos com estrutura adequada de centros de saúde?
+
+---
+
+**CoCoPop:**
+Qual é a prevalência de transtornos de ansiedade entre estudantes universitários em universidades públicas brasileiras?
+
+---
