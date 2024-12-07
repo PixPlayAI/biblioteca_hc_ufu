@@ -1,4 +1,4 @@
-//frontend/src/components/scenarios/ResearchAssistant.jsx
+// frontend/src/components/scenarios/ResearchAssistant.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardHeader, CardContent } from '../ui/card';
@@ -7,9 +7,9 @@ import { generateScenarioContent } from '../../lib/api';
 import FeedbackModal from '../FeedbackModal';
 import { Hourglass } from 'lucide-react';
 
-// Update translations with new elements
+// Atualização das traduções com novos elementos
 const translations = {
-  // Existing translations
+  // Traduções existentes
   population: { term: 'Population/Patient', translation: 'População/Paciente' },
   intervention: { term: 'Intervention', translation: 'Intervenção' },
   comparison: { term: 'Comparison', translation: 'Comparação' },
@@ -17,7 +17,7 @@ const translations = {
   exposure: { term: 'Exposure', translation: 'Exposição' },
   timeframe: { term: 'Time', translation: 'Tempo' },
 
-  // New translations
+  // Novas traduções
   condition: { term: 'Condition', translation: 'Condição' },
   context: { term: 'Context', translation: 'Contexto' },
   studyDesign: { term: 'Study Design', translation: 'Desenho do Estudo' },
@@ -32,14 +32,14 @@ const translations = {
   environment: { term: 'Environment', translation: 'Ambiente' },
 };
 
-// Helper function to map similar elements
+// Função auxiliar para mapear valores similares
 const mapElementValue = (elements, targetKey, alternativeKeys) => {
-  // If the target key already has a value, return it
+  // Se a chave alvo já tem um valor, retorne-o
   if (elements[targetKey] && elements[targetKey] !== '') {
     return elements[targetKey];
   }
 
-  // Look for a value in alternative keys
+  // Procure um valor nas chaves alternativas
   for (const altKey of alternativeKeys) {
     if (elements[altKey] && elements[altKey] !== '') {
       console.log(`Found value for ${targetKey} in ${altKey}:`, elements[altKey]);
@@ -50,22 +50,22 @@ const mapElementValue = (elements, targetKey, alternativeKeys) => {
   return '';
 };
 
-// Helper function to normalize elements
+// Função auxiliar para normalizar elementos
 const normalizeElements = (format, elements) => {
   console.log('Normalizing elements for format:', format);
   console.log('Original elements:', elements);
 
-  // Define element mappings
+  // Definir mapeamentos de elementos
   const elementMappings = {
-    exposure: ['intervention', 'condition'], // 'exposure' can come from 'intervention' or 'condition'
-    intervention: ['exposure'], // 'intervention' can come from 'exposure'
-    comparison: ['control'], // 'comparison' can come from 'control'
-    // Adicione outras mapeamentos conforme necessário
+    exposure: ['intervention', 'condition'], // 'exposure' pode vir de 'intervention' ou 'condition'
+    intervention: ['exposure'], // 'intervention' pode vir de 'exposure'
+    comparison: ['control'], // 'comparison' pode vir de 'control'
+    // Adicione outros mapeamentos conforme necessário
   };
 
   const normalized = { ...elements };
 
-  // Apply mappings
+  // Aplicar mapeamentos
   Object.entries(elementMappings).forEach(([targetKey, alternativeKeys]) => {
     normalized[targetKey] = mapElementValue(elements, targetKey, alternativeKeys);
   });
@@ -74,21 +74,21 @@ const normalizeElements = (format, elements) => {
   return normalized;
 };
 
-// Helper function to ensure all format elements are present
+// Função auxiliar para garantir que todos os elementos do formato estejam presentes
 const ensureAllFormatElements = (format, elements) => {
   console.log('Ensuring all elements for format:', format);
 
-  // First normalize the elements
+  // Primeiro, normalize os elementos
   const normalizedElements = normalizeElements(format, elements);
   console.log('After normalization:', normalizedElements);
 
-  // Define required elements for each format
+  // Definir elementos obrigatórios para cada formato
   const formatRequirements = {
     PECO: ['population', 'exposure', 'comparison', 'outcome'],
     PEO: ['population', 'exposure', 'outcome'],
     PICO: ['population', 'intervention', 'comparison', 'outcome'],
     PICOT: ['population', 'intervention', 'comparison', 'outcome', 'timeframe'],
-    SPIDER: ['sample', 'phenomenonOfInterest', 'design', 'evaluation', 'researchType'],
+    SPIDER: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
     PICOS: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
     PIRO: ['population', 'index', 'reference', 'outcome'],
     PCC: ['population', 'concept', 'context'],
@@ -100,7 +100,7 @@ const ensureAllFormatElements = (format, elements) => {
   const requirements = formatRequirements[format] || [];
   const finalElements = { ...normalizedElements };
 
-  // Ensure all required elements exist
+  // Garantir que todos os elementos obrigatórios existam
   requirements.forEach((key) => {
     if (!finalElements[key]) {
       console.log(`Adding missing required element: ${key}`);
@@ -112,7 +112,7 @@ const ensureAllFormatElements = (format, elements) => {
   return finalElements;
 };
 
-// Function to get ordered elements in the correct order
+// Função para obter elementos ordenados na ordem correta
 const getOrderedElements = (format, elements) => {
   console.log('Getting ordered elements for format:', format);
   console.log('Input elements:', elements);
@@ -256,13 +256,13 @@ const getOrderedElements = (format, elements) => {
   return ordered;
 };
 
-// Updated validateResponse function
+// Função atualizada para validar a resposta
 export const validateResponse = (response) => {
   console.log('Validating response:', response);
 
   const requiredFields = ['quality', 'analysis', 'nextQuestion', 'canGenerateFinal'];
 
-  // Validate basic structure
+  // Validar estrutura básica
   for (const field of requiredFields) {
     if (!(field in response)) {
       console.error(`Missing required field: ${field}`);
@@ -270,7 +270,13 @@ export const validateResponse = (response) => {
     }
   }
 
-  // Ensure all format-specific elements are present
+  // Garantir que o campo 'quality' esteja presente e seja um número válido
+  if (typeof response.quality !== 'number') {
+    console.warn(`Quality is missing or not a number. Defaulting to 0.`);
+    response.quality = 0; // Defina um valor padrão adequado
+  }
+
+  // Garantir que todos os elementos específicos do formato estejam presentes
   if (response.finalResult?.format) {
     console.log('Format detected:', response.finalResult.format);
     const elements = response.finalResult.elements?.explicit || {};
@@ -286,43 +292,72 @@ export const validateResponse = (response) => {
   return response;
 };
 
-// Quality indicator component
-const QualityIndicator = ({ score }) => (
-  <div className="mt-2">
-    <div className="flex justify-between mb-1">
-      <span className="text-sm font-medium">Qualidade da Resposta</span>
-      <span className="text-sm font-bold">{score.toFixed(1)}/10</span>
-    </div>
-    <Progress
-      value={score * 10}
-      className="h-2"
-      indicatorClassName={score >= 7 ? 'bg-green-500' : 'bg-yellow-500'}
-    />
-  </div>
-);
+// Componente de indicador de qualidade
+const QualityIndicator = ({ score }) => {
+  // Garantir que score seja um número
+  const validScore = typeof score === 'number' ? score : 0;
 
-// ElementDisplay component
+  // Determinar a cor com base no score
+  let indicatorColor = 'bg-green-500'; // Padrão: verde
+
+  if (validScore < 4) {
+    indicatorColor = 'bg-red-500';
+  } else if (validScore < 7) {
+    indicatorColor = 'bg-yellow-500';
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between mb-1">
+        <span className="text-sm font-medium">Qualidade da Resposta</span>
+        <span className="text-sm font-bold">{validScore.toFixed(1)}/10</span>
+      </div>
+      <Progress value={validScore * 10} className="h-2" indicatorClassName={indicatorColor} />
+    </div>
+  );
+};
+
+QualityIndicator.propTypes = {
+  score: PropTypes.number.isRequired,
+};
+
+// Componente para exibir cada elemento
 const ElementDisplay = ({ letter, term, translation, description }) => (
-  <div className="flex items-start space-x-3 p-2 bg-gray-50 rounded-lg">
-    <span className="text-3xl font-bold text-blue-600 min-w-[2rem]">{letter}</span>
+  <div className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 min-w-[2rem]">
+      {letter}
+    </span>
     <div>
       <div className="font-medium">
-        {term} <span className="text-gray-600">({translation})</span>
+        {term} <span className="text-gray-600 dark:text-gray-300">({translation})</span>
       </div>
-      <p className="text-sm text-gray-700 mt-1">{description || 'Não especificado'}</p>
+      <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
+        {description || 'Não especificado'}
+      </p>
     </div>
   </div>
 );
 
-// Updated DetailedElements component// Updated DetailedElements component
+ElementDisplay.propTypes = {
+  letter: PropTypes.string.isRequired,
+  term: PropTypes.string.isRequired,
+  translation: PropTypes.string.isRequired,
+  description: PropTypes.string,
+};
+
+ElementDisplay.defaultProps = {
+  description: '',
+};
+
+// Componente para exibir elementos detalhados
 const DetailedElements = ({ elements, format, variant = 'default', descriptions = {} }) => {
   console.log('DetailedElements Input:', { elements, format, variant, descriptions });
 
-  // Get normalized elements but don't modify the keys yet
+  // Obter elementos normalizados sem modificar as chaves
   const normalizedElements = ensureAllFormatElements(format, elements);
   const orderedElements = getOrderedElements(format, normalizedElements);
 
-  // Map description for each element, using the descriptions object directly
+  // Mapear descrição para cada elemento, usando o objeto de descrições diretamente
   const elementsWithDescriptions = orderedElements.map(({ key, letter }) => ({
     key,
     letter,
@@ -331,7 +366,7 @@ const DetailedElements = ({ elements, format, variant = 'default', descriptions 
 
   if (variant === 'formatted') {
     return (
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
         <h3 className="text-lg font-medium mb-3">Elementos do {format}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {elementsWithDescriptions.map(({ key, letter, description }) => (
@@ -351,9 +386,11 @@ const DetailedElements = ({ elements, format, variant = 'default', descriptions 
   return (
     <div className="space-y-4">
       {elementsWithDescriptions.map(({ key, letter, description }) => (
-        <div key={key} className="bg-gray-50 p-4 rounded-lg">
+        <div key={key} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
           <div className="flex items-center space-x-3">
-            <span className="text-3xl font-bold text-blue-600 min-w-[2rem]">{letter}</span>
+            <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 min-w-[2rem]">
+              {letter}
+            </span>
             <div>
               <span className="font-bold">{translations[key]?.translation || key}:</span>{' '}
               {description}
@@ -364,17 +401,20 @@ const DetailedElements = ({ elements, format, variant = 'default', descriptions 
     </div>
   );
 };
+
 DetailedElements.propTypes = {
   elements: PropTypes.object.isRequired,
   format: PropTypes.string.isRequired,
   variant: PropTypes.oneOf(['default', 'formatted']),
   descriptions: PropTypes.object, // Adicionando PropType para descriptions
 };
+
 DetailedElements.defaultProps = {
   variant: 'default',
   descriptions: {}, // Adicionando valor padrão para descriptions
 };
-// Updated AIAnalysis component
+
+// Componente AIAnalysis atualizado
 const AIAnalysis = ({ analysis }) => {
   if (!analysis?.identifiedElements) return null;
 
@@ -388,19 +428,28 @@ const AIAnalysis = ({ analysis }) => {
     <Card>
       <CardContent className="p-6 space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Status da sua Pergunta de Pesquisa
           </h3>
           <div className="space-y-4">
             {orderedElements.map(({ key, letter, value }) => (
-              <div key={key} className="flex items-start space-x-3 p-2 bg-gray-50 rounded-lg">
-                <span className="text-3xl font-bold text-blue-600 min-w-[2rem]">{letter}</span>
+              <div
+                key={key}
+                className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 min-w-[2rem]">
+                  {letter}
+                </span>
                 <div>
                   <div className="font-medium">
                     {translations[key]?.term}{' '}
-                    <span className="text-gray-600">({translations[key]?.translation})</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      ({translations[key]?.translation})
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-700 mt-1">{value || 'Não especificado'}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
+                    {value || 'Não especificado'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -408,8 +457,10 @@ const AIAnalysis = ({ analysis }) => {
         </div>
         {analysis.observations && (
           <div>
-            <h4 className="font-medium text-blue-600 mb-2">Próximos Passos:</h4>
-            <p className="text-sm text-gray-700 leading-relaxed">{analysis.observations}</p>
+            <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">Próximos Passos:</h4>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {analysis.observations}
+            </p>
           </div>
         )}
       </CardContent>
@@ -426,24 +477,7 @@ AIAnalysis.propTypes = {
   }).isRequired,
 };
 
-// QualityIndicator propTypes
-QualityIndicator.propTypes = {
-  score: PropTypes.number.isRequired,
-};
-
-// ElementDisplay propTypes
-// Updated ElementDisplay PropTypes
-ElementDisplay.propTypes = {
-  letter: PropTypes.string.isRequired,
-  term: PropTypes.string.isRequired,
-  translation: PropTypes.string.isRequired,
-  description: PropTypes.string,
-};
-ElementDisplay.defaultProps = {
-  description: '',
-};
-
-// ConversationHistory component
+// Componente ConversationHistory atualizado
 const ConversationHistory = ({ conversations }) => (
   <div className="space-y-4">
     {conversations.map((conv, index) => (
@@ -451,12 +485,14 @@ const ConversationHistory = ({ conversations }) => (
         <CardContent className="p-4">
           <div className="space-y-3">
             <div>
-              <p className="font-medium text-gray-900">{conv.question}</p>
-              {conv.context && <p className="text-sm text-gray-600 mt-1">{conv.context}</p>}
+              <p className="font-medium text-gray-900 dark:text-gray-100">{conv.question}</p>
+              {conv.context && (
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{conv.context}</p>
+              )}
             </div>
             <div className="pl-4 border-l-2 border-blue-500">
-              <p className="text-gray-900">{conv.answer}</p>
-              {conv.quality < 10 && <QualityIndicator score={conv.quality} />}
+              <p className="text-gray-900 dark:text-gray-100">{conv.answer}</p>
+              <QualityIndicator score={conv.quality} />
             </div>
           </div>
         </CardContent>
@@ -465,7 +501,6 @@ const ConversationHistory = ({ conversations }) => (
   </div>
 );
 
-// ConversationHistory propTypes
 ConversationHistory.propTypes = {
   conversations: PropTypes.arrayOf(
     PropTypes.shape({
@@ -477,18 +512,18 @@ ConversationHistory.propTypes = {
   ).isRequired,
 };
 
-// FinalResult component
+// Componente FinalResult atualizado
 const FinalResult = ({ result, conversations, onReset }) => {
   console.log('FinalResult rendering with:', result);
   console.log('Result elements:', result.elements);
   console.log('Result descriptions:', result.elementDescriptions);
 
-  // Ensure we're using explicit elements if available, otherwise use implicit
+  // Garantir que estamos usando elementos explícitos se disponíveis, caso contrário, implícitos
   const elementsToUse = result.elements?.explicit || result.elements?.implicit || {};
   const descriptionsToUse =
     result.elementDescriptions?.explicit || result.elementDescriptions?.implicit || {};
 
-  // Map uppercase keys (P, E, C, O, etc.) to lowercase keys (population, exposure, comparison, etc.)
+  // Mapear chaves maiúsculas (P, E, C, O, etc.) para chaves minúsculas (population, exposure, comparison, etc.)
   const keyMapping = {
     P: 'population', // Usado por vários formatos
     E: 'exposure', // Usado por PEO, PECO, PICOTE
@@ -508,7 +543,7 @@ const FinalResult = ({ result, conversations, onReset }) => {
     K: 'environment', // Adicionado para PICOTE
   };
 
-  // Convert uppercase keys to lowercase
+  // Converter chaves maiúsculas para minúsculas
   const normalizedElements = Object.entries(elementsToUse).reduce((acc, [key, value]) => {
     const normalizedKey = keyMapping[key] || key.toLowerCase();
     acc[normalizedKey] = value;
@@ -527,10 +562,12 @@ const FinalResult = ({ result, conversations, onReset }) => {
       <Card>
         <CardHeader>
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">Pergunta de Pesquisa Estruturada</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Pergunta de Pesquisa Estruturada
+            </h2>
             {result.format && (
               <>
-                <p className="text-gray-600">Formato: {result.format}</p>
+                <p className="text-gray-600 dark:text-gray-300">Formato: {result.format}</p>
                 <DetailedElements
                   elements={normalizedElements}
                   format={result.format}
@@ -542,13 +579,15 @@ const FinalResult = ({ result, conversations, onReset }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-lg text-blue-900 text-center">{result.question}</p>
+          <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+            <p className="text-lg text-blue-900 dark:text-blue-400 text-center">
+              {result.question}
+            </p>
           </div>
           {result.explanation && (
             <div className="border-l-4 border-blue-500 pl-4">
               <h3 className="text-lg font-semibold mb-2">Explicação Detalhada:</h3>
-              <p className="text-gray-700">{result.explanation}</p>
+              <p className="text-gray-700 dark:text-gray-300">{result.explanation}</p>
             </div>
           )}
           <div className="flex justify-center pt-4">
@@ -565,7 +604,6 @@ const FinalResult = ({ result, conversations, onReset }) => {
   );
 };
 
-// FinalResult propTypes
 FinalResult.propTypes = {
   result: PropTypes.shape({
     format: PropTypes.string,
@@ -584,11 +622,10 @@ FinalResult.propTypes = {
   onReset: PropTypes.func.isRequired,
 };
 
-// ResearchAssistant component
+// Componente principal ResearchAssistant atualizado
 const ResearchAssistant = ({ isDark }) => {
   const [suggestionMode, setSuggestionMode] = useState(false);
   const [suggestedElement, setSuggestedElement] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [questionRepetitions, setQuestionRepetitions] = useState(new Map());
 
   const [conversations, setConversations] = useState([]);
@@ -680,6 +717,14 @@ const ResearchAssistant = ({ isDark }) => {
       } else if (validatedResponse.nextQuestion) {
         setNextQuestion(validatedResponse.nextQuestion);
       }
+
+      // Exibir FeedbackModal apenas se a qualidade for muito baixa
+      if (validatedResponse.quality < 3) {
+        setErrorMessage(
+          'A resposta fornecida está com qualidade muito baixa. Por favor, tente novamente.'
+        );
+        setIsFeedbackModalOpen(true);
+      }
     } catch (error) {
       setErrorMessage(error.message);
       setIsFeedbackModalOpen(true);
@@ -694,7 +739,7 @@ const ResearchAssistant = ({ isDark }) => {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-medium mb-2">Sugestão para {suggestedElement}</h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
             Com base no seu contexto, estas são algumas opções que poderiam se adequar ao seu
             estudo. Você pode escolher uma delas, propor uma alternativa ou negar a sugestão.
           </p>
@@ -702,7 +747,7 @@ const ResearchAssistant = ({ isDark }) => {
             <button
               key={index}
               onClick={() => setCurrentInput(suggestion)}
-              className="block w-full text-left p-3 rounded-lg border hover:bg-gray-50
+              className="block w-full text-left p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700
                       transition-colors mb-2"
             >
               {suggestion}
@@ -711,7 +756,7 @@ const ResearchAssistant = ({ isDark }) => {
           <textarea
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
-            className="w-full min-h-[120px] p-4 rounded-lg border mt-4"
+            className="w-full min-h-[120px] p-4 rounded-lg border dark:border-gray-700 mt-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
             placeholder="Digite sua resposta ou escolha uma sugestão acima..."
           />
         </div>
@@ -722,12 +767,12 @@ const ResearchAssistant = ({ isDark }) => {
       <div className="space-y-4">
         <h3 className="text-lg font-medium mb-2">{nextQuestion.text}</h3>
         {nextQuestion.context && (
-          <p className="text-sm text-gray-600 mb-4">{nextQuestion.context}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{nextQuestion.context}</p>
         )}
         <textarea
           value={currentInput}
           onChange={(e) => setCurrentInput(e.target.value)}
-          className="w-full min-h-[120px] p-4 rounded-lg border"
+          className="w-full min-h-[120px] p-4 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           placeholder="Digite sua resposta..."
           autoFocus
         />
@@ -791,7 +836,7 @@ const ResearchAssistant = ({ isDark }) => {
   );
 };
 
-// ResearchAssistant propTypes
+// Definição dos PropTypes para ResearchAssistant
 ResearchAssistant.propTypes = {
   isDark: PropTypes.bool.isRequired,
 };

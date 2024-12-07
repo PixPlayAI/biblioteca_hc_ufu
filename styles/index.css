@@ -7,7 +7,7 @@
 
 /* Variáveis de cor */
 :root {
-  --background: 0 0% 100%;
+  --background: 210 11% 95%; /* Light mode: hsl(210, 11%, 95%) ~ #F3F4F6 */
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
@@ -40,14 +40,16 @@
 /* Estilo para tema claro */
 .light {
   color-scheme: light;
-  --bg-primary: #ffffff;
+  --bg-primary: #f3f4f6; /* Atualizado para #F3F4F6 */
+  --background: 210 11% 95%; /* HSL equivalente a #F3F4F6 */
   --text-primary: #213547;
 }
 
 /* Estilo para tema escuro */
 .dark {
   color-scheme: dark;
-  --background: 240 10% 3.9%;
+  --bg-primary: #111827; /* Atualizado para #111827 */
+  --background: 220 42% 11%; /* HSL equivalente a #111827 */
   --foreground: 0 0% 98%;
   --card: 240 10% 3.9%;
   --card-foreground: 0 0% 98%;
@@ -67,27 +69,27 @@
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
 
-  --bg-primary: #242424;
   --text-primary: rgba(255, 255, 255, 0.87);
 }
-
 /* Estilos globais */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
 
-#root {
+#__next {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centraliza o conteúdo horizontalmente */
+  background-color: var(--bg-primary); /* Garante que o container use a mesma cor */
 }
 
 /* Estilos específicos */

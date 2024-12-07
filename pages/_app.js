@@ -1,3 +1,5 @@
+// pages/_app.js
+
 import '../styles/index.css';
 
 function MyApp({ Component, pageProps }) {

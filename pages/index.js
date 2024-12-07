@@ -20,7 +20,9 @@ export default function HomePage() {
 
   return (
     <div
-      className={`min-h-screen py-4 px-2 md:py-8 md:px-4 ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}
+      className={`min-h-screen py-4 px-2 md:py-8 md:px-4 ${
+        isDark ? 'bg-gray-900 bg-background' : 'bg-background'
+      }`}
     >
       <WelcomeModal isOpen={showWelcome} onStart={handleStartResearch} isDark={isDark} />
       {!showWelcome && (
