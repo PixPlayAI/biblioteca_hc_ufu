@@ -27,7 +27,6 @@ O **Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde** 
 - 🎨 **TailwindCSS**: Framework CSS para estilização rápida e personalizada dos componentes.
 - 🛡️ **PropTypes**: Validação de tipos para componentes React, garantindo a integridade dos dados passados entre eles.
 - 💫 **Lucide Icons**: Biblioteca de ícones utilizados para enriquecer a interface e melhorar a experiência do usuário.
-- 📦 **Vite**: Ferramenta de build rápida e eficiente para projetos frontend, otimizando o processo de desenvolvimento.
 - 🌐 **HTML5**: Estruturação semântica do conteúdo web, garantindo melhor desempenho e SEO.
 - 📱 **Responsive Design**: Design adaptável para diferentes tamanhos de tela, proporcionando uma experiência consistente em todos os dispositivos.
 
