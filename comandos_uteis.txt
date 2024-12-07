@@ -10,3 +10,10 @@ git add .
 git commit -m "Updating to modified version"
 git push origin main --force
 v2
+
+
+rm -rf node_modules package-lock.json
+npm install
+
+
+PERGUNTA PECO: Em grávidas, a exposição ao estresse psicológico durante a gestação está associada a um aumento no risco de parto prematuro em comparação com aquelas que relatam baixo nível de estresse?

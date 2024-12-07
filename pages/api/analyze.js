@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT } from '../../lib/systemPrompt';
+import SYSTEM_PROMPT from '../../lib/systemPrompt';
 import axios from 'axios';
 
 export default async function handler(req, res) {
@@ -32,7 +32,7 @@ RESPOSTA ATUAL (Etapa ${currentStep + 1}): "${currentInput}"`;
     const openaiResponse = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4-1106-preview',
         messages: [
           {
             role: 'system',
@@ -41,18 +41,34 @@ RESPOSTA ATUAL (Etapa ${currentStep + 1}): "${currentInput}"`;
           { role: 'user', content: promptMessage },
         ],
         temperature: 0,
-        max_tokens: 2000,
+        max_tokens: 4096,
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        timeout: 55000,
+        timeout: 100000,
       }
     );
 
     const openaiContent = openaiResponse.data.choices?.[0]?.message?.content;
+
+    // Remover qualquer ``` e espaços extras
+    const sanitizedContent = openaiContent
+      .trim()
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    try {
+      const parsedContent = JSON.parse(sanitizedContent);
+      return res.json(parsedContent);
+    } catch (e) {
+      console.error('❌ Erro ao parsear resposta da OpenAI:', sanitizedContent);
+      return res.status(500).json({ error: 'Error parsing OpenAI response.' });
+    }
+
     console.log('📥 Resposta da OpenAI:', openaiResponse.data);
 
     if (!openaiContent) {

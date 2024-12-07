@@ -1,15 +1,11 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Ativa a otimização com SWC
   swcMinify: true,
-
-  // Resolve problemas de pacotes que usam `fs` no navegador
   webpack: (config) => {
     config.resolve.fallback = { ...config.resolve.fallback, fs: false };
     return config;
   },
-
-  // Headers de segurança
   async headers() {
     return [
       {
@@ -24,4 +20,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
