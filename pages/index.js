@@ -1,4 +1,6 @@
-import { useState } from 'react';
+// pages/index.js
+
+import { useState, useEffect } from 'react';
 import ResearchAssistant from '../components/scenarios/ResearchAssistant';
 import WelcomeModal from '../components/WelcomeModal';
 import Footer from '../components/Footer';
@@ -8,22 +10,26 @@ export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [isDark, setIsDark] = useState(false);
 
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   const handleStartResearch = () => {
     setShowWelcome(false);
   };
 
   const toggleTheme = () => {
     setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark', !isDark);
-    document.documentElement.classList.toggle('light', isDark);
   };
 
   return (
-    <div
-      className={`min-h-screen py-4 px-2 md:py-8 md:px-4 ${
-        isDark ? 'bg-gray-900 bg-background' : 'bg-background'
-      }`}
-    >
+    <div className="min-h-screen py-4 px-2 md:py-8 md:px-4 bg-background">
       <WelcomeModal isOpen={showWelcome} onStart={handleStartResearch} isDark={isDark} />
       {!showWelcome && (
         <>

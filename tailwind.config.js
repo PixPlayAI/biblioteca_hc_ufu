@@ -3,26 +3,21 @@
 import animate from 'tailwindcss-animate';
 
 export default {
-  // Ativar modo escuro com a classe "dark"
   darkMode: 'class',
-
-  // Configurar onde o Tailwind deve buscar classes para tree-shaking
   content: [
     './pages/**/*.{js,jsx,ts,tsx}',
     './components/**/*.{js,jsx,ts,tsx}',
     './lib/**/*.{js,jsx,ts,tsx}',
-    './app/**/*.{js,jsx,ts,tsx}', // Caso utilize o App Router no Next.js
+    './app/**/*.{js,jsx,ts,tsx}',
   ],
-
   theme: {
     extend: {
-      // Definição de cores personalizadas baseadas em variáveis CSS
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))', // Usando a variável personalizada
-        foreground: 'hsl(var(--foreground))',
+        background: 'var(--background)', // Ajustado para usar var(--background)
+        foreground: 'var(--foreground)', // Ajustado para usar var(--foreground)
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -48,15 +43,11 @@ export default {
           foreground: 'hsl(var(--secondary-foreground))',
         },
       },
-
-      // Ajustes para bordas personalizadas
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-
-      // Configurações extras
       spacing: {
         128: '32rem',
         144: '36rem',
@@ -67,7 +58,5 @@ export default {
       },
     },
   },
-
-  // Plugins adicionais
   plugins: [animate],
 };

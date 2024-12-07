@@ -7,8 +7,8 @@
 
 /* Variáveis de cor */
 :root {
-  --background: 210 11% 95%; /* Light mode: hsl(210, 11%, 95%) ~ #F3F4F6 */
-  --foreground: 240 10% 3.9%;
+  --background: #111827; /* Modo Escuro */
+  --foreground: #f3f4f6; /* Modo Escuro */
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
   --popover: 0 0% 100%;
@@ -47,10 +47,11 @@
 
 /* Estilo para tema escuro */
 .dark {
+  --background: #111827; /* Modo Escuro */
+  --foreground: #f3f4f6; /* Modo Escuro */
   color-scheme: dark;
   --bg-primary: #111827; /* Atualizado para #111827 */
-  --background: 220 42% 11%; /* HSL equivalente a #111827 */
-  --foreground: 0 0% 98%;
+
   --card: 240 10% 3.9%;
   --card-foreground: 0 0% 98%;
   --popover: 240 10% 3.9%;
@@ -73,6 +74,8 @@
 }
 /* Estilos globais */
 body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
