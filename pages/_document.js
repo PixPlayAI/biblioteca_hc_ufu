@@ -4,13 +4,17 @@ export default function MyDocument() {
   return (
     <Html lang="pt-BR">
       <Head>
-        {/* Meta tags para SEO */}
+        {/* Configurações básicas */}
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        {/* Meta Description para SEO */}
         <meta
           name="description"
           content="Plataforma inteligente desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que auxilia pesquisadores a estruturar metodologicamente suas perguntas de pesquisa usando formatos PICO, PICOT, PICOTE, PICOS e SPIDER. Ferramenta gratuita com suporte especializado."
         />
+
+        {/* Título do Site */}
         <title>
           Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde | HC-UFU/Ebserh
         </title>
@@ -24,7 +28,7 @@ export default function MyDocument() {
         <link rel="manifest" href="/icons/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
 
-        {/* Meta tags Open Graph (OG) */}
+        {/* Meta Tags Open Graph (Facebook, WhatsApp, LinkedIn) */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://biblioteca-hc-ufu.vercel.app/" />
         <meta
@@ -35,9 +39,10 @@ export default function MyDocument() {
           property="og:description"
           content="Ferramenta gratuita desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que guia pesquisadores na estruturação metodológica de suas questões de pesquisa. Suporte para PICO, PICOT, PICOTE, PICOS e SPIDER com análise em tempo real e feedback personalizado."
         />
+        {/* Imagem para Open Graph */}
         <meta
           property="og:image"
-          content="https://biblioteca-hc-ufu.vercel.app/assistente-digital-pesquisa-saude_1200X630.png"
+          content="https://biblioteca-hc-ufu.vercel.app/biblioteca_hc_ufu_1200X630.png"
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -46,7 +51,7 @@ export default function MyDocument() {
           content="Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde - Uma ferramenta do HC-UFU/Ebserh"
         />
 
-        {/* Meta tags Twitter */}
+        {/* Meta Tags Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
@@ -58,12 +63,28 @@ export default function MyDocument() {
         />
         <meta
           name="twitter:image"
-          content="https://biblioteca-hc-ufu.vercel.app/assistente-digital-pesquisa-saude_1200X600.png"
+          content="https://biblioteca-hc-ufu.vercel.app/biblioteca_hc_ufu_1200X600.png"
         />
         <meta
           name="twitter:image:alt"
           content="Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde - HC-UFU/Ebserh"
         />
+
+        {/* Meta Tags Adicionais para WhatsApp (Imagem quadrada) */}
+        <meta
+          property="og:image"
+          content="https://biblioteca-hc-ufu.vercel.app/biblioteca_hc_ufu_800X800.png"
+        />
+        <meta property="og:image:width" content="800" />
+        <meta property="og:image:height" content="800" />
+
+        {/* Meta Tags para Instagram (Opcional, Imagem 1080x1080) */}
+        <meta
+          property="og:image"
+          content="https://biblioteca-hc-ufu.vercel.app/biblioteca_hc_ufu_1080X1080.png"
+        />
+        <meta property="og:image:width" content="1080" />
+        <meta property="og:image:height" content="1080" />
       </Head>
       <body>
         <Main />

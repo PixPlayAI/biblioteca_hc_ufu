@@ -7,80 +7,97 @@
 
 /* Variáveis de cor */
 :root {
-  --background: #111827; /* Modo Escuro */
-  --foreground: #f3f4f6; /* Modo Escuro */
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
   --radius: 0.5rem;
 
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Tema Claro */
+  --bg-primary: #f3f4f6;
+  --background: #f3f4f6; /* Cor de fundo geral */
+  --foreground: #213547; /* Cor de texto geral */
+  --text-primary: #213547; /* Cor de texto primário */
+
+  --card: #ffffff;
+  --card-foreground: #213547;
+
+  --popover: #ffffff;
+  --popover-foreground: #213547;
+
+  --primary: #3b82f6; /* Azul padrão */
+  --primary-foreground: #ffffff;
+
+  --secondary: #d1d5db; /* Cinza claro */
+  --secondary-foreground: #111827;
+
+  --muted: #d1d5db;
+  --muted-foreground: #6b7280;
+
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #d1d5db;
+  --input: #e5e7eb;
+  --ring: #3b82f6;
+
+  /* Adicionando variáveis adicionais */
+  --text-muted-foreground: #6b7280;
+
+  /* Variáveis para o botão no modo claro */
+  --button-active-bg: #3b82f6; /* Azul para botão ativo no modo claro */
+  --button-active-text: #ffffff; /* Texto branco para botão ativo */
+  --button-inactive-bg: #d1d5db; /* Cinza para botão inativo no modo claro */
+  --button-inactive-text: #ffffff; /* Texto branco para botão inativo */
 }
 
-/* Estilo para tema claro */
-.light {
-  color-scheme: light;
-  --bg-primary: #f3f4f6; /* Atualizado para #F3F4F6 */
-  --background: 210 11% 95%; /* HSL equivalente a #F3F4F6 */
-  --text-primary: #213547;
-}
-
-/* Estilo para tema escuro */
 .dark {
-  --background: #111827; /* Modo Escuro */
-  --foreground: #f3f4f6; /* Modo Escuro */
-  color-scheme: dark;
-  --bg-primary: #111827; /* Atualizado para #111827 */
-
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
-
+  --bg-primary: #111827;
+  --background: #111827;
+  --foreground: #f3f4f6;
   --text-primary: rgba(255, 255, 255, 0.87);
+
+  --card: #1f2937;
+  --card-foreground: #f3f4f6;
+
+  --popover: #1f2937;
+  --popover-foreground: #f3f4f6;
+
+  --primary: #60a5fa; /* Azul claro para escuro */
+  --primary-foreground: #1f2937;
+
+  --secondary: #374151; /* Cinza escuro */
+  --secondary-foreground: #f3f4f6;
+
+  --muted: #374151;
+  --muted-foreground: #9ca3af;
+
+  --accent: #60a5fa;
+  --accent-foreground: #1f2937;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #f3f4f6;
+
+  --border: #374151;
+  --input: #4b5563;
+  --ring: #60a5fa;
+
+  /* Adicionando variáveis adicionais para tema escuro */
+  --text-muted-foreground: #9ca3af;
+
+  /* Variáveis para o botão no modo escuro */
+  --button-active-bg: #00158f;
+  --button-active-text: #ffffff;
+  --button-inactive-bg: #374151;
+  --button-inactive-text: #ffffff;
 }
+
 /* Estilos globais */
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
 }
 
 #__next {
@@ -91,8 +108,8 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centraliza o conteúdo horizontalmente */
-  background-color: var(--bg-primary); /* Garante que o container use a mesma cor */
+  align-items: center;
+  background-color: var(--bg-primary);
 }
 
 /* Estilos específicos */
@@ -132,4 +149,113 @@ body {
 
 .read-the-docs {
   color: #888;
+}
+
+/* Classes utilitárias para aplicar cores via variáveis */
+.bg-card {
+  background-color: var(--card);
+}
+
+.text-card-foreground {
+  color: var(--card-foreground);
+}
+
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.text-primary-foreground {
+  color: var(--primary-foreground);
+}
+
+.bg-destructive {
+  background-color: var(--destructive);
+}
+
+.text-destructive-foreground {
+  color: var(--destructive-foreground);
+}
+
+/* Custom classes para estados do botão */
+@layer components {
+  /* Classe para o botão "Enviar" */
+  .btn-enviar {
+    background-color: var(--button-active-bg);
+    color: var(--button-active-text);
+
+    &.disabled {
+      background-color: var(--button-inactive-bg);
+      color: var(--button-inactive-text);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    border-radius: var(--radius);
+    padding: 0.625rem 1.5rem; /* px-6 py-2.5 */
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Classe para botões primários */
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+
+    &.disabled {
+      background-color: var(--button-inactive-bg);
+      color: var(--button-inactive-text);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    border-radius: var(--radius);
+    padding: 0.75rem 1.5rem; /* px-6 py-3 */
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Classe para botões destrutivos */
+  .btn-destructive {
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+
+    &.disabled {
+      background-color: var(--button-inactive-bg);
+      color: var(--button-inactive-text);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    border-radius: var(--radius);
+    padding: 0.75rem 1.5rem; /* px-6 py-3 */
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Estilização para o modal */
+  .modal-content {
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border-radius: var(--radius);
+    padding: 1rem;
+    max-width: 28rem; /* max-w-md */
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+  }
 }

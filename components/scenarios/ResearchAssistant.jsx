@@ -323,17 +323,13 @@ QualityIndicator.propTypes = {
 
 // Componente para exibir cada elemento
 const ElementDisplay = ({ letter, term, translation, description }) => (
-  <div className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-    <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 min-w-[2rem]">
-      {letter}
-    </span>
+  <div className="flex items-start space-x-3 p-2 bg-card text-card-foreground rounded-lg">
+    <span className="text-3xl font-bold text-primary foreground min-w-[2rem]">{letter}</span>
     <div>
       <div className="font-medium">
-        {term} <span className="text-gray-600 dark:text-gray-300">({translation})</span>
+        {term} <span className="text-muted-foreground">({translation})</span>
       </div>
-      <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
-        {description || 'Não especificado'}
-      </p>
+      <p className="text-sm text-muted-foreground mt-1">{description || 'Não especificado'}</p>
     </div>
   </div>
 );
@@ -428,26 +424,26 @@ const AIAnalysis = ({ analysis }) => {
     <Card>
       <CardContent className="p-6 space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             Status da sua Pergunta de Pesquisa
           </h3>
           <div className="space-y-4">
             {orderedElements.map(({ key, letter, value }) => (
               <div
                 key={key}
-                className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                className="flex items-start space-x-3 p-2 bg-card text-card-foreground rounded-lg"
               >
-                <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 min-w-[2rem]">
+                <span className="text-3xl font-bold text-primary foreground min-w-[2rem]">
                   {letter}
                 </span>
                 <div>
                   <div className="font-medium">
                     {translations[key]?.term}{' '}
-                    <span className="text-gray-600 dark:text-gray-300">
+                    <span className="text-muted-foreground">
                       ({translations[key]?.translation})
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {value || 'Não especificado'}
                   </p>
                 </div>
@@ -457,10 +453,8 @@ const AIAnalysis = ({ analysis }) => {
         </div>
         {analysis.observations && (
           <div>
-            <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">Próximos Passos:</h4>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {analysis.observations}
-            </p>
+            <h4 className="font-medium text-primary foreground mb-2">Próximos Passos:</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">{analysis.observations}</p>
           </div>
         )}
       </CardContent>
@@ -485,13 +479,11 @@ const ConversationHistory = ({ conversations }) => (
         <CardContent className="p-4">
           <div className="space-y-3">
             <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{conv.question}</p>
-              {conv.context && (
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{conv.context}</p>
-              )}
+              <p className="font-medium text-foreground">{conv.question}</p>
+              {conv.context && <p className="text-sm text-muted-foreground mt-1">{conv.context}</p>}
             </div>
-            <div className="pl-4 border-l-2 border-blue-500">
-              <p className="text-gray-900 dark:text-gray-100">{conv.answer}</p>
+            <div className="pl-4 border-l border-primary foreground">
+              <p className="text-foreground">{conv.answer}</p>
               <QualityIndicator score={conv.quality} />
             </div>
           </div>
@@ -562,12 +554,10 @@ const FinalResult = ({ result, conversations, onReset }) => {
       <Card>
         <CardHeader>
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Pergunta de Pesquisa Estruturada
-            </h2>
+            <h2 className="text-2xl font-bold text-foreground">Pergunta de Pesquisa Estruturada</h2>
             {result.format && (
               <>
-                <p className="text-gray-600 dark:text-gray-300">Formato: {result.format}</p>
+                <p className="text-muted-foreground">Formato: {result.format}</p>
                 <DetailedElements
                   elements={normalizedElements}
                   format={result.format}
@@ -579,21 +569,19 @@ const FinalResult = ({ result, conversations, onReset }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-            <p className="text-lg text-blue-900 dark:text-blue-400 text-center">
-              {result.question}
-            </p>
+          <div className="bg-accent foreground p-4 rounded-lg">
+            <p className="text-lg text-accent-foreground text-center">{result.question}</p>
           </div>
           {result.explanation && (
-            <div className="border-l-4 border-blue-500 pl-4">
+            <div className="border-l-4 border-primary pl-4">
               <h3 className="text-lg font-semibold mb-2">Explicação Detalhada:</h3>
-              <p className="text-gray-700 dark:text-gray-300">{result.explanation}</p>
+              <p className="text-muted-foreground">{result.explanation}</p>
             </div>
           )}
           <div className="flex justify-center pt-4">
             <button
               onClick={onReset}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md hover:shadow-lg"
+              className="px-6 py-2.5 bg-primary foreground text-primary-foreground rounded-lg hover:bg-primary-dark transition-colors shadow-md hover:shadow-lg"
             >
               Iniciar Nova Pesquisa
             </button>
@@ -739,7 +727,7 @@ const ResearchAssistant = ({ isDark }) => {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-medium mb-2">Sugestão para {suggestedElement}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Com base no seu contexto, estas são algumas opções que poderiam se adequar ao seu
             estudo. Você pode escolher uma delas, propor uma alternativa ou negar a sugestão.
           </p>
@@ -767,7 +755,7 @@ const ResearchAssistant = ({ isDark }) => {
       <div className="space-y-4">
         <h3 className="text-lg font-medium mb-2">{nextQuestion.text}</h3>
         {nextQuestion.context && (
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{nextQuestion.context}</p>
+          <p className="text-sm text-muted-foreground mb-4">{nextQuestion.context}</p>
         )}
         <textarea
           value={currentInput}
@@ -791,7 +779,7 @@ const ResearchAssistant = ({ isDark }) => {
   }
 
   return (
-    <div className={`max-w-[1200px] mx-auto p-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`max-w-[1200px] mx-auto p-4 text-primary-foreground`}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <ConversationHistory conversations={conversations} />
@@ -802,9 +790,7 @@ const ResearchAssistant = ({ isDark }) => {
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !currentInput.trim()}
-                  className="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600
-                            transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                            flex items-center gap-2"
+                  className={`btn-enviar ${isLoading || !currentInput.trim() ? 'disabled' : ''}`}
                 >
                   {isLoading ? (
                     <>

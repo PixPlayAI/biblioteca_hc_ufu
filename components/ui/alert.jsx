@@ -11,7 +11,7 @@ const Alert = React.forwardRef(({ className, variant = 'default', ...props }, re
       'relative w-full rounded-lg border p-4',
       {
         'bg-background text-foreground': variant === 'default',
-        'bg-destructive text-destructive-foreground': variant === 'destructive',
+        'bg-destructive foreground': variant === 'destructive',
       },
       className
     )}

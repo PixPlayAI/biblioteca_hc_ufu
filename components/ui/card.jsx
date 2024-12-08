@@ -36,7 +36,7 @@ CardHeader.defaultProps = {
 CardHeader.displayName = 'CardHeader';
 
 const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  <div ref={ref} className={cn('p-6 pt-0 text-foreground', className)} {...props} />
 ));
 
 CardContent.propTypes = {

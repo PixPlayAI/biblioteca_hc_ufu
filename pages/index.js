@@ -1,9 +1,11 @@
+// pages/index.js
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import ResearchAssistant from '../components/scenarios/ResearchAssistant';
 import WelcomeModal from '../components/WelcomeModal';
 import Footer from '../components/Footer';
 import { Moon, Sun } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(true);
@@ -35,7 +37,7 @@ export default function HomePage() {
           content="Página inicial do Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde desenvolvido pelo HC-UFU/Ebserh."
         />
       </Head>
-      <div className="min-h-screen py-4 px-2 md:py-8 md:px-4 bg-background">
+      <div className="min-h-screen py-4 px-2 md:py-8 md:px-4 bg-background text-foreground">
         <WelcomeModal isOpen={showWelcome} onStart={handleStartResearch} isDark={isDark} />
         {!showWelcome && (
           <>
@@ -43,7 +45,7 @@ export default function HomePage() {
               <div className="flex flex-col items-center relative">
                 <h1
                   className={`text-xl md:text-3xl font-bold mb-4 text-center ${
-                    isDark ? 'text-white' : 'text-gray-900'
+                    isDark ? 'text-foreground' : 'text-foreground'
                   }`}
                 >
                   Assistente de Estruturação de Perguntas de Pesquisa.
@@ -55,9 +57,13 @@ export default function HomePage() {
                 />
                 <button
                   onClick={toggleTheme}
-                  className={`p-2 rounded-full ${
-                    isDark ? 'bg-gray-800 text-yellow-300' : 'bg-gray-200 text-gray-800'
-                  } hover:bg-opacity-80 transition-colors fixed top-4 right-4 z-10 md:static md:absolute md:right-0 md:top-0`}
+                  className={cn(
+                    `p-2 rounded-full transition-colors`,
+                    isDark
+                      ? 'bg-background text-primary hover:bg-muted-foreground'
+                      : 'bg-muted-foreground text-primary hover:bg-secondary-foreground',
+                    'fixed top-4 right-4 z-10 md:static md:absolute md:right-0 md:top-0'
+                  )}
                 >
                   {isDark ? <Sun size={24} /> : <Moon size={24} />}
                 </button>
