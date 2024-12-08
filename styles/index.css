@@ -259,3 +259,51 @@ body {
     transition: transform 0.2s ease-in-out;
   }
 }
+
+/* Estilos inspirados no design antigo para destacar siglas e letras maiúsculas */
+
+/* Container para os elementos (P, I, C, O...) no detalhamento das siglas */
+.element-display-item {
+  background-color: #e5e7eb; /* Claro */
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+  color: #213547;
+}
+
+.dark .element-display-item {
+  background-color: var(--card); /* Usará a cor do card no modo escuro */
+  color: var(--card-foreground); /* Texto coerente com o modo escuro */
+}
+
+/* Letra da sigla em destaque (P, I, C, O, etc.) */
+.element-display-item .acronym-letter {
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 700; /* font-bold */
+  color: #3b82f6; /* Azul destaque */
+  min-width: 2rem;
+}
+
+/* Descrição do elemento da sigla */
+.element-display-item .acronym-description {
+  font-size: 0.875rem; /* text-sm */
+  color: #6b7280; /* Cor de texto mais suave (text-muted-foreground) */
+}
+
+/* Container para a apresentação final (onde a pergunta e a explicação final são exibidas) */
+.final-presentation-container {
+  background-color: #105d96; /* fundo azul claro */
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.final-presentation-container .acronym-letter {
+  /* Ajustar a cor do texto para um azul mais escuro ou quase preto */
+  color: #ffffff;
+}
+
+.final-presentation-container .final-question-text {
+  color: #213547; /* Cor de texto mais escura para melhor contraste */
+}

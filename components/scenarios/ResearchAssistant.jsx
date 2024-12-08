@@ -5,7 +5,7 @@ import { Card, CardHeader, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { generateScenarioContent } from '../../lib/api';
 import FeedbackModal from '../FeedbackModal';
-import { Hourglass } from 'lucide-react';
+import { Bold, Hourglass } from 'lucide-react';
 
 // Atualização das traduções com novos elementos
 const translations = {
@@ -323,13 +323,13 @@ QualityIndicator.propTypes = {
 
 // Componente para exibir cada elemento
 const ElementDisplay = ({ letter, term, translation, description }) => (
-  <div className="flex items-start space-x-3 p-2 bg-card text-card-foreground rounded-lg">
-    <span className="text-3xl font-bold text-primary foreground min-w-[2rem]">{letter}</span>
+  <div className="element-display-item">
+    <span className="acronym-letter">{letter}</span>
     <div>
       <div className="font-medium">
         {term} <span className="text-muted-foreground">({translation})</span>
       </div>
-      <p className="text-sm text-muted-foreground mt-1">{description || 'Não especificado'}</p>
+      <p className="acronym-description mt-1">{description || 'Não especificado'}</p>
     </div>
   </div>
 );
@@ -362,7 +362,7 @@ const DetailedElements = ({ elements, format, variant = 'default', descriptions 
 
   if (variant === 'formatted') {
     return (
-      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+      <div className="mt-4 p-4 bg-blue-50 dark:bg-gray-900 rounded-lg">
         <h3 className="text-lg font-medium mb-3">Elementos do {format}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {elementsWithDescriptions.map(({ key, letter, description }) => (
@@ -429,25 +429,13 @@ const AIAnalysis = ({ analysis }) => {
           </h3>
           <div className="space-y-4">
             {orderedElements.map(({ key, letter, value }) => (
-              <div
+              <ElementDisplay
                 key={key}
-                className="flex items-start space-x-3 p-2 bg-card text-card-foreground rounded-lg"
-              >
-                <span className="text-3xl font-bold text-primary foreground min-w-[2rem]">
-                  {letter}
-                </span>
-                <div>
-                  <div className="font-medium">
-                    {translations[key]?.term}{' '}
-                    <span className="text-muted-foreground">
-                      ({translations[key]?.translation})
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {value || 'Não especificado'}
-                  </p>
-                </div>
-              </div>
+                letter={letter}
+                term={translations[key]?.term || key}
+                translation={translations[key]?.translation || key}
+                description={value || 'Não especificado'}
+              />
             ))}
           </div>
         </div>
@@ -569,9 +557,10 @@ const FinalResult = ({ result, conversations, onReset }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-accent foreground p-4 rounded-lg">
-            <p className="text-lg text-accent-foreground text-center">{result.question}</p>
+          <div className="final-presentation-container">
+            <p className="text-lg text-center acronym-letter font-bold">{result.question}</p>
           </div>
+
           {result.explanation && (
             <div className="border-l-4 border-primary pl-4">
               <h3 className="text-lg font-semibold mb-2">Explicação Detalhada:</h3>
