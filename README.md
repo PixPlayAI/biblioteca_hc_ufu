@@ -19,7 +19,7 @@ O **Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde** 
 - **Modal de Boas-Vindas**: Apresenta informações iniciais sobre o assistente, orientando o usuário sobre como utilizar a ferramenta.
 - **Rodapé Informativo**: Contém informações de contato, localização, horário de funcionamento e outros detalhes relevantes sobre a Biblioteca e a UGITS.
 - **Integração com Inteligência Artificial**: Geração de perguntas e alternativas personalizadas para auxiliar na definição e estruturação das pesquisas.
-- **Suporte a Múltiplos Formatos Metodológicos**: Suporte para formatos reconhecidos como PICO, PICOT, PICOTE, PICOS, SPIDER, entre outros, facilitando a adaptação às necessidades específicas de cada pesquisa.
+- **Suporte a Múltiplos Formatos Metodológicos**: Suporte para formatos reconhecidos como PICO, PICOT, PICOS, entre outros, facilitando a adaptação às necessidades específicas de cada pesquisa.
 
 ## 🛠️ Tecnologias Utilizadas
 

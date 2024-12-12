@@ -11,7 +11,7 @@ export default function MyDocument() {
         {/* Meta Description para SEO */}
         <meta
           name="description"
-          content="Plataforma inteligente desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que auxilia pesquisadores a estruturar metodologicamente suas perguntas de pesquisa usando formatos PICO, PICOT, PICOTE, PICOS e SPIDER. Ferramenta gratuita com suporte especializado."
+          content="Plataforma inteligente desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que auxilia pesquisadores a estruturar metodologicamente suas perguntas de pesquisa usando formatos PICO, PICOT e PICOS, etc. Ferramenta gratuita com suporte especializado."
         />
 
         {/* Título do Site */}
@@ -37,7 +37,7 @@ export default function MyDocument() {
         />
         <meta
           property="og:description"
-          content="Ferramenta gratuita desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que guia pesquisadores na estruturação metodológica de suas questões de pesquisa. Suporte para PICO, PICOT, PICOTE, PICOS e SPIDER com análise em tempo real e feedback personalizado."
+          content="Ferramenta gratuita desenvolvida pela Biblioteca e UGITS do HC-UFU/Ebserh que guia pesquisadores na estruturação metodológica de suas questões de pesquisa. Suporte para PICO, PICOT e PICOS com análise em tempo real e feedback personalizado."
         />
         {/* Imagem para Open Graph */}
         <meta

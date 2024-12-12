@@ -22,14 +22,14 @@ const translations = {
   context: { term: 'Context', translation: 'Contexto' },
   studyDesign: { term: 'Study Design', translation: 'Desenho do Estudo' },
   riskFactor: { term: 'Risk Factor', translation: 'Fator de Risco' },
-  phenomenonOfInterest: { term: 'Phenomenon of Interest', translation: 'Fenômeno de Interesse' },
+  //phenomenonOfInterest: { term: 'Phenomenon of Interest', translation: 'Fenômeno de Interesse' },
   concept: { term: 'Concept', translation: 'Conceito' },
-  evaluation: { term: 'Evaluation', translation: 'Avaliação' },
-  researchType: { term: 'Research Type', translation: 'Tipo de Pesquisa' },
-  sample: { term: 'Sample', translation: 'Amostra' },
+  //evaluation: { term: 'Evaluation', translation: 'Avaliação' },
+  //researchType: { term: 'Research Type', translation: 'Tipo de Pesquisa' },
+  //sample: { term: 'Sample', translation: 'Amostra' },
   index: { term: 'Index Test', translation: 'Teste Índice' },
   reference: { term: 'Reference Test', translation: 'Teste de Referência' },
-  environment: { term: 'Environment', translation: 'Ambiente' },
+  //environment: { term: 'Environment', translation: 'Ambiente' },
 };
 
 // Função auxiliar para mapear valores similares
@@ -88,11 +88,11 @@ const ensureAllFormatElements = (format, elements) => {
     PEO: ['population', 'exposure', 'outcome'],
     PICO: ['population', 'intervention', 'comparison', 'outcome'],
     PICOT: ['population', 'intervention', 'comparison', 'outcome', 'timeframe'],
-    SPIDER: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
+    //SPIDER: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
     PICOS: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
     PIRO: ['population', 'index', 'reference', 'outcome'],
     PCC: ['population', 'concept', 'context'],
-    PICOTE: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'environment'],
+    //PICOTE: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'environment'],
     CoCoPop: ['condition', 'context', 'population'],
     // Adicione outros formatos conforme necessário
   };
@@ -142,16 +142,16 @@ const getOrderedElements = (format, elements) => {
     },
 
     // SPIDER
-    SPIDER: {
-      order: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
-      letters: {
-        sample: 'S',
-        phenomenonOfInterest: 'P',
-        studyDesign: 'D',
-        evaluation: 'E',
-        researchType: 'R',
-      },
-    },
+    //SPIDER: {
+    //  order: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
+    //  letters: {
+    //    sample: 'S',
+    //    phenomenonOfInterest: 'P',
+    //    studyDesign: 'D',
+    //    evaluation: 'E',
+    //    researchType: 'R',
+    //  },
+    //},
 
     // PEO
     PEO: {
@@ -175,17 +175,17 @@ const getOrderedElements = (format, elements) => {
     },
 
     // PICOTE
-    PICOTE: {
-      order: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'evaluation'],
-      letters: {
-        population: 'P',
-        intervention: 'I',
-        comparison: 'C',
-        outcome: 'O',
-        timeframe: 'T',
-        evaluation: 'E',
-      },
-    },
+    //PICOTE: {
+    //  order: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'evaluation'],
+    //  letters: {
+    //    population: 'P',
+    //    intervention: 'I',
+    //    comparison: 'C',
+    //    outcome: 'O',
+    //    timeframe: 'T',
+    //    evaluation: 'E',
+    //  },
+    //},
 
     // CoCoPop
     CoCoPop: {
@@ -506,21 +506,22 @@ const FinalResult = ({ result, conversations, onReset }) => {
   // Mapear chaves maiúsculas (P, E, C, O, etc.) para chaves minúsculas (population, exposure, comparison, etc.)
   const keyMapping = {
     P: 'population', // Usado por vários formatos
-    E: 'exposure', // Usado por PEO, PECO, PICOTE
-    C: 'comparison', // Usado por PICO, PICOT, PECO, PICOTE
+    E: 'exposure', // Usado por PEO, PECO, REMOVIDO: PICOTE
+    C: 'comparison', // Usado por PICO, PICOT, PECO, REMOVIDO: PICOTE
     O: 'outcome', // Usado por PICO, PICOT, PECO, PIRO
-    I: 'intervention', // Usado por PICO, PICOT, PICOTE, PIRO
-    T: 'timeframe', // Usado por PICOT, PICOTE ou sem sigla
-    S: 'studyDesign', // Usado por PICO, PICOT, PICOS, SPIDER
+    I: 'intervention', // Usado por PICO, PICOT, REMOVIDO: PICOTE, PIRO
+    T: 'timeframe', // Usado por PICOT, REMOVIDO: PICOTE ou sem sigla
+    S: 'studyDesign', // Usado por PICO, PICOT, PICOS, REMOVIDO: SPIDER
     R: 'riskFactor', // Usado por PIRO
-    D: 'phenomenonOfInterest', // Usado por SPIDER
+    //D: 'phenomenonOfInterest', // Usado por REMOVIDO: SPIDER
     N: 'concept', // Usado por PCC
-    F: 'evaluation', // Usado por SPIDER
+    //F: 'evaluation', // Usado por REMOVIDO: SPIDER E REMOVIDO: PICOTE
     X: 'condition', // Usado por CoCoPop
     U: 'context', // Usado por PCC, CoCoPop
-    L: 'sample', // Usado por SPIDER
+    //L: 'sample', // Usado por REMOVIDO: SPIDER
     H: 'index', // Usado por PIRO (substituição de 'intervention' para se alinhar ao formato)
-    K: 'environment', // Adicionado para PICOTE
+    //K: 'environment', // Adicionado para REMOVIDO: PICOTE
+    //Y: 'researchType', // Usado para REMOVIDO: SPYDER
   };
 
   // Converter chaves maiúsculas para minúsculas
