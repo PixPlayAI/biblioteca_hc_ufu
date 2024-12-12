@@ -752,7 +752,7 @@ const ResearchAssistant = ({ isDark }) => {
         <textarea
           value={currentInput}
           onChange={(e) => setCurrentInput(e.target.value)}
-          className="w-full min-h-[120px] p-4 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+          className="w-full min-h-[100px] sm:min-h-[120px] p-3 sm:p-4 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           placeholder="Digite sua resposta..."
           autoFocus
         />
@@ -778,19 +778,25 @@ const ResearchAssistant = ({ isDark }) => {
   }
 
   return (
-    <div className={`max-w-[1200px] mx-auto p-4 text-primary-foreground`}>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+    <div className={`max-w-[1200px] mx-auto p-2 sm:p-4 text-primary-foreground`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-6">
           <ConversationHistory conversations={conversations} />
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-6">
               {renderQuestionContent()}
-              <div className="flex justify-between items-center mt-4">
-                <FloatingActionButtons variant="inline" isDark={isDark} />
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mt-4">
+                <FloatingActionButtons
+                  variant="inline"
+                  isDark={isDark}
+                  className="w-full sm:w-auto"
+                />
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !currentInput.trim()}
-                  className={`btn-enviar ${isLoading || !currentInput.trim() ? 'disabled' : ''}`}
+                  className={`btn-enviar w-full sm:w-auto ${
+                    isLoading || !currentInput.trim() ? 'disabled' : ''
+                  } justify-center`} // Adicionado justify-center aqui
                 >
                   {isLoading ? (
                     <>

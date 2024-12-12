@@ -28,9 +28,9 @@ const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) 
 
   if (variant === 'final') {
     return (
-      <div className={`flex justify-center gap-4 ${className}`}>
+      <div className={`flex flex-col md:flex-row justify-center gap-4 ${className}`}>
         <Card
-          className="hover:scale-105 transition-transform duration-200 cursor-pointer max-w-xs"
+          className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
           onClick={handleEmailClick}
         >
           <CardContent className="p-4 flex items-center gap-3">
@@ -45,7 +45,7 @@ const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) 
         </Card>
 
         <Card
-          className="hover:scale-105 transition-transform duration-200 cursor-pointer max-w-xs"
+          className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
           onClick={() =>
             handleWhatsAppClick(
               'Oi tudo bem? Utilizei o aplicativo o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde e consegui o seguinte resultado, podem me ajudar? [ESPAÇO PARA EU FUTURAMENTE INTEGRAR COM O RESULTADO]'
@@ -68,17 +68,17 @@ const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) 
 
   if (variant === 'inline') {
     return (
-      <div className={`flex gap-2 ${className}`}>
+      <div className={`flex flex-col sm:flex-row gap-2 ${className}`}>
         <button
           onClick={() => handleWhatsAppClick()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
         >
           <MessageCircleQuestion className="w-5 h-5" />
           <span className="text-sm">Precisa de ajuda?</span>
         </button>
         <button
           onClick={handleFeedbackClick}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-transform duration-200"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
         >
           <ThumbsUp className="w-5 h-5" />
           <span className="text-sm">Está gostando?</span>
@@ -86,15 +86,15 @@ const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) 
       </div>
     );
   }
-
   // Versão padrão (cards flutuantes)
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 p-2 sm:p-0 ${className}`}>
       <Card
         className="hover:scale-105 transition-transform duration-200 cursor-pointer"
         onClick={() => handleWhatsAppClick()}
       >
-        <CardContent className="p-4 flex items-center gap-3">
+        <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+          {' '}
           <div className="bg-[#25D366] p-2 rounded-full">
             <MessageCircleQuestion className="w-6 h-6 text-white" />
           </div>
@@ -111,7 +111,8 @@ const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) 
         className="hover:scale-105 transition-transform duration-200 cursor-pointer"
         onClick={handleFeedbackClick}
       >
-        <CardContent className="p-4 flex items-center gap-3">
+        <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+          {' '}
           <div className="bg-primary p-2 rounded-full">
             <ThumbsUp className="w-6 h-6 text-primary-foreground" />
           </div>
