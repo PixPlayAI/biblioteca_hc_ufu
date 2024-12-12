@@ -6,6 +6,7 @@ import { Progress } from '../ui/progress';
 import { generateScenarioContent } from '../../lib/api';
 import FeedbackModal from '../FeedbackModal';
 import { Bold, Hourglass } from 'lucide-react';
+import FloatingActionButtons from '../FloatingActionButtons';
 
 // Atualização das traduções com novos elementos
 const translations = {
@@ -493,7 +494,7 @@ ConversationHistory.propTypes = {
 };
 
 // Componente FinalResult atualizado
-const FinalResult = ({ result, conversations, onReset }) => {
+const FinalResult = ({ result, conversations, onReset, isDark }) => {
   console.log('FinalResult rendering with:', result);
   console.log('Result elements:', result.elements);
   console.log('Result descriptions:', result.elementDescriptions);
@@ -558,6 +559,7 @@ const FinalResult = ({ result, conversations, onReset }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <FloatingActionButtons variant="final" isDark={isDark} className="mb-8" />
           <div className="final-presentation-container">
             <p className="text-lg text-center acronym-letter font-bold">{result.question}</p>
           </div>
@@ -598,8 +600,8 @@ FinalResult.propTypes = {
   }).isRequired,
   conversations: PropTypes.array.isRequired,
   onReset: PropTypes.func.isRequired,
+  isDark: PropTypes.bool.isRequired,
 };
-
 // Componente principal ResearchAssistant atualizado
 const ResearchAssistant = ({ isDark }) => {
   const [suggestionMode, setSuggestionMode] = useState(false);
@@ -765,7 +767,14 @@ const ResearchAssistant = ({ isDark }) => {
   };
 
   if (finalResult) {
-    return <FinalResult result={finalResult} conversations={conversations} onReset={handleReset} />;
+    return (
+      <FinalResult
+        result={finalResult}
+        conversations={conversations}
+        onReset={handleReset}
+        isDark={isDark}
+      />
+    );
   }
 
   return (
@@ -776,7 +785,8 @@ const ResearchAssistant = ({ isDark }) => {
           <Card>
             <CardContent className="p-6">
               {renderQuestionContent()}
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-between items-center mt-4">
+                <FloatingActionButtons variant="inline" isDark={isDark} />
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !currentInput.trim()}
@@ -796,8 +806,9 @@ const ResearchAssistant = ({ isDark }) => {
           </Card>
         </div>
         <div className="hidden lg:block lg:col-span-1">
-          <div className="sticky top-16 z-10">
+          <div className="sticky top-16 z-10 space-y-4">
             {currentAnalysis && <AIAnalysis analysis={currentAnalysis} />}
+            <FloatingActionButtons isDark={isDark} />
           </div>
         </div>
       </div>
