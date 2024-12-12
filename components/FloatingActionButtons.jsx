@@ -1,17 +1,62 @@
+//components/FloatingActionButtons.jsx
 import PropTypes from 'prop-types';
 import { MessageCircleQuestion, ThumbsUp, Mail, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 
-const FloatingActionButtons = ({ isDark, variant = 'default', className = '' }) => {
-  const handleWhatsAppClick = (customMessage) => {
-    const message = encodeURIComponent(
-      customMessage ||
-        'Oi tudo bem? Estou usando o aplicativo da biblioteca, o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde, e estou com dificuldades... Podem me ajudar?'
-    );
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=553432182451&text=${message}`;
-    window.open(whatsappUrl, '_blank');
+const FloatingActionButtons = ({
+  isDark,
+  variant = 'default',
+  className = '',
+  conversations = [],
+  finalResult = null,
+}) => {
+  const formatConversationHistory = () => {
+    if (!conversations.length) return '';
+
+    return conversations
+      .map(
+        (conv, index) => `
+🔹 *Pergunta ${index + 1}:* ${conv.question}
+${conv.context ? `_Contexto:_ ${conv.context}\n` : ''}*Resposta:* ${conv.answer}
+`
+      )
+      .join('\n');
   };
 
+  const formatFinalResult = () => {
+    if (!finalResult) return '';
+
+    return `
+📋 *RESULTADO FINAL*
+------------------
+*Formato:* ${finalResult.format}
+*Pergunta Estruturada:* ${finalResult.question}
+${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
+`;
+  };
+
+  const handleWhatsAppClick = (customMessage) => {
+    const conversationHistory = formatConversationHistory();
+    const formattedResult = formatFinalResult();
+
+    let message = '';
+
+    if (variant === 'final') {
+      message = `Oi tudo bem? Utilizei o aplicativo o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde e consegui o seguinte resultado, podem me ajudar?\n\n`;
+      message += `*HISTÓRICO DA CONSTRUÇÃO*\n`;
+      message += `------------------\n`;
+      message += conversationHistory;
+      message += `\n${formattedResult}`;
+    } else {
+      message = `Oi tudo bem? Estou usando o aplicativo da biblioteca, o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde, e estou com dificuldades... Podem me ajudar?\n\n`;
+      message += `*HISTÓRICO DA INTERAÇÃO ATÉ O MOMENTO*\n`;
+      message += `------------------\n`;
+      message += conversationHistory;
+    }
+
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=553432182451&text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
   const handleFeedbackClick = () => {
     window.open(
       'https://www.canva.com/design/DAGZHsEGVGw/hHRk3ashIVuplEnP8jNGSw/view?utm_content=DAGZHsEGVGw&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hf724616ddf',
@@ -130,6 +175,8 @@ FloatingActionButtons.propTypes = {
   isDark: PropTypes.bool.isRequired,
   variant: PropTypes.oneOf(['default', 'inline', 'final']),
   className: PropTypes.string,
+  conversations: PropTypes.array,
+  finalResult: PropTypes.object,
 };
 
 export default FloatingActionButtons;

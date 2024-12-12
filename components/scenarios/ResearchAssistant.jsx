@@ -559,11 +559,16 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <FloatingActionButtons variant="final" isDark={isDark} className="mb-8" />
+          <FloatingActionButtons
+            variant="final"
+            isDark={isDark}
+            className="mb-8"
+            conversations={conversations}
+            finalResult={result}
+          />
           <div className="final-presentation-container">
             <p className="text-lg text-center acronym-letter font-bold">{result.question}</p>
           </div>
-
           {result.explanation && (
             <div className="border-l-4 border-primary pl-4">
               <h3 className="text-lg font-semibold mb-2">Explicação Detalhada:</h3>
@@ -790,7 +795,9 @@ const ResearchAssistant = ({ isDark }) => {
                   variant="inline"
                   isDark={isDark}
                   className="w-full sm:w-auto"
+                  conversations={conversations}
                 />
+
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !currentInput.trim()}
@@ -814,7 +821,7 @@ const ResearchAssistant = ({ isDark }) => {
         <div className="hidden lg:block lg:col-span-1">
           <div className="sticky top-16 z-10 space-y-4">
             {currentAnalysis && <AIAnalysis analysis={currentAnalysis} />}
-            <FloatingActionButtons isDark={isDark} />
+            <FloatingActionButtons isDark={isDark} conversations={conversations} />
           </div>
         </div>
       </div>
