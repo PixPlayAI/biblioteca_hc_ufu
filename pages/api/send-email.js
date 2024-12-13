@@ -1,3 +1,4 @@
+//pages/api/send-email.js
 import nodemailer from 'nodemailer';
 
 const getFormattedDateTime = () => {

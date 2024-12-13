@@ -1,10 +1,11 @@
+//components/NPSModal.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Star, X, Send } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { markNPSAsSubmitted, checkNPSStatus } from '../lib/npsManager';
 
 const getRatingColor = (index, isSelected) => {
-  // Base colors for the gradient
   const colors = {
     0: { bg: 'bg-red-500', hover: 'hover:bg-red-600' },
     1: { bg: 'bg-red-500', hover: 'hover:bg-red-600' },
@@ -54,13 +55,7 @@ const NPSQuestion = ({ question, value, onChange }) => {
   );
 };
 
-NPSQuestion.propTypes = {
-  question: PropTypes.string.isRequired,
-  value: PropTypes.number,
-  onChange: PropTypes.func.isRequired,
-};
-
-const NPSModal = ({ isOpen, onClose, isDark }) => {
+const NPSModal = ({ isOpen, onClose, isDark, source, onComplete }) => {
   const [scores, setScores] = useState({
     methodologySupport: null,
     clarity: null,
@@ -73,13 +68,27 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
 
   useEffect(() => {
     if (isOpen) {
-      const hasSubmitted = sessionStorage.getItem('nps_submitted');
+      const hasSubmitted = checkNPSStatus();
       if (hasSubmitted) {
         setHasSubmittedBefore(true);
         setShowThankYou(true);
+        if (source?.type === 'forced' && onComplete) {
+          setTimeout(() => {
+            onComplete();
+          }, 2000);
+        }
       }
+    } else {
+      setScores({
+        methodologySupport: null,
+        clarity: null,
+        overall: null,
+      });
+      setComment('');
+      setIsSubmitting(false);
+      setShowThankYou(false);
     }
-  }, [isOpen]);
+  }, [isOpen, source, onComplete]);
 
   const isFormValid =
     scores.methodologySupport !== null && scores.clarity !== null && scores.overall !== null;
@@ -89,39 +98,71 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
     setIsSubmitting(true);
 
     try {
+      const requestBody = {
+        scores,
+        comment,
+        source,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log('Enviando NPS - Request Body:', requestBody);
+
       const response = await fetch('/api/send-nps', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          scores,
-          comment,
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) throw new Error('Failed to submit feedback');
-      sessionStorage.setItem('nps_submitted', 'true');
+      const responseData = await response.json();
+      console.log('Resposta do servidor NPS:', responseData);
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit feedback: ${responseData.error || 'Unknown error'}`);
+      }
+
+      markNPSAsSubmitted();
       setShowThankYou(true);
+
+      if (source?.type === 'forced' && onComplete) {
+        setTimeout(() => {
+          onComplete();
+        }, 2000);
+      }
     } catch (error) {
-      console.error('Error submitting NPS:', error);
+      console.error('Erro completo ao enviar NPS:', {
+        message: error.message,
+        stack: error.stack,
+        error,
+      });
+      alert('Erro ao enviar avaliação. Por favor, tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
+  const getModalMessage = () => {
+    if (source?.type === 'forced') {
+      return (
+        <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg mb-4">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Nota Importante:</strong> Para{' '}
+            {source.id.includes('email')
+              ? 'receber o resultado por email'
+              : 'entrar em contato com a biblioteca'}
+            , pedimos que primeiro responda estas três breves perguntas sobre sua experiência.
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   if (showThankYou) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-4 z-50 overflow-y-auto">
-        <div
-          className={cn(
-            'rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto shadow-xl transform transition-all my-4',
-            'bg-card text-card-foreground'
-          )}
-        >
+        <div className="rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto shadow-xl transform transition-all my-4 bg-card text-card-foreground">
           <div className="text-center space-y-4">
             <div className="flex flex-col items-center">
               <Star className="w-12 h-12 text-yellow-500 mb-2" />
@@ -149,14 +190,12 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
     );
   }
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-4 z-50 overflow-y-auto">
-      <div
-        className={cn(
-          'rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-auto shadow-xl transform transition-all my-4',
-          'bg-card text-card-foreground'
-        )}
-      >
+      <div className="rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-auto shadow-xl transform transition-all my-4 bg-card text-card-foreground">
+        {getModalMessage()}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -221,10 +260,23 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
   );
 };
 
+NPSQuestion.propTypes = {
+  question: PropTypes.string.isRequired,
+  value: PropTypes.number,
+  onChange: PropTypes.func.isRequired,
+};
+
 NPSModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   isDark: PropTypes.bool.isRequired,
+  source: PropTypes.shape({
+    id: PropTypes.string,
+    text: PropTypes.string,
+    description: PropTypes.string,
+    type: PropTypes.oneOf(['spontaneous', 'forced']),
+  }),
+  onComplete: PropTypes.func,
 };
 
 export default NPSModal;

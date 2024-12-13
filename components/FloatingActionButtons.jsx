@@ -1,9 +1,11 @@
+//components/FloatingActionButtons.jsx
 import PropTypes from 'prop-types';
 import { MessageCircleQuestion, ThumbsUp, Mail, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { useState } from 'react';
 import EmailModal from './EmailModal';
 import NPSModal from './NPSModal';
+import { NPS_SOURCES, checkNPSStatus } from '../lib/npsManager';
 
 const FloatingActionButtons = ({
   isDark,
@@ -12,6 +14,10 @@ const FloatingActionButtons = ({
   conversations = [],
   finalResult = null,
 }) => {
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isNPSModalOpen, setIsNPSModalOpen] = useState(false);
+  const [currentNPSSource, setCurrentNPSSource] = useState(null);
+
   const formatConversationHistory = () => {
     if (!conversations.length) return '';
 
@@ -43,39 +49,68 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
   };
 
   const handleWhatsAppClick = (customMessage) => {
-    const conversationHistory = formatConversationHistory();
-    const formattedResult = formatFinalResult();
+    if (checkNPSStatus()) {
+      const conversationHistory = formatConversationHistory();
+      const formattedResult = formatFinalResult();
 
-    let message = '';
+      let message = '';
 
-    if (variant === 'final') {
-      message = `Oi tudo bem? Utilizei o aplicativo o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde e consegui o seguinte resultado, podem me ajudar?\n\n`;
-      message += `*HISTÓRICO DA CONSTRUÇÃO*\n`;
-      message += `------------------\n`;
-      message += conversationHistory;
-      message += `\n${formattedResult}`;
+      if (variant === 'final') {
+        message = `Oi tudo bem? Utilizei o aplicativo o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde e consegui o seguinte resultado, podem me ajudar?\n\n`;
+        message += `*HISTÓRICO DA CONSTRUÇÃO*\n`;
+        message += `------------------\n`;
+        message += conversationHistory;
+        message += `\n${formattedResult}`;
+      } else {
+        message = `Oi tudo bem? Estou usando o aplicativo da biblioteca, o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde, e estou com dificuldades... Podem me ajudar?\n\n`;
+        message += `*HISTÓRICO DA INTERAÇÃO ATÉ O MOMENTO*\n`;
+        message += `------------------\n`;
+        message += conversationHistory;
+      }
+
+      const phoneNumber = '553432182451';
+      const encodedMessage = encodeURIComponent(message);
+      const baseUrl = isMobile()
+        ? 'https://api.whatsapp.com/send'
+        : 'https://web.whatsapp.com/send';
+      const whatsappUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+      return;
     } else {
-      message = `Oi tudo bem? Estou usando o aplicativo da biblioteca, o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde, e estou com dificuldades... Podem me ajudar?\n\n`;
-      message += `*HISTÓRICO DA INTERAÇÃO ATÉ O MOMENTO*\n`;
-      message += `------------------\n`;
-      message += conversationHistory;
+      // Caso contrário, mostra o modal do NPS
+      const source =
+        variant === 'final'
+          ? NPS_SOURCES.CHAT_RESULT
+          : customMessage
+            ? NPS_SOURCES.NEED_HELP
+            : NPS_SOURCES.LIBRARY_HELP;
+      setCurrentNPSSource(source);
+      setIsNPSModalOpen(true);
     }
 
-    const phoneNumber = '553432182451';
-    const encodedMessage = encodeURIComponent(message);
+    // Caso contrário, abra o modal do NPS com a origem apropriada
+    const source =
+      variant === 'final'
+        ? NPS_SOURCES.CHAT_RESULT
+        : customMessage
+          ? NPS_SOURCES.NEED_HELP
+          : NPS_SOURCES.LIBRARY_HELP;
 
-    // Define a URL base baseado no dispositivo
-    const baseUrl = isMobile() ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send';
-
-    const whatsappUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
+    setCurrentNPSSource(source);
+    setIsNPSModalOpen(true);
   };
-  // ... outros estados ...
-  const [isNPSModalOpen, setIsNPSModalOpen] = useState(false);
 
-  // Adicione esta função para verificar se já foi enviado
+  const handleEmailClick = () => {
+    if (checkNPSStatus()) {
+      setIsEmailModalOpen(true);
+    } else {
+      setCurrentNPSSource(NPS_SOURCES.EMAIL_RESULT);
+      setIsNPSModalOpen(true);
+    }
+  };
+
   const handleFeedbackClick = () => {
-    const hasSubmitted = sessionStorage.getItem('nps_submitted');
+    setCurrentNPSSource(variant === 'inline' ? NPS_SOURCES.LIKE_BUTTON : NPS_SOURCES.APP_FEEDBACK);
     setIsNPSModalOpen(true);
   };
 
@@ -90,7 +125,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       });
 
       if (!response.ok) throw new Error('Failed to send email');
-
       return true;
     } catch (error) {
       console.error('Error sending email:', error);
@@ -98,10 +132,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
     }
   };
 
-  // Estados para controlar o email
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-
-  // função formatEmailContent
   const formatEmailContent = () => {
     let content = '';
 
@@ -113,22 +143,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
 
     return content;
   };
-
-  const handleEmailClick = () => {
-    const emailContent = formatEmailContent();
-    setIsEmailModalOpen(true);
-  };
-
-  {
-    /* Adicione o EmailModal aqui */
-  }
-  <EmailModal
-    isOpen={isEmailModalOpen}
-    onClose={() => setIsEmailModalOpen(false)}
-    isDark={isDark}
-    emailContent={formatEmailContent()}
-    onSendEmail={handleSendEmail}
-  />;
 
   if (variant === 'final') {
     return (
@@ -175,6 +189,17 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
           isOpen={isNPSModalOpen}
           onClose={() => setIsNPSModalOpen(false)}
           isDark={isDark}
+          source={currentNPSSource}
+          onComplete={() => {
+            setIsNPSModalOpen(false);
+            if (currentNPSSource?.type === 'forced') {
+              if (currentNPSSource.id === 'email_result') {
+                setIsEmailModalOpen(true);
+              } else {
+                handleWhatsAppClick(true);
+              }
+            }
+          }}
         />
       </>
     );
@@ -191,9 +216,8 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
           onSendEmail={handleSendEmail}
         />
         <div className={`flex flex-col sm:flex-row gap-2 ${className}`}>
-          {' '}
           <button
-            onClick={handleWhatsAppClick}
+            onClick={() => handleWhatsAppClick(true)}
             className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
           >
             <MessageCircleQuestion className="w-5 h-5" />
@@ -211,12 +235,18 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
           isOpen={isNPSModalOpen}
           onClose={() => setIsNPSModalOpen(false)}
           isDark={isDark}
+          source={currentNPSSource}
+          onComplete={() => {
+            setIsNPSModalOpen(false);
+            if (currentNPSSource?.type === 'forced') {
+              handleWhatsAppClick(true);
+            }
+          }}
         />
       </>
     );
   }
 
-  // Versão padrão (cards flutuantes)
   return (
     <>
       <EmailModal
@@ -229,7 +259,7 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       <div className={`space-y-4 p-2 sm:p-0 ${className}`}>
         <Card
           className="hover:scale-105 transition-transform duration-200 cursor-pointer"
-          onClick={handleWhatsAppClick}
+          onClick={() => handleWhatsAppClick(false)}
         >
           <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <div className="bg-[#25D366] p-2 rounded-full">
@@ -259,7 +289,18 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
           </CardContent>
         </Card>
       </div>
-      <NPSModal isOpen={isNPSModalOpen} onClose={() => setIsNPSModalOpen(false)} isDark={isDark} />
+      <NPSModal
+        isOpen={isNPSModalOpen}
+        onClose={() => setIsNPSModalOpen(false)}
+        isDark={isDark}
+        source={currentNPSSource}
+        onComplete={() => {
+          setIsNPSModalOpen(false);
+          if (currentNPSSource?.type === 'forced') {
+            handleWhatsAppClick(false);
+          }
+        }}
+      />
     </>
   );
 };

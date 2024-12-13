@@ -1,3 +1,4 @@
+//components/EmailModal.jsx
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Mail, Check, X } from 'lucide-react';

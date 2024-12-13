@@ -1,4 +1,4 @@
-// frontend/src/components/scenarios/ResearchAssistant.jsx
+// components/scenarios/ResearchAssistant.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardHeader, CardContent } from '../ui/card';
