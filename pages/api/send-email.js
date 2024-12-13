@@ -1,13 +1,19 @@
 import nodemailer from 'nodemailer';
 
-// Function to format current date and time
 const getFormattedDateTime = () => {
+  // Criar data no fuso horário local
   const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = String(now.getFullYear()).slice(-2);
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
+
+  // Ajustar para GMT-3 (Brasília)
+  const brasiliaOffset = -3;
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasiliaTime = new Date(utc + 3600000 * brasiliaOffset);
+
+  const day = String(brasiliaTime.getDate()).padStart(2, '0');
+  const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
+  const year = String(brasiliaTime.getFullYear()).slice(-2);
+  const hours = String(brasiliaTime.getHours()).padStart(2, '0');
+  const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
 
   return `[${day}/${month}/${year} - ${hours}:${minutes}]`;
 };
@@ -61,9 +67,10 @@ export default async function handler(req, res) {
 
             <hr style="border:none; border-bottom:1px solid #d1d5db; margin:20px 0;" />
 
-            <p style="font-size:0.875rem; color:#374151; margin-top:10px;">
+            <p style="font-size:0.875rem; color:#374151; margin-top:10px; text-align: center;">
               <strong>Assistente Digital de Perguntas de Pesquisa em Saúde</strong><br/>
-              Desenvolvido em parceria entre a <strong>📚 Biblioteca</strong> e a <strong>🔬 UGITS</strong> (Unidade de Gestão da Inovação Tecnológica em Saúde) do HC-UFU/Ebserh, este assistente utiliza inteligência artificial para auxiliar pesquisadores na formulação estruturada de suas questões de pesquisa, guiando desde a ideia inicial até a construção de uma pergunta robusta e bem fundamentada.
+              Desenvolvido em parceria entre a <strong>📚 Biblioteca</strong> e a <strong>🔬 UGITS</strong> (Unidade de Gestão da Inovação Tecnológica em Saúde) do HC-UFU/Ebserh, este assistente utiliza inteligência artificial para auxiliar pesquisadores na formulação estruturada de suas questões de pesquisa, guiando desde a ideia inicial até a construção de uma pergunta robusta e bem fundamentada.<br/><br/>
+              <small style="color:#666;">Horário de Brasília (GMT-3)</small>
             </p>
           </div>
         </div>

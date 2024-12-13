@@ -1,12 +1,19 @@
 import nodemailer from 'nodemailer';
 
 const getFormattedDateTime = () => {
+  // Criar data no fuso horário local
   const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = String(now.getFullYear()).slice(-2);
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
+
+  // Ajustar para GMT-3 (Brasília)
+  const brasiliaOffset = -3;
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasiliaTime = new Date(utc + 3600000 * brasiliaOffset);
+
+  const day = String(brasiliaTime.getDate()).padStart(2, '0');
+  const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
+  const year = String(brasiliaTime.getFullYear()).slice(-2);
+  const hours = String(brasiliaTime.getHours()).padStart(2, '0');
+  const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
 
   return `[${day}/${month}/${year} - ${hours}:${minutes}]`;
 };
@@ -19,13 +26,11 @@ export default async function handler(req, res) {
   try {
     const { scores, comment } = req.body;
     const timestamp = getFormattedDateTime();
-
     const subject = `📊 Nova Avaliação NPS - Assistente Digital HC-UFU ${timestamp}`;
 
     const htmlContent = `
       <div style="font-family:Arial, sans-serif; background-color:#f3f4f6; color:#213547; padding:20px;">
         <div style="background-color:#ffffff; max-width:600px; margin:0 auto; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb;">
-
           <!-- Cabeçalho -->
           <div style="background-color:#97BE53; padding:20px; text-align:center;">
             <h1 style="color:#ffffff; font-size:1.5rem; margin:0;">
@@ -37,16 +42,15 @@ export default async function handler(req, res) {
           <!-- Conteúdo -->
           <div style="padding:20px; text-align:left;">
             <h2 style="color:#213547; margin-top:0;">Pontuações NPS:</h2>
-
             <div style="background-color:#f8fafc; padding:15px; border-radius:8px; margin:15px 0;">
               <p style="margin:10px 0;">
-                <strong>🎯 Experiência Geral:</strong> ${scores.experience}/10
+                <strong>🎯 Experiência Geral:</strong> ${scores.methodologySupport}/10
               </p>
               <p style="margin:10px 0;">
-                <strong>💡 Facilidade de Uso:</strong> ${scores.usability}/10
+                <strong>💡 Facilidade de Uso:</strong> ${scores.clarity}/10
               </p>
               <p style="margin:10px 0;">
-                <strong>📢 Probabilidade de Recomendação:</strong> ${scores.recommendation}/10
+                <strong>📢 Probabilidade de Recomendação:</strong> ${scores.overall}/10
               </p>
             </div>
 
@@ -61,6 +65,7 @@ export default async function handler(req, res) {
 
             <p style="font-size:0.875rem; color:#64748b;">
               Esta avaliação foi enviada automaticamente pelo Assistente Digital de Perguntas de Pesquisa em Saúde.
+              <br>Horário de Brasília (GMT-3)
             </p>
           </div>
         </div>
