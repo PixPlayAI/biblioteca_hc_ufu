@@ -1,14 +1,28 @@
 import nodemailer from 'nodemailer';
 
+// Function to format current date and time
+const getFormattedDateTime = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear()).slice(-2);
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+
+  return `[${day}/${month}/${year} - ${hours}:${minutes}]`;
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
+
   try {
     const { email, content } = req.body;
+    const timestamp = getFormattedDateTime();
 
     const fromName = 'Biblioteca HC-UFU';
-    const subject = '🔔📊 Resultado da sua Pesquisa - Assistente Digital do HC-UFU';
+    const subject = `🔔📊 Resultado da sua Pesquisa - Assistente Digital do HC-UFU ${timestamp}`;
 
     const htmlContent = `
       <div style="font-family:Arial, sans-serif; background-color:#f3f4f6; color:#213547; padding:20px;">
@@ -16,7 +30,10 @@ export default async function handler(req, res) {
 
           <!-- Barra Superior Verde -->
           <div style="background-color:#97BE53; padding:20px; text-align:center;">
-            <h1 style="color:#ffffff; font-size:1.5rem; margin:0;">🔔📊 Segue o Resultado da sua Pesquisa:</h1>
+            <h1 style="color:#ffffff; font-size:1.5rem; margin:0;">
+              🔔📊 Segue o Resultado da sua Pesquisa:<br>
+              <span style="font-size:1.2rem;">${timestamp}</span>
+            </h1>
           </div>
 
           <!-- Conteúdo Principal -->

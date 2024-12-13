@@ -95,7 +95,7 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Mail className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold">✉️ Enviar resultado via Email</h2>
+              <h2 className="text-xl font-bold"> Enviar resultado via Email</h2>
             </div>
             <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
               <X className="w-6 h-6" />
