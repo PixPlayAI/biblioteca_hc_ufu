@@ -18,4 +18,5 @@ npm install
 
 PERGUNTA PECO: Em grávidas, a exposição ao estresse psicológico durante a gestação está associada a um aumento no risco de parto prematuro em comparação com aquelas que relatam baixo nível de estresse?
 
-voltei
+COMANDO PARA FORÇAR UMA VERSÃO ANTIGA PARA O TOPO DOS COMMIT
+git push origin main --force
