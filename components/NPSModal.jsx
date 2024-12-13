@@ -3,25 +3,52 @@ import PropTypes from 'prop-types';
 import { Star, X, Send } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+const getRatingColor = (index, isSelected) => {
+  // Base colors for the gradient
+  const colors = {
+    0: { bg: 'bg-red-500', hover: 'hover:bg-red-600' },
+    1: { bg: 'bg-red-500', hover: 'hover:bg-red-600' },
+    2: { bg: 'bg-red-400', hover: 'hover:bg-red-500' },
+    3: { bg: 'bg-orange-400', hover: 'hover:bg-orange-500' },
+    4: { bg: 'bg-orange-400', hover: 'hover:bg-orange-500' },
+    5: { bg: 'bg-yellow-400', hover: 'hover:bg-yellow-500' },
+    6: { bg: 'bg-yellow-400', hover: 'hover:bg-yellow-500' },
+    7: { bg: 'bg-lime-400', hover: 'hover:bg-lime-500' },
+    8: { bg: 'bg-lime-500', hover: 'hover:bg-lime-600' },
+    9: { bg: 'bg-green-500', hover: 'hover:bg-green-600' },
+    10: { bg: 'bg-green-600', hover: 'hover:bg-green-700' },
+  };
+
+  return isSelected
+    ? colors[index].bg
+    : `bg-secondary hover:bg-secondary/80 ${colors[index].hover}`;
+};
+
 const NPSQuestion = ({ question, value, onChange }) => {
   return (
     <div className="space-y-3">
       <p className="font-medium text-foreground">{question}</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
         {[...Array(11)].map((_, i) => (
           <button
             key={i}
             onClick={() => onChange(i)}
             className={cn(
-              'w-10 h-10 rounded-lg transition-all',
+              'w-10 h-10 rounded-lg transition-all font-medium',
+              getRatingColor(i, value === i),
               value === i
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary hover:bg-secondary/80'
+                ? 'text-white ring-2 ring-offset-2 ring-offset-background'
+                : 'text-foreground',
+              'transform hover:scale-105 active:scale-95'
             )}
           >
             {i}
           </button>
         ))}
+      </div>
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>Não satisfatório</span>
+        <span>Muito satisfatório</span>
       </div>
     </div>
   );
@@ -35,9 +62,9 @@ NPSQuestion.propTypes = {
 
 const NPSModal = ({ isOpen, onClose, isDark }) => {
   const [scores, setScores] = useState({
-    experience: null,
-    usability: null,
-    recommendation: null,
+    methodologySupport: null,
+    clarity: null,
+    overall: null,
   });
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +82,7 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
   }, [isOpen]);
 
   const isFormValid =
-    scores.experience !== null && scores.usability !== null && scores.recommendation !== null;
+    scores.methodologySupport !== null && scores.clarity !== null && scores.overall !== null;
 
   const handleSubmit = async () => {
     if (!isFormValid) return;
@@ -75,8 +102,6 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
       });
 
       if (!response.ok) throw new Error('Failed to submit feedback');
-
-      // Mark as submitted in sessionStorage
       sessionStorage.setItem('nps_submitted', 'true');
       setShowThankYou(true);
     } catch (error) {
@@ -88,14 +113,12 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
 
   if (!isOpen) return null;
 
-  if (!isOpen) return null;
-
   if (showThankYou) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-4 z-50 overflow-y-auto">
         <div
           className={cn(
-            'rounded-lg p-6 w-full max-w-md mx-auto shadow-xl transform transition-all',
+            'rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto shadow-xl transform transition-all my-4',
             'bg-card text-card-foreground'
           )}
         >
@@ -109,7 +132,7 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
             <p className="text-sm text-muted-foreground">
               {hasSubmittedBefore
                 ? 'Você já nos enviou sua avaliação anteriormente. Agradecemos muito seu interesse em contribuir!'
-                : 'Sua avaliação é muito importante para nós. Com ela, podemos continuar melhorando a plataforma para melhor atender suas necessidades.'}
+                : 'Sua avaliação é muito importante para nós. Com ela, podemos continuar melhorando a plataforma para melhor atender suas necessidades de pesquisa.'}
             </p>
             <button
               onClick={onClose}
@@ -127,15 +150,14 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-4 z-50 overflow-y-auto">
       <div
         className={cn(
-          'rounded-lg p-6 w-full max-w-2xl mx-auto shadow-xl transform transition-all',
+          'rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-auto shadow-xl transform transition-all my-4',
           'bg-card text-card-foreground'
         )}
       >
         <div className="space-y-6">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Star className="w-6 h-6 text-yellow-500" />
@@ -146,24 +168,23 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
             </button>
           </div>
 
-          {/* Questions */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
             <NPSQuestion
-              question="🎯 Em uma escala de 0 a 10, como você avalia sua experiência geral com o assistente?"
-              value={scores.experience}
-              onChange={(value) => setScores((prev) => ({ ...prev, experience: value }))}
+              question="📋 Como você avalia o suporte do assistente na estruturação da sua pergunta de pesquisa em diferentes formatos metodológicos (PICO, PICOT, etc.)?"
+              value={scores.methodologySupport}
+              onChange={(value) => setScores((prev) => ({ ...prev, methodologySupport: value }))}
             />
 
             <NPSQuestion
-              question="💡 O quão fácil foi utilizar a ferramenta para estruturar sua pergunta de pesquisa?"
-              value={scores.usability}
-              onChange={(value) => setScores((prev) => ({ ...prev, usability: value }))}
+              question="💡 O quão clara e útil foi a orientação fornecida pelo assistente durante o processo de construção da sua pergunta?"
+              value={scores.clarity}
+              onChange={(value) => setScores((prev) => ({ ...prev, clarity: value }))}
             />
 
             <NPSQuestion
-              question="📢 Qual a probabilidade de você recomendar este assistente para outros pesquisadores?"
-              value={scores.recommendation}
-              onChange={(value) => setScores((prev) => ({ ...prev, recommendation: value }))}
+              question="🎯 De modo geral, qual é a probabilidade de você recomendar este assistente para outros pesquisadores da área da saúde?"
+              value={scores.overall}
+              onChange={(value) => setScores((prev) => ({ ...prev, overall: value }))}
             />
 
             <div className="space-y-2">
@@ -174,13 +195,12 @@ const NPSModal = ({ isOpen, onClose, isDark }) => {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="w-full min-h-[100px] p-3 rounded-lg border bg-background resize-none"
-                placeholder="Sua opinião é muito importante para nós..."
+                placeholder="Sua opinião é muito importante para continuarmos melhorando o assistente..."
               />
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-4 border-t">
             <button
               onClick={handleSubmit}
               disabled={!isFormValid || isSubmitting}
