@@ -1,4 +1,3 @@
-//components/FloatingActionButtons.jsx
 import PropTypes from 'prop-types';
 import { MessageCircleQuestion, ThumbsUp, Mail, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
@@ -35,6 +34,11 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
 `;
   };
 
+  const isMobile = () => {
+    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : '';
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+  };
+
   const handleWhatsAppClick = (customMessage) => {
     const conversationHistory = formatConversationHistory();
     const formattedResult = formatFinalResult();
@@ -54,9 +58,16 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       message += conversationHistory;
     }
 
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=553432182451&text=${encodeURIComponent(message)}`;
+    const phoneNumber = '553432182451';
+    const encodedMessage = encodeURIComponent(message);
+
+    // Define a URL base baseado no dispositivo
+    const baseUrl = isMobile() ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send';
+
+    const whatsappUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
+
   const handleFeedbackClick = () => {
     window.open(
       'https://www.canva.com/design/DAGZHsEGVGw/hHRk3ashIVuplEnP8jNGSw/view?utm_content=DAGZHsEGVGw&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hf724616ddf',
@@ -91,11 +102,7 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
 
         <Card
           className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
-          onClick={() =>
-            handleWhatsAppClick(
-              'Oi tudo bem? Utilizei o aplicativo o 🎯 Assistente Digital para Estruturação de Perguntas de Pesquisa em Saúde e consegui o seguinte resultado, podem me ajudar? [ESPAÇO PARA EU FUTURAMENTE INTEGRAR COM O RESULTADO]'
-            )
-          }
+          onClick={handleWhatsAppClick}
         >
           <CardContent className="p-4 flex items-center gap-3">
             <div className="bg-[#25D366] p-2 rounded-full">
@@ -115,7 +122,7 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
     return (
       <div className={`flex flex-col sm:flex-row gap-2 ${className}`}>
         <button
-          onClick={() => handleWhatsAppClick()}
+          onClick={handleWhatsAppClick}
           className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
         >
           <MessageCircleQuestion className="w-5 h-5" />
@@ -131,15 +138,15 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       </div>
     );
   }
+
   // Versão padrão (cards flutuantes)
   return (
     <div className={`space-y-4 p-2 sm:p-0 ${className}`}>
       <Card
         className="hover:scale-105 transition-transform duration-200 cursor-pointer"
-        onClick={() => handleWhatsAppClick()}
+        onClick={handleWhatsAppClick}
       >
         <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-          {' '}
           <div className="bg-[#25D366] p-2 rounded-full">
             <MessageCircleQuestion className="w-6 h-6 text-white" />
           </div>
@@ -157,7 +164,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
         onClick={handleFeedbackClick}
       >
         <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-          {' '}
           <div className="bg-primary p-2 rounded-full">
             <ThumbsUp className="w-6 h-6 text-primary-foreground" />
           </div>
