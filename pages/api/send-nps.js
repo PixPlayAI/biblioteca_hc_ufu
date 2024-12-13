@@ -28,6 +28,11 @@ export default async function handler(req, res) {
     const timestamp = getFormattedDateTime();
     const subject = `📊 Nova Avaliação NPS - Assistente Digital HC-UFU ${timestamp}`;
 
+    // Função auxiliar para formatar a pontuação
+    const formatScore = (score) => {
+      return score !== null && score !== undefined ? `${score}/10` : 'Não avaliado';
+    };
+
     const htmlContent = `
       <div style="font-family:Arial, sans-serif; background-color:#f3f4f6; color:#213547; padding:20px;">
         <div style="background-color:#ffffff; max-width:600px; margin:0 auto; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb;">
@@ -38,34 +43,34 @@ export default async function handler(req, res) {
               <span style="font-size:1.2rem;">${timestamp}</span>
             </h1>
           </div>
-
           <!-- Conteúdo -->
           <div style="padding:20px; text-align:left;">
             <h2 style="color:#213547; margin-top:0;">Pontuações NPS:</h2>
             <div style="background-color:#f8fafc; padding:15px; border-radius:8px; margin:15px 0;">
               <p style="margin:10px 0;">
-                <strong>🎯 Experiência Geral:</strong> ${scores.methodologySupport}/10
+                <strong>🎯 Suporte Metodológico:</strong> ${formatScore(scores.methodologySupport)}
+                <br><small style="color:#666">Avaliação do suporte na estruturação da pergunta usando diferentes formatos (PICO, PICOT, etc.)</small>
               </p>
               <p style="margin:10px 0;">
-                <strong>💡 Facilidade de Uso:</strong> ${scores.clarity}/10
+                <strong>💡 Clareza das Orientações:</strong> ${formatScore(scores.clarity)}
+                <br><small style="color:#666">Avaliação da clareza e utilidade das orientações fornecidas</small>
               </p>
               <p style="margin:10px 0;">
-                <strong>📢 Probabilidade de Recomendação:</strong> ${scores.overall}/10
+                <strong>📢 Probabilidade de Recomendação:</strong> ${formatScore(scores.overall)}
+                <br><small style="color:#666">Probabilidade de recomendar o assistente para outros pesquisadores</small>
               </p>
             </div>
-
             <div style="margin-top:20px;">
               <h3 style="color:#213547;">💭 Comentários do Usuário:</h3>
               <p style="background-color:#f8fafc; padding:15px; border-radius:8px; margin-top:10px;">
                 ${comment || 'Nenhum comentário fornecido'}
               </p>
             </div>
-
             <hr style="border:none; border-bottom:1px solid #e5e7eb; margin:20px 0;" />
-
-            <p style="font-size:0.875rem; color:#64748b;">
-              Esta avaliação foi enviada automaticamente pelo Assistente Digital de Perguntas de Pesquisa em Saúde.
-              <br>Horário de Brasília (GMT-3)
+            <p style="font-size:0.875rem; color:#64748b; text-align: center;">
+              Esta avaliação foi enviada automaticamente pelo<br>
+              <strong>Assistente Digital de Perguntas de Pesquisa em Saúde</strong><br>
+              Horário de Brasília (GMT-3)
             </p>
           </div>
         </div>
