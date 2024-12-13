@@ -3,6 +3,7 @@ import { MessageCircleQuestion, ThumbsUp, Mail, MessageCircle } from 'lucide-rea
 import { Card, CardContent } from './ui/card';
 import { useState } from 'react';
 import EmailModal from './EmailModal';
+import NPSModal from './NPSModal';
 
 const FloatingActionButtons = ({
   isDark,
@@ -69,12 +70,13 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
     const whatsappUrl = `${baseUrl}?phone=${phoneNumber}&text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
+  // ... outros estados ...
+  const [isNPSModalOpen, setIsNPSModalOpen] = useState(false);
 
+  // Adicione esta função para verificar se já foi enviado
   const handleFeedbackClick = () => {
-    window.open(
-      'https://www.canva.com/design/DAGZHsEGVGw/hHRk3ashIVuplEnP8jNGSw/view?utm_content=DAGZHsEGVGw&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hf724616ddf',
-      '_blank'
-    );
+    const hasSubmitted = sessionStorage.getItem('nps_submitted');
+    setIsNPSModalOpen(true);
   };
 
   const handleSendEmail = async (email, content) => {
@@ -169,6 +171,11 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
             </CardContent>
           </Card>
         </div>
+        <NPSModal
+          isOpen={isNPSModalOpen}
+          onClose={() => setIsNPSModalOpen(false)}
+          isDark={isDark}
+        />
       </>
     );
   }
@@ -200,6 +207,11 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
             <span className="text-sm">Está gostando?</span>
           </button>
         </div>
+        <NPSModal
+          isOpen={isNPSModalOpen}
+          onClose={() => setIsNPSModalOpen(false)}
+          isDark={isDark}
+        />
       </>
     );
   }
@@ -247,6 +259,7 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
           </CardContent>
         </Card>
       </div>
+      <NPSModal isOpen={isNPSModalOpen} onClose={() => setIsNPSModalOpen(false)} isDark={isDark} />
     </>
   );
 };
