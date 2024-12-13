@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
 import { MessageCircleQuestion, ThumbsUp, Mail, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
+import { useState } from 'react';
+import EmailModal from './EmailModal';
 
 const FloatingActionButtons = ({
   isDark,
@@ -75,105 +77,177 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
     );
   };
 
-  const handleEmailClick = () => {
-    window.open(
-      'https://www.canva.com/design/DAGZHjJJ-80/AO8UDDeubPDFb5q1GGPr7g/view?utm_content=DAGZHjJJ-80&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hedf49f66b2',
-      '_blank'
-    );
+  const handleSendEmail = async (email, content) => {
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, content }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send email');
+
+      return true;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
+    }
   };
+
+  // Estados para controlar o email
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+
+  // função formatEmailContent
+  const formatEmailContent = () => {
+    let content = '';
+
+    if (variant === 'final' && finalResult) {
+      content = `Resultado da Pesquisa - Assistente Digital HC-UFU\n\n`;
+      content += `${formatConversationHistory()}\n`;
+      content += `${formatFinalResult()}`;
+    }
+
+    return content;
+  };
+
+  const handleEmailClick = () => {
+    const emailContent = formatEmailContent();
+    setIsEmailModalOpen(true);
+  };
+
+  {
+    /* Adicione o EmailModal aqui */
+  }
+  <EmailModal
+    isOpen={isEmailModalOpen}
+    onClose={() => setIsEmailModalOpen(false)}
+    isDark={isDark}
+    emailContent={formatEmailContent()}
+    onSendEmail={handleSendEmail}
+  />;
 
   if (variant === 'final') {
     return (
-      <div className={`flex flex-col md:flex-row justify-center gap-4 ${className}`}>
-        <Card
-          className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
-          onClick={handleEmailClick}
-        >
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="bg-blue-500 p-2 rounded-full">
-              <Mail className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium">Enviar para meu email</h3>
-              <p className="text-sm text-muted-foreground">Receba o resultado por email</p>
-            </div>
-          </CardContent>
-        </Card>
+      <>
+        <EmailModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          isDark={isDark}
+          emailContent={formatEmailContent()}
+          onSendEmail={handleSendEmail}
+        />
+        <div className={`flex flex-col md:flex-row justify-center gap-4 ${className}`}>
+          <Card
+            className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
+            onClick={handleEmailClick}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="bg-blue-500 p-2 rounded-full">
+                <Mail className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">Enviar para meu email</h3>
+                <p className="text-sm text-muted-foreground">Receba o resultado por email</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card
-          className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
-          onClick={handleWhatsAppClick}
-        >
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="bg-[#25D366] p-2 rounded-full">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium">Conversar sobre o resultado</h3>
-              <p className="text-sm text-muted-foreground">Fale com a biblioteca do HC-UFU</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card
+            className="hover:scale-105 transition-transform duration-200 cursor-pointer w-full md:max-w-xs"
+            onClick={handleWhatsAppClick}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="bg-[#25D366] p-2 rounded-full">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">Conversar sobre o resultado</h3>
+                <p className="text-sm text-muted-foreground">Fale com a biblioteca do HC-UFU</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   }
 
   if (variant === 'inline') {
     return (
-      <div className={`flex flex-col sm:flex-row gap-2 ${className}`}>
-        <button
-          onClick={handleWhatsAppClick}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
-        >
-          <MessageCircleQuestion className="w-5 h-5" />
-          <span className="text-sm">Precisa de ajuda?</span>
-        </button>
-        <button
-          onClick={handleFeedbackClick}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
-        >
-          <ThumbsUp className="w-5 h-5" />
-          <span className="text-sm">Está gostando?</span>
-        </button>
-      </div>
+      <>
+        <EmailModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          isDark={isDark}
+          emailContent={formatEmailContent()}
+          onSendEmail={handleSendEmail}
+        />
+        <div className={`flex flex-col sm:flex-row gap-2 ${className}`}>
+          {' '}
+          <button
+            onClick={handleWhatsAppClick}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
+          >
+            <MessageCircleQuestion className="w-5 h-5" />
+            <span className="text-sm">Precisa de ajuda?</span>
+          </button>
+          <button
+            onClick={handleFeedbackClick}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
+          >
+            <ThumbsUp className="w-5 h-5" />
+            <span className="text-sm">Está gostando?</span>
+          </button>
+        </div>
+      </>
     );
   }
 
   // Versão padrão (cards flutuantes)
   return (
-    <div className={`space-y-4 p-2 sm:p-0 ${className}`}>
-      <Card
-        className="hover:scale-105 transition-transform duration-200 cursor-pointer"
-        onClick={handleWhatsAppClick}
-      >
-        <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-          <div className="bg-[#25D366] p-2 rounded-full">
-            <MessageCircleQuestion className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-medium">Pedir ajuda para a biblioteca</h3>
-            <p className="text-sm text-muted-foreground">
-              Clique para falar com a biblioteca do HC-UFU via WhatsApp
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+    <>
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        isDark={isDark}
+        emailContent={formatEmailContent()}
+        onSendEmail={handleSendEmail}
+      />
+      <div className={`space-y-4 p-2 sm:p-0 ${className}`}>
+        <Card
+          className="hover:scale-105 transition-transform duration-200 cursor-pointer"
+          onClick={handleWhatsAppClick}
+        >
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="bg-[#25D366] p-2 rounded-full">
+              <MessageCircleQuestion className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium">Pedir ajuda para a biblioteca</h3>
+              <p className="text-sm text-muted-foreground">
+                Clique para falar com a biblioteca do HC-UFU via WhatsApp
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card
-        className="hover:scale-105 transition-transform duration-200 cursor-pointer"
-        onClick={handleFeedbackClick}
-      >
-        <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-full">
-            <ThumbsUp className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-medium">O que está achando do app?</h3>
-            <p className="text-sm text-muted-foreground">Compartilhe sua experiência conosco</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        <Card
+          className="hover:scale-105 transition-transform duration-200 cursor-pointer"
+          onClick={handleFeedbackClick}
+        >
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="bg-primary p-2 rounded-full">
+              <ThumbsUp className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium">O que está achando do app?</h3>
+              <p className="text-sm text-muted-foreground">Compartilhe sua experiência conosco</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 };
 
