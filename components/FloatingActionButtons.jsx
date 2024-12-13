@@ -20,7 +20,6 @@ const FloatingActionButtons = ({
 
   const formatConversationHistory = () => {
     if (!conversations.length) return '';
-
     return conversations
       .map(
         (conv, index) => `
@@ -77,7 +76,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       window.open(whatsappUrl, '_blank');
       return;
     } else {
-      // Caso contrário, mostra o modal do NPS
       const source =
         variant === 'final'
           ? NPS_SOURCES.CHAT_RESULT
@@ -87,17 +85,6 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       setCurrentNPSSource(source);
       setIsNPSModalOpen(true);
     }
-
-    // Caso contrário, abra o modal do NPS com a origem apropriada
-    const source =
-      variant === 'final'
-        ? NPS_SOURCES.CHAT_RESULT
-        : customMessage
-          ? NPS_SOURCES.NEED_HELP
-          : NPS_SOURCES.LIBRARY_HELP;
-
-    setCurrentNPSSource(source);
-    setIsNPSModalOpen(true);
   };
 
   const handleEmailClick = () => {
@@ -114,14 +101,15 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
     setIsNPSModalOpen(true);
   };
 
-  const handleSendEmail = async (email, content) => {
+  // Ajuste aqui: agora `handleSendEmail` recebe um objeto com { email, content, libraryHelp, libraryMessage }
+  const handleSendEmail = async (payload) => {
     try {
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, content }),
+        body: JSON.stringify(payload), // Envia o objeto completo
       });
 
       if (!response.ok) throw new Error('Failed to send email');
@@ -141,7 +129,7 @@ ${finalResult.explanation ? `\n*Explicação:* ${finalResult.explanation}` : ''}
       content += `${formatFinalResult()}`;
     }
 
-    return content;
+    return content || '';
   };
 
   if (variant === 'final') {

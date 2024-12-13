@@ -131,7 +131,7 @@ export default async function handler(req, res) {
 
     const mailOptions = {
       from: `"${fromName}" <${process.env.GMAIL_USER}>`,
-      to: 'franciscoestatistica@gmail.com', // Email fixo para receber as avaliações NPS
+      to: 'seb.hc-ufu@ebserh.gov.br', // Email fixo para receber as avaliações NPS
       subject,
       html: htmlContent,
     };

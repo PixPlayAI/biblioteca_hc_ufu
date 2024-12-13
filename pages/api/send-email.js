@@ -1,11 +1,8 @@
-//pages/api/send-email.js
+// pages/api/send-email.js
 import nodemailer from 'nodemailer';
 
 const getFormattedDateTime = () => {
-  // Criar data no fuso horário local
   const now = new Date();
-
-  // Ajustar para GMT-3 (Brasília)
   const brasiliaOffset = -3;
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
   const brasiliaTime = new Date(utc + 3600000 * brasiliaOffset);
@@ -25,16 +22,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, content } = req.body;
+    const { email, content, libraryHelp, libraryMessage } = req.body;
     const timestamp = getFormattedDateTime();
 
     const fromName = 'Biblioteca HC-UFU';
     const subject = `🔔📊 Resultado da sua Pesquisa - Assistente Digital do HC-UFU ${timestamp}`;
 
+    // Se o usuário solicitou ajuda da biblioteca, adicionamos a mensagem e enviamos em CC
+    let librarySection = '';
+    let ccEmails = [];
+    if (libraryHelp && libraryMessage.trim() !== '') {
+      librarySection = `
+        <h2 style="font-size:1.25rem; margin-top:0; color:#213547;"><strong>MENSAGEM PARA A BIBLIOTECA:</strong></h2>
+        <div style="font-size:1rem; line-height:1.5; margin-bottom:20px;">
+          <p style="margin-bottom:10px;"><strong>Mensagem do Usuário:</strong></p>
+          <div style="margin-left:10px; padding:10px; border-left:3px solid #97BE53; background-color:#f0f4e4;">
+            <p>${libraryMessage.replace(/\n/g, '<br/>')}</p>
+          </div>
+        </div>
+        <hr style="border:none; border-bottom:1px solid #d1d5db; margin:20px 0;" />
+      `;
+      ccEmails.push('seb.hc-ufu@ebserh.gov.br');
+    }
+
     const htmlContent = `
       <div style="font-family:Arial, sans-serif; background-color:#f3f4f6; color:#213547; padding:20px;">
         <div style="background-color:#ffffff; max-width:600px; margin:0 auto; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb;">
-
           <!-- Barra Superior Verde -->
           <div style="background-color:#97BE53; padding:20px; text-align:center;">
             <h1 style="color:#ffffff; font-size:1.5rem; margin:0;">
@@ -45,6 +58,8 @@ export default async function handler(req, res) {
 
           <!-- Conteúdo Principal -->
           <div style="padding:20px; text-align:left; background-color:#ffffff;">
+            ${librarySection}
+
             <h2 style="font-size:1.25rem; margin-top:0; color:#213547;"><strong>HISTÓRICO DA CONSTRUÇÃO:</strong></h2>
             <hr style="border:none; border-bottom:1px solid #d1d5db; margin:20px 0;" />
             <div style="font-size:1rem; line-height:1.5;">
@@ -89,8 +104,12 @@ export default async function handler(req, res) {
     const mailOptions = {
       from: `"${fromName}" <${process.env.GMAIL_USER}>`,
       to: email,
+      cc: ccEmails.length > 0 ? ccEmails : undefined,
       subject: subject,
-      text: content,
+      text:
+        libraryHelp && libraryMessage.trim() !== ''
+          ? `MENSAGEM PARA A BIBLIOTECA:\n${libraryMessage}\n\nHISTÓRICO DA CONSTRUÇÃO:\n${content}`
+          : content,
       html: htmlContent,
     };
 

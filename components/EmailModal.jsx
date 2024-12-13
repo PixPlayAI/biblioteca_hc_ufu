@@ -1,4 +1,4 @@
-//components/EmailModal.jsx
+// components/EmailModal.jsx
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Mail, Check, X } from 'lucide-react';
@@ -10,6 +10,9 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
   const [isSending, setIsSending] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [sentToEmail, setSentToEmail] = useState('');
+  const [wantLibraryHelp, setWantLibraryHelp] = useState(false);
+  const [libraryMessage, setLibraryMessage] = useState('');
+  const [libraryMessageError, setLibraryMessageError] = useState(false);
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,11 +25,41 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
     setIsValidEmail(validateEmail(newEmail));
   };
 
+  const handleCheckboxChange = (e) => {
+    setWantLibraryHelp(e.target.checked);
+    if (!e.target.checked) {
+      // se desmarcar o checkbox, limpamos o campo de mensagem e erro
+      setLibraryMessage('');
+      setLibraryMessageError(false);
+    }
+  };
+
+  const handleLibraryMessageChange = (e) => {
+    setLibraryMessage(e.target.value);
+    if (e.target.value.trim() !== '') {
+      setLibraryMessageError(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!isValidEmail) return;
+
+    if (wantLibraryHelp && libraryMessage.trim() === '') {
+      setLibraryMessageError(true);
+      return;
+    }
+
     setIsSending(true);
+
+    const payload = {
+      email,
+      content: emailContent,
+      libraryHelp: wantLibraryHelp,
+      libraryMessage: wantLibraryHelp ? libraryMessage : '',
+    };
+
     try {
-      await onSendEmail(email, emailContent);
+      await onSendEmail(payload);
       setSentToEmail(email);
       setShowConfirmation(true);
     } catch (error) {
@@ -40,6 +73,9 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
     setEmail('');
     setIsValidEmail(false);
     setShowConfirmation(false);
+    setWantLibraryHelp(false);
+    setLibraryMessage('');
+    setLibraryMessageError(false);
     onClose();
   };
 
@@ -62,10 +98,17 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
             <p className="text-sm">
               Enviamos os resultados para <strong>{sentToEmail}</strong>
             </p>
-            <p className="text-sm text-muted-foreground">
-              Por favor, verifique também sua pasta de spam caso não encontre o email em sua caixa
-              de entrada.
-            </p>
+            {wantLibraryHelp && (
+              <p className="text-sm text-muted-foreground">
+                Em breve a biblioteca entrará em contato, respondendo ao email enviado.
+              </p>
+            )}
+            {!wantLibraryHelp && (
+              <p className="text-sm text-muted-foreground">
+                Por favor, verifique também sua pasta de spam caso não encontre o email em sua caixa
+                de entrada.
+              </p>
+            )}
             <button
               onClick={handleClose}
               className={cn(
@@ -141,6 +184,45 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
                 )}
               </div>
             </div>
+
+            {/* Checkbox para solicitar ajuda da biblioteca */}
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="libraryHelp"
+                checked={wantLibraryHelp}
+                onChange={handleCheckboxChange}
+                className="h-4 w-4"
+              />
+              <label htmlFor="libraryHelp" className="text-sm font-medium">
+                Deseja iniciar um contato com a Biblioteca do HC-UFU para auxiliar na sua pesquisa?
+              </label>
+            </div>
+
+            {/* Text-area aparece se checkbox estiver marcado */}
+            {wantLibraryHelp && (
+              <div className="space-y-2">
+                <label htmlFor="libraryMessage" className="block text-sm font-medium">
+                  Apresente-se, descreva sua dúvida e solicite ajuda da biblioteca (obrigatório):
+                </label>
+                <textarea
+                  id="libraryMessage"
+                  value={libraryMessage}
+                  onChange={handleLibraryMessageChange}
+                  rows={4}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg border',
+                    'bg-background',
+                    'focus:outline-none focus:ring-2 focus:ring-primary',
+                    libraryMessageError ? 'border-red-500' : 'border-input'
+                  )}
+                  placeholder="Escreva aqui sua mensagem..."
+                />
+                {libraryMessageError && (
+                  <p className="text-red-500 text-sm">Este campo é obrigatório.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Botão de Envio */}
@@ -170,6 +252,7 @@ EmailModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   isDark: PropTypes.bool.isRequired,
   emailContent: PropTypes.string.isRequired,
+  // Ajustar o onSendEmail para receber objeto com email, content, libraryHelp, libraryMessage
   onSendEmail: PropTypes.func.isRequired,
 };
 
