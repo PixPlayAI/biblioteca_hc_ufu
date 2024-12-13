@@ -28,7 +28,6 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
   const handleCheckboxChange = (e) => {
     setWantLibraryHelp(e.target.checked);
     if (!e.target.checked) {
-      // se desmarcar o checkbox, limpamos o campo de mensagem e erro
       setLibraryMessage('');
       setLibraryMessageError(false);
     }
@@ -83,7 +82,7 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
 
   if (showConfirmation) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 py-4 z-50">
         <div
           className={cn(
             'rounded-lg p-6 w-full max-w-md mx-auto shadow-xl transform transition-all',
@@ -127,11 +126,13 @@ const EmailModal = ({ isOpen, onClose, isDark, emailContent, onSendEmail }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 py-4 z-50">
       <div
         className={cn(
-          'rounded-lg p-6 w-full max-w-2xl mx-auto shadow-xl transform transition-all',
-          'bg-card text-card-foreground'
+          // Ajustes de tamanho e overflow
+          'rounded-lg p-6 w-full sm:max-w-md md:max-w-2xl mx-auto shadow-xl transform transition-all',
+          'bg-card text-card-foreground',
+          'max-h-[80vh] overflow-y-auto'
         )}
       >
         <div className="space-y-6 text-left">
@@ -252,7 +253,6 @@ EmailModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   isDark: PropTypes.bool.isRequired,
   emailContent: PropTypes.string.isRequired,
-  // Ajustar o onSendEmail para receber objeto com email, content, libraryHelp, libraryMessage
   onSendEmail: PropTypes.func.isRequired,
 };
 
