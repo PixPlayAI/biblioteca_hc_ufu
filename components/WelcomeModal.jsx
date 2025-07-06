@@ -59,7 +59,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                     Estruturar suas perguntas de pesquisa de forma clara, utilizando formatos
-                    reconhecidos (PICO, PICOT, PICOS, PECO, PEO, PIRO, PCC e CoCoPop)
+                    reconhecidos (PICO, PICOT, PICOS, PEO, PECO, PCC, SPIDER, PIRD, CoCoPop, SPICE, ECLIPSE, BeHEMoTh)
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />

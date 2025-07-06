@@ -1,49 +1,41 @@
 **PICO:**
 Em adultos obesos, uma dieta de baixo carboidrato, quando comparada a uma dieta de baixo teor de gordura, resulta em maior perda de peso?
-
 ---
-
 **PICOT:**
 Em adultos com hipertensão arterial, a prática de exercícios aeróbicos regulares, em comparação à ausência de exercícios, reduz significativamente a pressão arterial sistólica após 12 semanas de intervenção?
-
 ---
-
-**SPIDER:** REMOVIDO
-Entre enfermeiras recém-graduadas em hospitais de grande porte, como elas percebem e descrevem a experiência da primeira semana de trabalho, analisada por meio de entrevistas semiestruturadas, avaliando o impacto psicológico dessa transição?
-
----
-
-**PEO:**
-Entre mulheres grávidas, como a exposição ao fumo passivo durante a gestação está associada ao risco de baixo peso ao nascer, analisando essa relação em um estudo observacional sem grupos de comparação, como um estudo de coorte que acompanhe gestantes ao longo do tempo ou um caso-controle que investigue apenas a associação direta entre exposição e desfecho?
-
----
-
-**PECO:**
-Em adolescentes, a exposição a ambientes com alto nível de poluição sonora urbana, em comparação a ambientes com menor nível de ruído, está associada a um maior risco de problemas de sono?
-
----
-
 **PICOS:**
 Em pacientes adultos com depressão maior, a psicoterapia cognitivo-comportamental, comparada ao uso de antidepressivos convencionais, melhora significativamente a remissão dos sintomas depressivos, conforme avaliado em ensaios clínicos randomizados, que são utilizados como base para examinar essa eficácia em um contexto controlado e rigoroso?
-
 ---
-
-**PIRO:**
-Em pacientes com suspeita de apneia obstrutiva do sono, o uso de um dispositivo portátil de monitoramento do sono é capaz de detectar a presença da condição com acurácia similar à polissonografia em laboratório, resultando em um diagnóstico confiável?
-
+**PEO:**
+O foco do meu estudo é investigar, entre mulheres grávidas, como a exposição ao fumo passivo durante a gestação está associada ao risco de baixo peso ao nascer, analisando essa relação através de um estudo observacional de coorte que acompanhe gestantes ao longo do tempo, sem grupos de comparação.
 ---
-
+**PECO:**
+Em adolescentes, a exposição a ambientes com alto nível de poluição sonora urbana, em comparação a ambientes com menor nível de ruído, está associada a um maior risco de problemas de sono?
+---
 **PCC:**
 Entre idosos institucionalizados, quais são as barreiras e facilitadores (conceito central) para o acesso a cuidados paliativos, no contexto de instituições de longa permanência no Brasil?
-
 ---
-
-**PICOTE:** REMOVIDO
-Em idosos com diabetes tipo 2, um programa de exercícios físicos supervisionados, comparado à recomendação de exercícios em casa, melhora o controle glicêmico após seis meses, em ambientes urbanos com estrutura adequada de centros de saúde?
-
+**SPIDER:**
+Entre enfermeiras recém-graduadas em hospitais de grande porte, como elas percebem e descrevem a experiência da primeira semana de trabalho, analisada por meio de entrevistas semiestruturadas, avaliando o impacto psicológico dessa transição?
 ---
-
+**PIRD**
+Em pacientes com sintomas sugestivos de infarto agudo do miocárdio atendidos no pronto-socorro, a dosagem de troponina de alta sensibilidade point-of-care (teste índice), quando comparada ao eletrocardiograma seriado associado à troponina laboratorial convencional (teste de referência/padrão-ouro), apresenta sensibilidade e especificidade adequadas para o diagnóstico precoce de infarto agudo do miocárdio?
+---
 **CoCoPop:**
 Qual é a prevalência de transtornos de ansiedade entre estudantes universitários em universidades públicas brasileiras?
-
 ---
+**SPICE**
+Em unidades de atenção primária à saúde (setting), sob a perspectiva dos usuários do SUS (perspective), a implementação de agendamento online via aplicativo móvel (intervention), comparado ao agendamento presencial tradicional (comparison), melhora a satisfação do usuário e reduz o tempo de espera para marcação de consultas (evaluation)?
+---
+**ECLIPSE**
+Como melhorar o acesso e a cobertura vacinal (expectation) para crianças menores de 5 anos em situação de vulnerabilidade social (client group) nas periferias urbanas do Rio de Janeiro (location), visando reduzir a incidência de doenças imunopreveníveis e aumentar a adesão ao calendário vacinal (impact), através da articulação entre agentes comunitários de saúde, enfermeiros e pediatras (professionals) nos serviços de imunização das unidades básicas de saúde e estratégias de busca ativa (service)?
+---
+**BeHEMoTh**
+
+Como a adesão ao uso contínuo de medicamentos antirretrovirais (behavior) entre adolescentes vivendo com HIV em centros de referência especializados (health context), excluindo aqueles com comorbidades psiquiátricas graves ou em situação de rua (exclusions), pode ser compreendida e melhorada através da aplicação do Modelo de Crenças em Saúde e da Teoria Social Cognitiva de Bandura (models/theories)?
+---
+
+
+
+

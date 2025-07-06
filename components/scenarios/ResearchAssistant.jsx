@@ -1,119 +1,244 @@
-// components/scenarios/ResearchAssistant.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardHeader, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { generateScenarioContent } from '../../lib/api';
 import FeedbackModal from '../FeedbackModal';
-import { Bold, Hourglass } from 'lucide-react';
+import { Bold, Hourglass, Globe } from 'lucide-react';
 import FloatingActionButtons from '../FloatingActionButtons';
+import confetti from 'canvas-confetti';
+import { cn } from '../../lib/utils';
 
-// Atualização das traduções com novos elementos
+// Adicionar após os outros imports
+import MeshSearch from '../MeshSearch';
+import { convertToMeshFormat } from '../../lib/frameworkMappings';
+
+// Traduções atualizadas com todos os elementos dos novos frameworks
 const translations = {
-  // Traduções existentes
+  // PICO, PICOT, PICOS
   population: { term: 'Population/Patient', translation: 'População/Paciente' },
   intervention: { term: 'Intervention', translation: 'Intervenção' },
   comparison: { term: 'Comparison', translation: 'Comparação' },
   outcome: { term: 'Outcome', translation: 'Desfecho' },
-  exposure: { term: 'Exposure', translation: 'Exposição' },
   timeframe: { term: 'Time', translation: 'Tempo' },
-
-  // Novas traduções
-  condition: { term: 'Condition', translation: 'Condição' },
-  context: { term: 'Context', translation: 'Contexto' },
   studyDesign: { term: 'Study Design', translation: 'Desenho do Estudo' },
-  riskFactor: { term: 'Risk Factor', translation: 'Fator de Risco' },
-  //phenomenonOfInterest: { term: 'Phenomenon of Interest', translation: 'Fenômeno de Interesse' },
+
+  // PEO, PECO
+  exposure: { term: 'Exposure', translation: 'Exposição' },
+
+  // PCC
   concept: { term: 'Concept', translation: 'Conceito' },
-  //evaluation: { term: 'Evaluation', translation: 'Avaliação' },
-  //researchType: { term: 'Research Type', translation: 'Tipo de Pesquisa' },
-  //sample: { term: 'Sample', translation: 'Amostra' },
-  index: { term: 'Index Test', translation: 'Teste Índice' },
-  reference: { term: 'Reference Test', translation: 'Teste de Referência' },
-  //environment: { term: 'Environment', translation: 'Ambiente' },
-};
+  context: { term: 'Context', translation: 'Contexto' },
 
-// Função auxiliar para mapear valores similares
-const mapElementValue = (elements, targetKey, alternativeKeys) => {
-  // Se a chave alvo já tem um valor, retorne-o
-  if (elements[targetKey] && elements[targetKey] !== '') {
-    return elements[targetKey];
-  }
+  // SPIDER
+  sample: { term: 'Sample', translation: 'Amostra' },
+  phenomenonOfInterest: { term: 'Phenomenon of Interest', translation: 'Fenômeno de Interesse' },
+  design: { term: 'Design', translation: 'Design' },
+  evaluation: { term: 'Evaluation', translation: 'Avaliação' },
+  researchType: { term: 'Research Type', translation: 'Tipo de Pesquisa' },
 
-  // Procure um valor nas chaves alternativas
-  for (const altKey of alternativeKeys) {
-    if (elements[altKey] && elements[altKey] !== '') {
-      console.log(`Found value for ${targetKey} in ${altKey}:`, elements[altKey]);
-      return elements[altKey];
-    }
-  }
+  // PIRD
+  indexTest: { term: 'Index Test', translation: 'Teste Índice' },
+  referenceTest: { term: 'Reference Test', translation: 'Teste de Referência' },
+  diagnosis: { term: 'Diagnosis', translation: 'Diagnóstico' },
 
-  return '';
+  // CoCoPop
+  condition: { term: 'Condition', translation: 'Condição' },
+
+  // SPICE
+  setting: { term: 'Setting', translation: 'Ambiente/Contexto' },
+  perspective: { term: 'Perspective', translation: 'Perspectiva' },
+
+  // ECLIPSE
+  expectation: { term: 'Expectation', translation: 'Expectativa' },
+  clientGroup: { term: 'Client Group', translation: 'Grupo de Clientes' },
+  location: { term: 'Location', translation: 'Local' },
+  impact: { term: 'Impact', translation: 'Impacto' },
+  professionals: { term: 'Professionals', translation: 'Profissionais' },
+  service: { term: 'Service', translation: 'Serviço' },
+
+  // BeHEMoTh
+  behavior: { term: 'Behavior', translation: 'Comportamento' },
+  healthContext: { term: 'Health Context', translation: 'Contexto de Saúde' },
+  exclusions: { term: 'Exclusions', translation: 'Exclusões' },
+  modelsOrTheories: { term: 'Models or Theories', translation: 'Modelos ou Teorias' },
 };
 
 // Função auxiliar para normalizar elementos
-const normalizeElements = (format, elements) => {
-  console.log('Normalizing elements for format:', format);
-  console.log('Original elements:', elements);
 
-  // Definir mapeamentos de elementos
-  const elementMappings = {
-    exposure: ['intervention', 'condition'], // 'exposure' pode vir de 'intervention' ou 'condition'
-    intervention: ['exposure'], // 'intervention' pode vir de 'exposure'
-    comparison: ['control'], // 'comparison' pode vir de 'control'
-    // Adicione outros mapeamentos conforme necessário
-  };
-
-  const normalized = { ...elements };
-
-  // Aplicar mapeamentos
-  Object.entries(elementMappings).forEach(([targetKey, alternativeKeys]) => {
-    normalized[targetKey] = mapElementValue(elements, targetKey, alternativeKeys);
-  });
-
-  console.log('Normalized elements:', normalized);
-  return normalized;
-};
-
+// Função auxiliar para garantir que todos os elementos do formato estejam presentes
 // Função auxiliar para garantir que todos os elementos do formato estejam presentes
 const ensureAllFormatElements = (format, elements) => {
   console.log('Ensuring all elements for format:', format);
+  console.log('Original elements:', elements);
 
-  // Primeiro, normalize os elementos
-  const normalizedElements = normalizeElements(format, elements);
-  console.log('After normalization:', normalizedElements);
-
-  // Definir elementos obrigatórios para cada formato
-  const formatRequirements = {
-    PECO: ['population', 'exposure', 'comparison', 'outcome'],
-    PEO: ['population', 'exposure', 'outcome'],
-    PICO: ['population', 'intervention', 'comparison', 'outcome'],
-    PICOT: ['population', 'intervention', 'comparison', 'outcome', 'timeframe'],
-    //SPIDER: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
-    PICOS: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
-    PIRO: ['population', 'index', 'reference', 'outcome'],
-    PCC: ['population', 'concept', 'context'],
-    //PICOTE: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'environment'],
-    CoCoPop: ['condition', 'context', 'population'],
-    // Adicione outros formatos conforme necessário
+  // Mapeamento completo de siglas para elementos por framework
+  const frameworkMappings = {
+    PICO: {
+      'P': 'population',
+      'I': 'intervention',
+      'C': 'comparison',
+      'O': 'outcome'
+    },
+    PICOT: {
+      'P': 'population',
+      'I': 'intervention',
+      'C': 'comparison',
+      'O': 'outcome',
+      'T': 'timeframe'
+    },
+    PICOS: {
+      'P': 'population',
+      'I': 'intervention',
+      'C': 'comparison',
+      'O': 'outcome',
+      'S': 'studyDesign'
+    },
+    PEO: {
+      'P': 'population',
+      'E': 'exposure',
+      'O': 'outcome'
+    },
+    PECO: {
+      'P': 'population',
+      'E': 'exposure',
+      'C': 'comparison',
+      'O': 'outcome'
+    },
+    PCC: {
+      'P': 'population',
+      'C': 'concept',
+      'C2': 'context'
+    },
+    SPIDER: {
+      'S': 'sample',
+      'PI': 'phenomenonOfInterest',
+      'D': 'design',
+      'E': 'evaluation',
+      'R': 'researchType'
+    },
+    PIRD: {
+      'P': 'population',
+      'I': 'indexTest',
+      'R': 'referenceTest',
+      'D': 'diagnosis'
+    },
+    CoCoPop: {
+      'Co': 'condition',
+      'Co2': 'context',
+      'Pop': 'population'
+    },
+    SPICE: {
+      'S': 'setting',
+      'P': 'perspective',
+      'I': 'intervention',
+      'C': 'comparison',
+      'E': 'evaluation'
+    },
+    ECLIPSE: {
+      'E': 'expectation',
+      'C': 'clientGroup',
+      'L': 'location',
+      'I': 'impact',
+      'P': 'professionals',
+      'SE': 'service'
+    },
+    BeHEMoTh: {
+      'Be': 'behavior',
+      'HE': 'healthContext',
+      'Mo': 'exclusions',
+      'Th': 'modelsOrTheories'
+    }
   };
 
-  const requirements = formatRequirements[format] || [];
-  const finalElements = { ...normalizedElements };
+  // Processar elementos baseado no framework
+  const processedElements = {};
+  const mapping = frameworkMappings[format];
+  
+  if (mapping) {
+    // Criar um mapa reverso também (de elemento para sigla)
+    const reverseMapping = {};
+    Object.entries(mapping).forEach(([sigla, elemento]) => {
+      reverseMapping[elemento] = sigla;
+    });
+    
+    // Processar APENAS elementos que pertencem ao framework atual
+    Object.entries(elements).forEach(([key, value]) => {
+      if (value && value !== '' && value !== 'Não especificado') {
+        // Se a chave é uma sigla válida para este framework
+        if (mapping[key]) {
+          processedElements[mapping[key]] = value;
+          processedElements[key] = value;
+        }
+        // Se a chave é um elemento completo válido para este framework
+        else if (reverseMapping[key]) {
+          processedElements[reverseMapping[key]] = value;
+          processedElements[key] = value;
+        }
+        // NÃO adicionar elementos que não pertencem ao framework
+      }
+    });
+    
+    // Adicionar elementos faltantes como strings vazias
+    Object.entries(mapping).forEach(([sigla, elemento]) => {
+      if (!processedElements[sigla]) {
+        processedElements[sigla] = processedElements[elemento] || '';
+      }
+      if (!processedElements[elemento]) {
+        processedElements[elemento] = processedElements[sigla] || '';
+      }
+    });
+  }
 
-  // Garantir que todos os elementos obrigatórios existam
-  requirements.forEach((key) => {
-    if (!finalElements[key]) {
-      console.log(`Adding missing required element: ${key}`);
-      finalElements[key] = '';
-    }
-  });
+  // Tratamento especial para BeHEMoTh
+  if (format === 'BeHEMoTh') {
+    const behemothElements = { ...processedElements };
+    
+    // Mapear siglas para nomes completos
+    const siglaMapping = {
+      'Be': 'behavior',
+      'HE': 'healthContext',
+      'Mo': 'exclusions',
+      'Th': 'modelsOrTheories',
+      'B': 'behavior',
+      'H': 'healthContext',
+      'E': 'exclusions',
+      'M': 'modelsOrTheories'
+    };
+    
+    // Verificar se há elementos com siglas e mapeá-los
+    Object.entries(elements).forEach(([key, value]) => {
+      if (siglaMapping[key] && value) {
+        behemothElements[siglaMapping[key]] = value;
+        // Manter também a sigla original
+        behemothElements[key] = value;
+      }
+    });
+    
+    // Garantir que todos os elementos obrigatórios existam
+    const requiredElements = ['behavior', 'healthContext', 'exclusions', 'modelsOrTheories'];
+    requiredElements.forEach(elem => {
+      if (!behemothElements[elem]) {
+        // Procurar valor em siglas
+        for (const [sigla, elemName] of Object.entries(siglaMapping)) {
+          if (elemName === elem && elements[sigla]) {
+            behemothElements[elem] = elements[sigla];
+            break;
+          }
+        }
+      }
+    });
+    
+    console.log('BeHEMoTh normalized elements:', behemothElements);
+    return behemothElements;
+  }
 
-  console.log('Final elements:', finalElements);
-  return finalElements;
+  // NÃO APLICAR normalização genérica - apenas retornar elementos processados
+  console.log('Final elements:', processedElements);
+  return processedElements;
 };
 
-// Função para obter elementos ordenados na ordem correta
+// Atualizar a função getOrderedElements para usar as siglas corretas
 const getOrderedElements = (format, elements) => {
   console.log('Getting ordered elements for format:', format);
   console.log('Input elements:', elements);
@@ -142,17 +267,17 @@ const getOrderedElements = (format, elements) => {
       },
     },
 
-    // SPIDER
-    //SPIDER: {
-    //  order: ['sample', 'phenomenonOfInterest', 'studyDesign', 'evaluation', 'researchType'],
-    //  letters: {
-    //    sample: 'S',
-    //    phenomenonOfInterest: 'P',
-    //    studyDesign: 'D',
-    //    evaluation: 'E',
-    //    researchType: 'R',
-    //  },
-    //},
+    // PICOS
+    PICOS: {
+      order: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
+      letters: {
+        population: 'P',
+        intervention: 'I',
+        comparison: 'C',
+        outcome: 'O',
+        studyDesign: 'S',
+      },
+    },
 
     // PEO
     PEO: {
@@ -175,29 +300,6 @@ const getOrderedElements = (format, elements) => {
       },
     },
 
-    // PICOTE
-    //PICOTE: {
-    //  order: ['population', 'intervention', 'comparison', 'outcome', 'timeframe', 'evaluation'],
-    //  letters: {
-    //    population: 'P',
-    //    intervention: 'I',
-    //    comparison: 'C',
-    //    outcome: 'O',
-    //    timeframe: 'T',
-    //    evaluation: 'E',
-    //  },
-    //},
-
-    // CoCoPop
-    CoCoPop: {
-      order: ['context', 'condition', 'population'],
-      letters: {
-        context: 'C',
-        condition: 'C',
-        population: 'P',
-      },
-    },
-
     // PCC
     PCC: {
       order: ['population', 'concept', 'context'],
@@ -208,43 +310,83 @@ const getOrderedElements = (format, elements) => {
       },
     },
 
-    // PIRO
-    PIRO: {
-      order: ['population', 'intervention', 'riskFactor', 'outcome'],
+    // SPIDER
+    SPIDER: {
+      order: ['sample', 'phenomenonOfInterest', 'design', 'evaluation', 'researchType'],
       letters: {
-        population: 'P',
-        intervention: 'I',
-        riskFactor: 'R',
-        outcome: 'O',
+        sample: 'S',
+        phenomenonOfInterest: 'PI',
+        design: 'D',
+        evaluation: 'E',
+        researchType: 'R',
       },
     },
 
-    // PICOS
-    PICOS: {
-      order: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
+    // PIRD
+    PIRD: {
+      order: ['population', 'indexTest', 'referenceTest', 'diagnosis'],
       letters: {
         population: 'P',
+        indexTest: 'I',
+        referenceTest: 'R',
+        diagnosis: 'D',
+      },
+    },
+
+    // CoCoPop
+    CoCoPop: {
+      order: ['condition', 'context', 'population'],
+      letters: {
+        condition: 'Co',
+        context: 'Co',
+        population: 'Pop',
+      },
+    },
+
+    // SPICE
+    SPICE: {
+      order: ['setting', 'perspective', 'intervention', 'comparison', 'evaluation'],
+      letters: {
+        setting: 'S',
+        perspective: 'P',
         intervention: 'I',
         comparison: 'C',
-        outcome: 'O',
-        studyDesign: 'S',
+        evaluation: 'E',
+      },
+    },
+
+    // ECLIPSE
+    ECLIPSE: {
+      order: ['expectation', 'clientGroup', 'location', 'impact', 'professionals', 'service'],
+      letters: {
+        expectation: 'E',
+        clientGroup: 'C',
+        location: 'L',
+        impact: 'I',
+        professionals: 'P',
+        service: 'SE',
+      },
+    },
+
+    // BeHEMoTh - CORRIGIR AS SIGLAS
+    BeHEMoTh: {
+      order: ['behavior', 'healthContext', 'exclusions', 'modelsOrTheories'],
+      letters: {
+        behavior: 'Be',
+        healthContext: 'HE',
+        exclusions: 'Mo',
+        modelsOrTheories: 'Th',
       },
     },
 
     // Sem sigla (genérico)
-    GENERIC: {
-      order: ['population', 'condition', 'intervention', 'outcome', 'timeframe'],
-      letters: {
-        population: 'P',
-        condition: 'C',
-        intervention: 'I',
-        outcome: 'O',
-        timeframe: 'T',
-      },
+    'sem sigla': {
+      order: [],
+      letters: {},
     },
   };
 
-  const formatConfig = formatOrder[format];
+  const formatConfig = formatOrder[format] || formatOrder['sem sigla'];
   if (!formatConfig) return [];
 
   const ordered = formatConfig.order.map((key) => ({
@@ -260,6 +402,11 @@ const getOrderedElements = (format, elements) => {
 // Função atualizada para validar a resposta
 export const validateResponse = (response) => {
   console.log('Validating response:', response);
+
+  // Se for BeHEMoTh, log especial
+  if (response.finalResult?.format === 'BeHEMoTh') {
+    console.log('BeHEMoTh detected - checking elements:', response.finalResult.elements);
+  }
 
   const requiredFields = ['quality', 'analysis', 'nextQuestion', 'canGenerateFinal'];
 
@@ -347,19 +494,47 @@ ElementDisplay.defaultProps = {
 };
 
 // Componente para exibir elementos detalhados
+// Componente para exibir elementos detalhados - CORRIGIDO
+// Componente para exibir elementos detalhados - CORRIGIDO
 const DetailedElements = ({ elements, format, variant = 'default', descriptions = {} }) => {
   console.log('DetailedElements Input:', { elements, format, variant, descriptions });
 
-  // Obter elementos normalizados sem modificar as chaves
-  const normalizedElements = ensureAllFormatElements(format, elements);
+  // Criar um objeto que combina elementos e descrições
+  const combinedElements = {};
+  
+  // Primeiro, adicionar todos os elementos
+  Object.entries(elements).forEach(([key, value]) => {
+    combinedElements[key] = value;
+  });
+  
+  // Depois, adicionar descrições se não houver valor no elemento
+  Object.entries(descriptions).forEach(([key, value]) => {
+    if (!combinedElements[key] || combinedElements[key] === 'Não especificado' || combinedElements[key] === '') {
+      combinedElements[key] = value;
+    }
+  });
+
+  // Obter elementos normalizados - SEM adicionar elementos extras
+  const normalizedElements = ensureAllFormatElements(format, combinedElements);
   const orderedElements = getOrderedElements(format, normalizedElements);
 
-  // Mapear descrição para cada elemento, usando o objeto de descrições diretamente
-  const elementsWithDescriptions = orderedElements.map(({ key, letter }) => ({
-    key,
-    letter,
-    description: descriptions[key] || elements[key] || 'Não especificado',
-  }));
+
+  // Usar o valor do elemento normalizado ou a descrição
+  const elementsWithDescriptions = orderedElements.map(({ key, letter, value }) => {
+    // Primeiro tenta usar o valor do elemento
+    let description = value;
+
+    // Se não tiver valor, tenta a descrição
+    if (!description || description === '' || description === 'Não especificado') {
+      description = descriptions[key] || descriptions[letter] || 'Não especificado';
+    }
+
+    return {
+      key,
+      letter,
+      description,
+    };
+  });
 
   if (variant === 'formatted') {
     return (
@@ -494,49 +669,25 @@ ConversationHistory.propTypes = {
 };
 
 // Componente FinalResult atualizado
+
+// Componente FinalResult atualizado
 const FinalResult = ({ result, conversations, onReset, isDark }) => {
   console.log('FinalResult rendering with:', result);
   console.log('Result elements:', result.elements);
   console.log('Result descriptions:', result.elementDescriptions);
+
+  // Estado para controlar a visibilidade do MeshSearch
+  const [showMeshSearch, setShowMeshSearch] = useState(false);
 
   // Garantir que estamos usando elementos explícitos se disponíveis, caso contrário, implícitos
   const elementsToUse = result.elements?.explicit || result.elements?.implicit || {};
   const descriptionsToUse =
     result.elementDescriptions?.explicit || result.elementDescriptions?.implicit || {};
 
-  // Mapear chaves maiúsculas (P, E, C, O, etc.) para chaves minúsculas (population, exposure, comparison, etc.)
-  const keyMapping = {
-    P: 'population', // Usado por vários formatos
-    E: 'exposure', // Usado por PEO, PECO, REMOVIDO: PICOTE
-    C: 'comparison', // Usado por PICO, PICOT, PECO, REMOVIDO: PICOTE
-    O: 'outcome', // Usado por PICO, PICOT, PECO, PIRO
-    I: 'intervention', // Usado por PICO, PICOT, REMOVIDO: PICOTE, PIRO
-    T: 'timeframe', // Usado por PICOT, REMOVIDO: PICOTE ou sem sigla
-    S: 'studyDesign', // Usado por PICO, PICOT, PICOS, REMOVIDO: SPIDER
-    R: 'riskFactor', // Usado por PIRO
-    //D: 'phenomenonOfInterest', // Usado por REMOVIDO: SPIDER
-    N: 'concept', // Usado por PCC
-    //F: 'evaluation', // Usado por REMOVIDO: SPIDER E REMOVIDO: PICOTE
-    X: 'condition', // Usado por CoCoPop
-    U: 'context', // Usado por PCC, CoCoPop
-    //L: 'sample', // Usado por REMOVIDO: SPIDER
-    H: 'index', // Usado por PIRO (substituição de 'intervention' para se alinhar ao formato)
-    //K: 'environment', // Adicionado para REMOVIDO: PICOTE
-    //Y: 'researchType', // Usado para REMOVIDO: SPYDER
-  };
+  // Preparar dados para o MeshSearch no formato esperado
+  const meshData = convertToMeshFormat(result);
 
-  // Converter chaves maiúsculas para minúsculas
-  const normalizedElements = Object.entries(elementsToUse).reduce((acc, [key, value]) => {
-    const normalizedKey = keyMapping[key] || key.toLowerCase();
-    acc[normalizedKey] = value;
-    return acc;
-  }, {});
-
-  const normalizedDescriptions = Object.entries(descriptionsToUse).reduce((acc, [key, value]) => {
-    const normalizedKey = keyMapping[key] || key.toLowerCase();
-    acc[normalizedKey] = value;
-    return acc;
-  }, {});
+  console.log('✅ Dados convertidos para MeshSearch:', meshData);
 
   return (
     <div className="space-y-8">
@@ -549,10 +700,10 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
               <>
                 <p className="text-muted-foreground">Formato: {result.format}</p>
                 <DetailedElements
-                  elements={normalizedElements}
+                  elements={elementsToUse}
                   format={result.format}
                   variant="formatted"
-                  descriptions={normalizedDescriptions}
+                  descriptions={descriptionsToUse}
                 />
               </>
             )}
@@ -575,7 +726,25 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
               <p className="text-muted-foreground">{result.explanation}</p>
             </div>
           )}
+
+          {/* Botão para buscar termos MeSH */}
           <div className="flex justify-center pt-4">
+            <button
+              onClick={() => setShowMeshSearch(!showMeshSearch)}
+              className={cn(
+                'px-6 py-3 rounded-lg transition-all',
+                'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
+                'hover:from-blue-600 hover:to-blue-700',
+                'shadow-md hover:shadow-lg transform hover:scale-105',
+                'flex items-center gap-2 font-medium'
+              )}
+            >
+              <Globe className="w-5 h-5" />
+              {showMeshSearch ? 'Ocultar Busca MeSH' : 'Pesquisar Termos MeSH'}
+            </button>
+          </div>
+
+          <div className="flex justify-center">
             <button
               onClick={onReset}
               className="px-6 py-2.5 bg-primary foreground text-primary-foreground rounded-lg hover:bg-primary-dark transition-colors shadow-md hover:shadow-lg"
@@ -585,6 +754,30 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Componente MeshSearch integrado */}
+      {showMeshSearch && (
+        <div className="mt-8 animate-fadeIn">
+          <MeshSearch researchData={meshData} isDark={isDark} />
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
@@ -699,10 +892,100 @@ const ResearchAssistant = ({ isDark }) => {
 
       if (validatedResponse.canGenerateFinal && validatedResponse.finalResult) {
         setFinalResult(validatedResponse.finalResult);
-      } else if (validatedResponse.nextQuestion) {
-        setNextQuestion(validatedResponse.nextQuestion);
-      }
 
+        // Aguardar um momento para o DOM renderizar o resultado final
+        setTimeout(() => {
+          // Encontrar o elemento da pergunta de pesquisa
+          const questionElement = document.querySelector('.final-presentation-container');
+          if (questionElement) {
+            const rect = questionElement.getBoundingClientRect();
+            const x = (rect.left + rect.width / 2) / window.innerWidth;
+            const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+            // Disparar confetti por 5 segundos
+            const duration = 5 * 1000; // 5 segundos
+            const animationEnd = Date.now() + duration;
+
+            const colors = [
+              '#3B82F6',
+              '#10B981',
+              '#F59E0B',
+              '#EF4444',
+              '#8B5CF6',
+              '#EC4899',
+              '#14B8A6',
+            ];
+
+            const defaults = {
+              startVelocity: 45,
+              spread: 360,
+              ticks: 200, // Mais visível
+              zIndex: 9999,
+              gravity: 0.5,
+              scalar: 1.2, // Partículas maiores
+              colors: colors,
+              disableForReducedMotion: false,
+              useWorker: true,
+            };
+
+            function randomInRange(min, max) {
+              return Math.random() * (max - min) + min;
+            }
+
+            // Primeiro burst grande do centro
+            confetti({
+              ...defaults,
+              particleCount: 150,
+              spread: 100,
+              origin: { x, y },
+              startVelocity: 60,
+              scalar: 1.5,
+            });
+
+            // Confetti contínuo
+            const interval = setInterval(function () {
+              const timeLeft = animationEnd - Date.now();
+
+              if (timeLeft <= 0) {
+                return clearInterval(interval);
+              }
+
+              const particleCount = 80 * (timeLeft / duration);
+
+              // Jorrar do ponto central
+              confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount),
+                spread: randomInRange(50, 70),
+                origin: { x, y },
+                startVelocity: randomInRange(35, 55),
+                scalar: randomInRange(0.8, 1.4),
+              });
+
+              // Adicionar alguns fogos laterais para efeito
+              if (Math.random() > 0.5) {
+                confetti({
+                  ...defaults,
+                  particleCount: Math.floor(particleCount * 0.3),
+                  spread: 120,
+                  origin: { x: x - 0.1, y },
+                  angle: 60,
+                  startVelocity: randomInRange(25, 40),
+                });
+
+                confetti({
+                  ...defaults,
+                  particleCount: Math.floor(particleCount * 0.3),
+                  spread: 120,
+                  origin: { x: x + 0.1, y },
+                  angle: 120,
+                  startVelocity: randomInRange(25, 40),
+                });
+              }
+            }, 150);
+          }
+        }, 100);
+      }
       // Exibir FeedbackModal apenas se a qualidade for muito baixa
       if (validatedResponse.quality < 3) {
         setErrorMessage(

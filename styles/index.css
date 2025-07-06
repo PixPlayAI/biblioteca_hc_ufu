@@ -260,17 +260,16 @@ body {
   }
 }
 
-/* Estilos inspirados no design antigo para destacar siglas e letras maiúsculas */
-
 /* Container para os elementos (P, I, C, O...) no detalhamento das siglas */
 .element-display-item {
   background-color: #e5e7eb; /* Claro */
   border-radius: 0.5rem;
   padding: 0.5rem;
   display: flex;
-  align-items: start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 1rem;
   color: #213547;
+  width: 100%;
 }
 
 .dark .element-display-item {
@@ -278,18 +277,32 @@ body {
   color: var(--card-foreground); /* Texto coerente com o modo escuro */
 }
 
-/* Letra da sigla em destaque (P, I, C, O, etc.) */
+/* Letra da sigla em destaque (P, I, C, O, etc.) - Versão atualizada */
 .element-display-item .acronym-letter {
-  font-size: 1.875rem; /* text-3xl */
-  font-weight: 700; /* font-bold */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 3rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
   color: #3b82f6; /* Azul destaque */
-  min-width: 2rem;
+}
+
+.element-display-item .acronym-letter:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Descrição do elemento da sigla */
 .element-display-item .acronym-description {
   font-size: 0.875rem; /* text-sm */
-  color: #6b7280; /* Cor de texto mais suave (text-muted-foreground) */
+  color: var(--text-muted-foreground);
+  opacity: 0.7;
 }
 
 /* Container para a apresentação final (onde a pergunta e a explicação final são exibidas) */
@@ -306,4 +319,467 @@ body {
 
 .final-presentation-container .final-question-text {
   color: #213547; /* Cor de texto mais escura para melhor contraste */
+}
+
+/* Estilos para MeSH/DeCS Search */
+
+/* Animações */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes linkPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Cards de resultados */
+.mesh-result-card {
+  animation: slideIn 0.3s ease-out;
+  transition: all 0.3s ease;
+}
+
+.mesh-result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Termos individuais */
+.term-card {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.term-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #3b82f6, #60a5fa);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.term-card:hover::before {
+  opacity: 1;
+}
+
+.term-card:hover {
+  transform: translateX(4px);
+}
+
+/* Badges de relevância */
+.relevance-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.relevance-badge::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  transition: transform 0.4s ease;
+}
+
+.relevance-badge:hover::after {
+  transform: translate(-50%, -50%) scale(2);
+}
+
+/* Debug accordion */
+.debug-accordion {
+  transition: all 0.3s ease;
+}
+
+.debug-section {
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.debug-section-header {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.debug-section-header:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.debug-section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.debug-section-content.expanded {
+  max-height: 1000px;
+}
+
+/* Search buttons */
+.search-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.search-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+.search-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Copy button */
+.copy-button {
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  transform: scale(1.1);
+}
+
+.copy-button:active {
+  transform: scale(0.9);
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-indicator.real {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.status-indicator.simulated {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+/* Term highlight */
+.term-highlight {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Section dividers */
+.section-divider {
+  position: relative;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.section-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, currentColor, transparent);
+  opacity: 0.2;
+}
+
+.section-divider span {
+  position: relative;
+  background: var(--background);
+  padding: 0 1rem;
+}
+
+/* Estilos para os tipos de strings de busca */
+.string-type-badge {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.string-type-badge.string-type-broad {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.string-type-badge.string-type-specific {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Hover effects para badges */
+.string-type-badge:hover {
+  transform: scale(1.1);
+}
+
+/* Seções de strings */
+.string-section {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.string-section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.string-section:hover::before {
+  opacity: 1;
+}
+
+/* Cores para cada tipo de string */
+.string-section:has(.string-type-broad)::before {
+  background: linear-gradient(to bottom, #3b82f6, #60a5fa);
+}
+
+.string-section:has(.string-type-specific)::before {
+  background: linear-gradient(to bottom, #8b5cf6, #a78bfa);
+}
+
+/* Melhorias nos boxes de código */
+.dark .string-section pre {
+  color: #e5e7eb;
+  background-color: rgba(31, 41, 55, 0.5);
+}
+
+.string-section pre {
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+  line-height: 1.6;
+}
+
+/* Visual de hierarquia */
+.string-section:first-child {
+  border-top: none;
+}
+
+.string-section:last-child {
+  border-bottom: none;
+}
+
+/* Indicador visual de tipo de busca */
+.string-section h6::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.string-section:has(.string-type-broad) h6::after {
+  background-color: #3b82f6;
+}
+
+.string-section:has(.string-type-specific) h6::after {
+  background-color: #8b5cf6;
+}
+
+/* Estilos para links de busca nas bases de dados */
+.search-database-link {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-database-link:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Efeito de brilho no hover */
+.search-database-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+  z-index: -1;
+}
+
+.search-database-link:hover::before {
+  left: 100%;
+}
+
+.search-database-link:focus {
+  animation: linkPulse 1.5s infinite;
+  outline: none;
+}
+
+/* Estilos específicos para links de string ampla */
+.string-section:has(.string-type-broad) .search-database-link {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+.string-section:has(.string-type-broad) .search-database-link:hover {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+/* Estilos específicos para links de string específica */
+.string-section:has(.string-type-specific) .search-database-link {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+}
+
+.string-section:has(.string-type-specific) .search-database-link:hover {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+}
+
+/* Ícone de link externo com animação */
+.search-database-link svg:last-child {
+  transition: transform 0.3s ease;
+}
+
+.search-database-link:hover svg:last-child {
+  transform: translate(2px, -2px);
+}
+
+/* Animação suave para expansão/colapso */
+.divide-y > div {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Cores específicas para gradientes */
+.from-purple-500.to-purple-600 {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.from-orange-500.to-orange-600 {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+.from-teal-500.to-teal-600 {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+
+.from-blue-500.to-blue-600 {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.from-green-500.to-green-600 {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.from-red-500.to-red-600 {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .string-type-badge {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .string-section h6 {
+    font-size: 0.8rem;
+  }
+  
+  .search-database-link {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .search-database-link svg {
+    width: 14px;
+    height: 14px;
+  }
 }

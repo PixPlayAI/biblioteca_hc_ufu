@@ -7,6 +7,17 @@ import Footer from '../components/Footer';
 import { Moon, Sun } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+{/* 
+
+// Importa a página de busca MeSH
+import MeshSearchPage from './mesh-search';
+
+export default function HomePage() {
+  return <MeshSearchPage />;
+}
+*/}
+
+
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [isDark, setIsDark] = useState(false);
