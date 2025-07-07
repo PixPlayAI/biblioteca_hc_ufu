@@ -31,7 +31,9 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [statusMessage, setStatusMessage] = useState('');
   const [processingTime, setProcessingTime] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [dots, setDots] = useState(''); // Adicione este estado
+  const [dots, setDots] = useState('');
+  const [processingPart, setProcessingPart] = useState(null); // 'first', 'second', null
+  const [firstPartTime, setFirstPartTime] = useState(null);
   const eventSourceRef = useRef(null);
 
   // Configuração das bases de dados com URLs
@@ -42,6 +44,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'blue',
       baseUrl: 'https://pubmed.ncbi.nlm.nih.gov/?term=',
       needsAuth: false,
+      part: 'first',
     },
     {
       key: 'SciELO',
@@ -49,6 +52,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'amber',
       baseUrl: 'https://search.scielo.org/?q=',
       needsAuth: false,
+      part: 'first',
     },
     {
       key: 'Europe_PMC',
@@ -56,6 +60,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'green',
       baseUrl: 'https://europepmc.org/search?query=',
       needsAuth: false,
+      part: 'first',
     },
     {
       key: 'CrossRef',
@@ -63,6 +68,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'purple',
       baseUrl: 'https://search.crossref.org/?q=',
       needsAuth: false,
+      part: 'first',
     },
     {
       key: 'DOAJ',
@@ -70,6 +76,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'orange',
       baseUrl: 'https://doaj.org/search/articles?q=',
       needsAuth: false,
+      part: 'second',
     },
     {
       key: 'Cochrane_Library',
@@ -77,6 +84,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'red',
       baseUrl: 'https://www.cochranelibrary.com/search?q=',
       needsAuth: false,
+      part: 'second',
     },
     {
       key: 'LILACS_BVS',
@@ -84,6 +92,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'teal',
       baseUrl: 'https://pesquisa.bvsalud.org/portal/?q=',
       needsAuth: false,
+      part: 'second',
     },
     {
       key: 'Scopus',
@@ -92,6 +101,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       baseUrl: 'https://www.scopus.com/search/form.uri?display=basic#basic',
       needsAuth: true,
       authMessage: 'Requer login institucional',
+      part: 'second',
     },
     {
       key: 'Web_of_Science',
@@ -100,6 +110,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       baseUrl: 'https://www.webofscience.com/wos/woscc/basic-search',
       needsAuth: true,
       authMessage: 'Requer login institucional',
+      part: 'second',
     },
   ];
 
@@ -134,14 +145,8 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     return `${database.baseUrl}${encodeURIComponent(searchString)}`;
   };
 
-  const generateSearchStrings = async () => {
-    setIsGenerating(true);
-    setError(null);
-    setSearchStrings(null);
-    setStatusMessage('Conectando ao servidor...');
-    setProcessingTime(null);
-    setIsConnected(false);
-
+  // Função para processar uma parte específica
+  const processSearchPart = async (promptType, isFirstPart = true) => {
     const startTime = Date.now();
 
     try {
@@ -150,7 +155,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ meshContent }),
+        body: JSON.stringify({ meshContent, promptType }),
       });
 
       if (!response.ok) {
@@ -192,7 +197,6 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   break;
 
                 case 'heartbeat':
-                  // Mantém conexão viva
                   console.log('Heartbeat recebido:', data.timestamp);
                   break;
 
@@ -200,16 +204,40 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   console.log('Evento complete recebido:', data);
                   if (data.success && data.data) {
                     console.log('Dados das strings:', data.data);
-                    setSearchStrings(data.data);
-                    setHasGenerated(true);
+                    
+                    // Mesclar resultados
+                    setSearchStrings(prevStrings => {
+                      if (!prevStrings) {
+                        return data.data;
+                      }
+                      
+                      // Mesclar as strings específicas e amplas
+                      return {
+                        search_strings: {
+                          specific: {
+                            ...prevStrings.search_strings.specific,
+                            ...data.data.search_strings.specific
+                          },
+                          broad: {
+                            ...prevStrings.search_strings.broad,
+                            ...data.data.search_strings.broad
+                          }
+                        }
+                      };
+                    });
+
+                    if (isFirstPart) {
+                      setFirstPartTime(Math.round((Date.now() - startTime) / 1000));
+                    } else {
+                      setHasGenerated(true);
+                      const totalTime = firstPartTime + Math.round((Date.now() - startTime) / 1000);
+                      setProcessingTime(totalTime);
+                    }
+                    
                     setStatusMessage('');
                     setIsConnected(false);
 
-                    if (data.processingTime) {
-                      setProcessingTime(Math.round(data.processingTime / 1000));
-                    }
-
-                    console.log('Geração concluída!', data);
+                    console.log('Parte concluída!', promptType);
                   } else {
                     console.error('Dados incompletos no evento complete:', data);
                   }
@@ -243,25 +271,65 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
         try {
           const data = JSON.parse(buffer.slice(6));
           if (data.type === 'complete' && data.success) {
-            setSearchStrings(data.data);
-            setHasGenerated(true);
+            setSearchStrings(prevStrings => {
+              if (!prevStrings) {
+                return data.data;
+              }
+              
+              return {
+                search_strings: {
+                  specific: {
+                    ...prevStrings.search_strings.specific,
+                    ...data.data.search_strings.specific
+                  },
+                  broad: {
+                    ...prevStrings.search_strings.broad,
+                    ...data.data.search_strings.broad
+                  }
+                }
+              };
+            });
           }
         } catch (e) {
           console.error('Erro ao processar buffer final:', e);
         }
       }
+
+      return true; // Sucesso
     } catch (err) {
       console.error('Erro ao gerar strings:', err);
       setError(err.message || 'Erro ao gerar strings de busca');
       setIsConnected(false);
+      return false; // Erro
+    }
+  };
+
+  const generateSearchStrings = async () => {
+    setIsGenerating(true);
+    setError(null);
+    setSearchStrings(null);
+    setStatusMessage('Conectando ao servidor...');
+    setProcessingTime(null);
+    setFirstPartTime(null);
+    setIsConnected(false);
+    setProcessingPart('first');
+
+    try {
+      // Processar primeira parte
+      console.log('Processando primeira parte...');
+      const firstSuccess = await processSearchPart('primeiraParte', true);
+      
+      if (firstSuccess) {
+        // Processar segunda parte
+        console.log('Processando segunda parte...');
+        setProcessingPart('second');
+        setStatusMessage('Processando bases restantes...');
+        await processSearchPart('segundaParte', false);
+      }
     } finally {
       setIsGenerating(false);
       setStatusMessage('');
-
-      const totalTime = Math.round((Date.now() - startTime) / 1000);
-      if (!processingTime && totalTime > 0) {
-        setProcessingTime(totalTime);
-      }
+      setProcessingPart(null);
     }
   };
 
@@ -294,6 +362,22 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     }));
   };
 
+  // Função para verificar se deve mostrar a base
+  const shouldShowDatabase = (db) => {
+    if (!searchStrings || !searchStrings.search_strings) return false;
+    
+    const broadString = searchStrings.search_strings?.broad?.[db.key];
+    const specificString = searchStrings.search_strings?.specific?.[db.key];
+    
+    return broadString || specificString;
+  };
+
+  // Função para verificar se deve mostrar indicador de carregamento da segunda parte
+  const shouldShowSecondPartLoader = () => {
+    return processingPart === 'second' && searchStrings && 
+           databases.some(db => db.part === 'first' && shouldShowDatabase(db));
+  };
+
   return (
     <div className="space-y-4 mt-6">
       {/* Indicador de status */}
@@ -311,7 +395,11 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
               <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
               <div className="flex flex-col items-start">
                 <span className="flex items-center gap-2">
-                  Gerando Strings Personalizadas...
+                  {processingPart === 'first' 
+                    ? 'Gerando Strings Personalizadas (Parte 1/2)...'
+                    : processingPart === 'second'
+                    ? 'Gerando Strings Personalizadas (Parte 2/2)...'
+                    : 'Gerando Strings Personalizadas...'}
                   {isConnected && <Wifi className="w-3 h-3 animate-pulse" />}
                 </span>
                 {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
@@ -325,7 +413,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                 {processingTime && (
                   <span className="text-xs opacity-80 mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Processado em {processingTime}s
+                    Processado em {processingTime}s total ({firstPartTime}s + {processingTime - firstPartTime}s)
                   </span>
                 )}
               </div>
@@ -350,16 +438,14 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium">{error}</p>
-            {error.includes('Tempo limite') && (
-              <p className="text-xs mt-1 opacity-80">
-                O processamento pode demorar até 2 minutos. Por favor, tente novamente.
-              </p>
-            )}
+            <p className="text-xs mt-1 opacity-80">
+              O processamento está dividido em duas partes. Por favor, tente novamente.
+            </p>
           </div>
         </div>
       )}
 
-      {/* Resultados das strings geradas - O resto do código continua igual */}
+      {/* Resultados das strings geradas */}
       {searchStrings && (
         <div className="space-y-4 animate-fadeIn">
           {/* Pergunta de Pesquisa e Elementos */}
@@ -653,6 +739,22 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                 </div>
               );
             })}
+
+            {/* Indicador de carregamento da segunda parte */}
+            {shouldShowSecondPartLoader() && (
+              <div className={cn(
+                'p-6 rounded-lg border transition-all',
+                isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
+                'animate-pulse'
+              )}>
+                <div className="flex items-center justify-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                  <span className="font-medium">
+                    Processando bases restantes (DOAJ, Cochrane, LILACS, Scopus, Web of Science)...
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
