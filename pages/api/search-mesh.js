@@ -65,6 +65,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     - Extraia conceitos SIMPLES e DIRETOS em inglês
     - Use termos médicos comuns, não códigos ou nomenclaturas específicas
     - Para cada elemento, forneça múltiplas variações quando possível
+    - PROCESSE TODOS OS ELEMENTOS FORNECIDOS
     
     Framework utilizado: ${frameworkType}
     
@@ -85,9 +86,11 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     
     Pergunta completa: ${fullQuestion}
     
-    Retorne um JSON com arrays de conceitos SIMPLES para cada elemento do framework.
-    As chaves devem ser exatamente as mesmas fornecidas no input.
-    Exemplo: {"P": ["diabetes", "adult"], "I": ["metformin", "exercise"], ...}
+    IMPORTANTE: Retorne um JSON com arrays de conceitos SIMPLES para CADA elemento do framework fornecido.
+    As chaves devem ser EXATAMENTE as mesmas fornecidas no input.
+    TODOS os elementos devem ter conceitos extraídos.
+    
+    Exemplo: {"P": ["diabetes", "adult"], "I": ["metformin", "exercise"], "C": ["placebo"], "O": ["glucose control"]}
   `;
   console.log('📤 Enviando prompt para DeepSeek:', prompt);
 
@@ -99,7 +102,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um especialista em extração de conceitos médicos para busca em bases de dados. Você extrai termos simples e diretos, NÃO termos MeSH.' 
+            content: 'Você é um especialista em extração de conceitos médicos para busca em bases de dados. Você extrai termos simples e diretos, NÃO termos MeSH. SEMPRE processe TODOS os elementos fornecidos.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -111,7 +114,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000 // 30 segundos de timeout
+        timeout: 30000
       }
     );
 
@@ -122,33 +125,40 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     console.log(JSON.stringify(concepts, null, 2));
     console.log('================================\n');
     
+    // VERIFICAR SE TODOS OS ELEMENTOS FORAM PROCESSADOS
+    const elementosNaoProcessados = Object.keys(frameworkElements).filter(
+      elem => !concepts[elem] || concepts[elem].length === 0
+    );
+    
+    if (elementosNaoProcessados.length > 0) {
+      console.error('❌ ERRO: Elementos não processados pela IA:', elementosNaoProcessados);
+      
+      // Adicionar arrays vazios para elementos não processados
+      elementosNaoProcessados.forEach(elem => {
+        concepts[elem] = [];
+      });
+    }
+    
     // LOG SUPER DETALHADO - COMPARAÇÃO ENTRADA VS SAÍDA
     console.log('\n🔄 COMPARAÇÃO ENTRADA → SAÍDA (POR ELEMENTO):');
     console.log('==============================================');
-    Object.entries(concepts).forEach(([elemento, termos]) => {
+    Object.entries(frameworkElements).forEach(([elemento, descricao]) => {
+      const termos = concepts[elemento] || [];
       console.log(`\n📌 Elemento: ${elemento}`);
-      console.log(`   📥 ENTRADA (Descrição original): "${frameworkElements[elemento]}"`);
+      console.log(`   📥 ENTRADA (Descrição original): "${descricao}"`);
       console.log(`   📤 SAÍDA (Conceitos extraídos): ${JSON.stringify(termos)}`);
       console.log(`   📊 Quantidade de conceitos: ${termos.length}`);
       
-      // Log individual de cada conceito
       if (termos.length > 0) {
         console.log('   📝 Detalhamento dos conceitos:');
         termos.forEach((termo, index) => {
           console.log(`      ${index + 1}. "${termo}"`);
         });
+      } else {
+        console.log('   ⚠️ NENHUM CONCEITO EXTRAÍDO!');
       }
     });
     console.log('==============================================\n');
-    
-    // Verificar se algum elemento ficou sem conceitos
-    const elementosSemConceitos = Object.entries(concepts)
-      .filter(([, termos]) => termos.length === 0)
-      .map(([elemento]) => elemento);
-    
-    if (elementosSemConceitos.length > 0) {
-      console.warn('⚠️ ATENÇÃO: Elementos sem conceitos extraídos:', elementosSemConceitos);
-    }
     
     console.log('🤖 extractConcepts - FIM da extração');
     
@@ -160,9 +170,9 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
   }
 }
 
-// Função melhorada para buscar termos MeSH com limite mais generoso
-async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 1000
-  console.log(`🔍 searchMeSHTerm - Buscando termo: "${term}" (max: ${maxResults} resultados)`);
+// Função para buscar termos MeSH SEM LIMITES
+async function searchMeSHTerm(term) {
+  console.log(`🔍 searchMeSHTerm - Buscando termo: "${term}" (SEM LIMITES)`);
   
   const debugInfo = {
     searchTerm: term,
@@ -171,13 +181,13 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
   };
 
   try {
-    // Primeiro, busca o ID do termo com limite
+    // Busca o ID do termo SEM LIMITE
     const searchUrl = `${NCBI_BASE_URL}/esearch.fcgi`;
     const searchParams = {
       db: 'mesh',
       term: term,
       retmode: 'json',
-      retmax: maxResults,
+      retmax: 100, // Buscar até 100 resultados
       ...(MESH_API_KEY && { api_key: MESH_API_KEY })
     };
     
@@ -192,7 +202,7 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
     
     const searchResponse = await axios.get(searchUrl, { 
       params: searchParams,
-      timeout: 59000 // 59 segundos de timeout
+      timeout: 20000
     });
     
     debugInfo.apiCalls[0].response = {
@@ -209,7 +219,7 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
       return { results: [], debug: debugInfo };
     }
 
-    // Busca detalhes dos termos encontrados
+    // Busca detalhes de TODOS os termos encontrados
     const summaryUrl = `${NCBI_BASE_URL}/esummary.fcgi`;
     const summaryParams = {
       db: 'mesh',
@@ -227,7 +237,7 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
 
     const summaryResponse = await axios.get(summaryUrl, { 
       params: summaryParams,
-      timeout: 59000 // 59 segundos de timeout
+      timeout: 20000
     });
     
     const results = [];
@@ -239,34 +249,29 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
       const meshData = summaryResponse.data.result[uid];
       if (!meshData || meshData.error) continue;
       
-      // Extrair o termo preferido e informações adicionais
+      // Extrair TODOS os dados
       const preferredTerm = meshData.ds_meshui || meshData.ds_meshterms?.[0] || '';
       const meshTerms = meshData.ds_meshterms || [];
       
-      // Melhorar a extração de tree numbers
+      // Extrair TODOS os tree numbers
       let treeNumbers = [];
       
-      // Primeiro, tentar ds_meshhierarchy se existir
       if (meshData.ds_meshhierarchy && Array.isArray(meshData.ds_meshhierarchy)) {
-        treeNumbers = meshData.ds_meshhierarchy.filter(h => typeof h === 'string').slice(0, 5); // Aumentado para 5
+        treeNumbers = meshData.ds_meshhierarchy.filter(h => typeof h === 'string');
       }
       
-      // Se não encontrou, tentar ds_idxlinks
       if (treeNumbers.length === 0 && meshData.ds_idxlinks) {
         if (Array.isArray(meshData.ds_idxlinks)) {
           treeNumbers = meshData.ds_idxlinks.map(link => {
             if (typeof link === 'string') return link;
             
-            // Se for objeto, tentar extrair propriedades comuns
             if (typeof link === 'object' && link !== null) {
-              // Tentar várias propriedades possíveis
               if (link.parent) return link.parent;
               if (link.code) return link.code;
               if (link.treeNumber) return link.treeNumber;
               if (link.hierarchyCode) return link.hierarchyCode;
               if (link.descriptor) return link.descriptor;
               
-              // Se tiver uma propriedade que parece um tree number (formato letra.números)
               for (const [key, value] of Object.entries(link)) {
                 if (typeof value === 'string' && /^[A-Z]\d+/.test(value)) {
                   return value;
@@ -277,27 +282,28 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
             }
             
             return null;
-          }).filter(Boolean).slice(0, 5); // Aumentado para 5
+          }).filter(Boolean);
         }
       }
       
-      // Manter mais sinônimos
-      const synonyms = (meshData.ds_meshsynonyms || []).slice(0, 10); // Aumentado para 10
+      // TODOS os sinônimos
+      const synonyms = meshData.ds_meshsynonyms || [];
       
-      // Manter definição completa ou até 1000 caracteres
-      const definition = meshData.ds_scopenote ? 
-        meshData.ds_scopenote.substring(0, 1000) + (meshData.ds_scopenote.length > 1000 ? '...' : '') : 
-        '';
+      // Definição COMPLETA
+      const definition = meshData.ds_scopenote || '';
+      
+      // Calcular relevance score com base na posição
+      const relevanceScore = Math.round(95 - (results.length * 0.5)); // Degradação mais suave
       
       const result = {
         meshId: uid,
         meshUI: preferredTerm,
         term: meshTerms[0] || term,
-        allTerms: meshTerms.slice(0, 5), // Aumentado para 5
+        allTerms: meshTerms,
         definition: definition,
         synonyms: synonyms,
         treeNumbers: treeNumbers,
-        relevanceScore: Math.round(95 - (results.length * 5))
+        relevanceScore: relevanceScore
       };
       
       results.push(result);
@@ -322,69 +328,6 @@ async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 
     debugInfo.error = error.message;
     return { results: [], debug: debugInfo };
   }
-}
-
-// Função para otimizar o tamanho da resposta apenas se necessário
-function optimizeResponse(data, targetSizeKB = 4000) { // 4MB como alvo
-  const currentSize = JSON.stringify(data).length / 1024;
-  console.log(`📏 Tamanho atual da resposta: ${currentSize.toFixed(2)} KB`);
-  
-  // Se estiver dentro do limite, retorna sem modificações
-  if (currentSize <= targetSizeKB) {
-    return data;
-  }
-  
-  console.warn(`⚠️ Resposta muito grande (${currentSize.toFixed(2)} KB), aplicando otimização...`);
-  
-  // Aplicar otimizações progressivas
-  let optimized = JSON.parse(JSON.stringify(data)); // Deep clone
-  
-  // Nível 1: Remover dados de debug em produção
-  if (process.env.NODE_ENV === 'production' && optimized.debug) {
-    delete optimized.debug;
-  }
-  
-  // Verificar tamanho após nível 1
-  if (JSON.stringify(optimized).length / 1024 <= targetSizeKB) {
-    return optimized;
-  }
-  
-  // Nível 2: Reduzir definições longas
-  if (optimized.results) {
-    optimized.results = optimized.results.map(result => ({
-      ...result,
-      terms: result.terms.map(term => ({
-        ...term,
-        definition: term.definition ? 
-          term.definition.substring(0, 500) + (term.definition.length > 500 ? '...' : '') : 
-          '',
-        synonyms: term.synonyms ? term.synonyms.slice(0, 5) : [],
-        treeNumbers: term.treeNumbers ? term.treeNumbers.slice(0, 3) : []
-      }))
-    }));
-  }
-  
-  // Verificar tamanho após nível 2
-  if (JSON.stringify(optimized).length / 1024 <= targetSizeKB) {
-    return optimized;
-  }
-  
-  // Nível 3: Limitar número de termos (última opção)
-  if (optimized.results) {
-    optimized.results = optimized.results.map(r => ({
-      ...r,
-      terms: r.terms.slice(0, 10) // Ainda mantém 10 termos por elemento
-    }));
-  }
-  
-  if (optimized.allMeshTerms) {
-    optimized.allMeshTerms = optimized.allMeshTerms.slice(0, 50); // Ainda mantém 50 termos únicos
-  }
-  
-  const finalSize = JSON.stringify(optimized).length / 1024;
-  console.log(`📏 Tamanho otimizado: ${finalSize.toFixed(2)} KB`);
-  
-  return optimized;
 }
 
 export default async function handler(req, res) {
@@ -428,59 +371,24 @@ export default async function handler(req, res) {
     console.log('🤖 PASSO 1: EXTRAÇÃO DE CONCEITOS COM IA');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
-    fullDebug['🔄 PROCESSO'].push({
-      '🤖 PASSO 1': 'EXTRAÇÃO DE CONCEITOS COM IA',
-      '📤 ENVIADO PARA DEEPSEEK': {
-        objetivo: 'Extrair conceitos simples (NÃO termos MeSH) para busca posterior',
-        modelo: 'deepseek-chat',
-        framework: frameworkType
-      }
-    });
-
     const concepts = await extractConcepts(validFrameworkElements, fullQuestion, frameworkType);
     
-    fullDebug['🔄 PROCESSO'].push({
-      '✅ RESPOSTA DA IA': concepts,
-      '🔍 ANÁLISE': {
-        totalConceitos: Object.values(concepts).flat().length,
-        conceitosPorElemento: Object.entries(concepts).map(([k, v]) => ({ [k]: v.length }))
-      }
-    });
-
-    // PASSO 2: Buscar termos MeSH para cada conceito
+    // PASSO 2: Buscar termos MeSH para CADA conceito
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🔎 PASSO 2: BUSCA DE TERMOS MESH');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     const results = [];
-    const allMeshTerms = []; // Para coletar todos os termos únicos
+    const allMeshTerms = [];
     
-    // LOG DO QUE VAI SER BUSCADO
-    console.log('\n📋 RESUMO DO QUE SERÁ BUSCADO NO MESH:');
-    console.log('=====================================');
-    Object.entries(concepts).forEach(([elemento, termos]) => {
-      console.log(`\n${elemento} (${frameworkElements[elemento]}):`);
-      termos.forEach((termo, index) => {
-        console.log(`  ${index + 1}. "${termo}"`);
-      });
-    });
-    console.log('=====================================\n');
-    
-    // CORREÇÃO CRÍTICA: Garantir que TODOS os elementos do framework sejam incluídos
-    // MODIFICADO: Processar elementos com limites mais generosos
+    // PROCESSAR TODOS OS ELEMENTOS
     for (const [element, originalText] of Object.entries(validFrameworkElements)) {
       console.log(`\n📌 PROCESSANDO ELEMENTO: ${element}`);
       console.log(`📝 Texto original: "${originalText}"`);
-      const elementDebug = {
-        '🏷️ ELEMENTO': element,
-        '🇧🇷 TEXTO ORIGINAL': originalText,
-        '🇺🇸 CONCEITOS EXTRAÍDOS': concepts[element] || [],
-        '🔎 BUSCAS MESH': []
-      };
       
       const elementResults = {
         element,
-        originalText: originalText, // IMPORTANTE: Sempre incluir o texto original
+        originalText: originalText,
         terms: []
       };
       
@@ -488,94 +396,72 @@ export default async function handler(req, res) {
       const terms = concepts[element] || [];
       
       if (terms.length === 0) {
-        console.log(`⚠️ Nenhum conceito extraído para ${element}, mas incluindo no resultado`);
-      } else {
-        console.log(`🔍 Conceitos a buscar: ${JSON.stringify(terms)}`);
-        console.log(`📊 Total de conceitos para buscar: ${terms.length}`);
+        console.log(`⚠️ Nenhum conceito extraído para ${element}, tentando buscar diretamente o texto original`);
         
-        // Processar até 5 conceitos por elemento (aumentado de 3)
-        const limitedTerms = terms.slice(0, 5);
-        
-        // Busca todos os termos do elemento
-        for (const searchTerm of limitedTerms) {
-          console.log(`\n   🔍 Buscando conceito: "${searchTerm}"`);
+        // Tentar buscar com o texto original se não houver conceitos
+        if (originalText && originalText.trim()) {
+          const { results: meshTerms } = await searchMeSHTerm(originalText);
           
-          const searchDebug = {
-            '🔍 BUSCANDO': searchTerm,
-            '🌐 API': 'NCBI E-utilities (REAL)',
-            '🔑 API KEY': MESH_API_KEY ? 'USANDO' : 'SEM KEY',
-            '💰 CUSTO': 'GRATUITO'
-          };
-
-          // Buscar com limite de resultados aumentado
-          const { results: meshTerms, debug: termDebug } = await searchMeSHTerm(searchTerm, 1000);
-          
-          searchDebug['📊 RESULTADOS'] = {
-            encontrados: meshTerms.length,
-            termos: meshTerms.map(t => t.term),
-            meshIDs: meshTerms.map(t => t.meshUI),
-            treeNumbers: meshTerms.map(t => ({
-              term: t.term,
-              trees: t.treeNumbers
-            }))
-          };
-          searchDebug['🔧 DEBUG API'] = termDebug;
-          
-          elementDebug['🔎 BUSCAS MESH'].push(searchDebug);
-          
-          // Adiciona termos encontrados
+          // Adicionar apenas termos com score >= 50%
           meshTerms.forEach(meshTerm => {
-            // Remove _rawData antes de adicionar aos resultados
-            const cleanTerm = { ...meshTerm };
-            delete cleanTerm._rawData;
-            
-            // Verifica se o termo já não foi adicionado
-            if (!elementResults.terms.find(t => t.meshId === meshTerm.meshId)) {
-              elementResults.terms.push(cleanTerm);
-              allMeshTerms.push(cleanTerm);
-              console.log(`      ✅ Termo adicionado: "${meshTerm.term}" (${meshTerm.relevanceScore}%)`);
+            if (meshTerm.relevanceScore >= 50) {
+              const cleanTerm = { ...meshTerm };
+              delete cleanTerm._rawData;
+              
+              if (!elementResults.terms.find(t => t.meshId === meshTerm.meshId)) {
+                elementResults.terms.push(cleanTerm);
+                allMeshTerms.push(cleanTerm);
+                console.log(`      ✅ Termo adicionado: "${meshTerm.term}" (${meshTerm.relevanceScore}%)`);
+              }
             }
           });
         }
+      } else {
+        console.log(`🔍 Conceitos a buscar: ${JSON.stringify(terms)}`);
+        console.log(`📊 Total de conceitos: ${terms.length}`);
         
-        // Ordena por relevância
-        elementResults.terms.sort((a, b) => b.relevanceScore - a.relevanceScore);
-        // Não limitar aqui - deixar todos os termos encontrados
+        // Buscar TODOS os termos sem limite
+        for (const searchTerm of terms) {
+          console.log(`\n   🔍 Buscando conceito: "${searchTerm}"`);
+          
+          const { results: meshTerms } = await searchMeSHTerm(searchTerm);
+          
+          // Adicionar apenas termos com score >= 50%
+          meshTerms.forEach(meshTerm => {
+            if (meshTerm.relevanceScore >= 50) {
+              const cleanTerm = { ...meshTerm };
+              delete cleanTerm._rawData;
+              
+              if (!elementResults.terms.find(t => t.meshId === meshTerm.meshId)) {
+                elementResults.terms.push(cleanTerm);
+                allMeshTerms.push(cleanTerm);
+                console.log(`      ✅ Termo adicionado: "${meshTerm.term}" (${meshTerm.relevanceScore}%)`);
+              }
+            } else {
+              console.log(`      ❌ Termo ignorado (score < 50%): "${meshTerm.term}" (${meshTerm.relevanceScore}%)`);
+            }
+          });
+          
+          // Pequena pausa entre requisições para não sobrecarregar a API
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
       
-      fullDebug['🔄 PROCESSO'].push(elementDebug);
+      // Ordena por relevância
+      elementResults.terms.sort((a, b) => b.relevanceScore - a.relevanceScore);
       
-      // SEMPRE adiciona o elemento aos resultados, mesmo sem termos MeSH
+      // SEMPRE adiciona o elemento aos resultados
       results.push(elementResults);
       
-      if (elementResults.terms.length > 0) {
-        console.log(`\n✅ Total de termos MeSH para ${element}: ${elementResults.terms.length}`);
-      } else {
-        console.log(`\n⚠️ Nenhum termo MeSH encontrado para ${element}, mas elemento incluído nos resultados`);
-      }
+      console.log(`\n✅ Total de termos MeSH com score >= 50% para ${element}: ${elementResults.terms.length}`);
     }
 
     // Remove duplicatas globais de allMeshTerms
     const uniqueMeshTerms = allMeshTerms
-      .filter((term, index, self) => index === self.findIndex(t => t.meshId === term.meshId));
+      .filter((term, index, self) => index === self.findIndex(t => t.meshId === term.meshId))
+      .filter(term => term.relevanceScore >= 50); // Apenas termos com score >= 50%
 
-    fullDebug['📊 RESUMO FINAL'] = {
-      '✅ STATUS': 'SUCESSO',
-      '🌐 TIPO': 'API REAL (NCBI)',
-      '🔑 API KEY': MESH_API_KEY ? 'ATIVA' : 'NÃO CONFIGURADA',
-      '💰 CUSTO': 'GRATUITO',
-      '📈 ESTATÍSTICAS': {
-        framework: frameworkType,
-        elementosProcessados: Object.keys(frameworkElements).length,
-        elementosIncluídosNosResultados: results.length,
-        totalConceitosExtraidos: Object.values(concepts).flat().length,
-        totalTermosMeshEncontrados: uniqueMeshTerms.length,
-        termosUnicos: uniqueMeshTerms.map(t => t.term),
-        tempoProcessamento: `${Date.now() - new Date(fullDebug['🚀 INÍCIO']).getTime()}ms`
-      }
-    };
-
-    // LOG FINAL SUPER DETALHADO
+    // LOG FINAL
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📊 RESUMO FINAL DO PROCESSAMENTO');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -586,15 +472,15 @@ export default async function handler(req, res) {
     results.forEach((r, index) => {
       console.log(`\n${index + 1}. ${r.element}: "${r.originalText}"`);
       console.log(`   - Conceitos buscados: ${concepts[r.element]?.length || 0}`);
-      console.log(`   - Termos MeSH encontrados: ${r.terms.length}`);
+      console.log(`   - Termos MeSH encontrados (score >= 50%): ${r.terms.length}`);
       if (r.terms.length > 0) {
-        console.log('   - Top 3 termos:');
-        r.terms.slice(0, 3).forEach((term, i) => {
+        console.log('   - Top 5 termos:');
+        r.terms.slice(0, 5).forEach((term, i) => {
           console.log(`     ${i + 1}. "${term.term}" (${term.relevanceScore}%)`);
         });
       }
     });
-    console.log('\n🎯 Total de termos MeSH únicos:', uniqueMeshTerms.length);
+    console.log('\n🎯 Total de termos MeSH únicos (score >= 50%):', uniqueMeshTerms.length);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🚀 API MeSH - FIM DO PROCESSAMENTO\n');
 
@@ -602,22 +488,15 @@ export default async function handler(req, res) {
     const responseData = {
       results, 
       allMeshTerms: uniqueMeshTerms,
-      debug: fullDebug
+      debug: process.env.NODE_ENV === 'development' ? fullDebug : undefined
     };
-    
-    // Otimizar apenas se necessário (resposta maior que 4MB)
-    const optimizedResponse = optimizeResponse(responseData);
       
-    res.status(200).json(optimizedResponse);
+    res.status(200).json(responseData);
   } catch (error) {
     console.error('❌ Erro na busca MeSH:', error);
     res.status(500).json({ 
       error: 'Erro ao buscar termos MeSH',
-      details: error.message,
-      debug: process.env.NODE_ENV === 'development' ? { 
-        '❌ ERRO': error.toString(),
-        '📍 STACK': error.stack 
-      } : undefined
+      details: error.message
     });
   }
 }
