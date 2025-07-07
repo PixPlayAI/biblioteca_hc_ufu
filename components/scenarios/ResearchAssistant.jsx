@@ -13,6 +13,28 @@ import { cn } from '../../lib/utils';
 import MeshSearch from '../MeshSearch';
 import { convertToMeshFormat } from '../../lib/frameworkMappings';
 
+import perfectQuestions from '../../lib/data/perfectQuestions.json';
+
+// Adicionar esta função ANTES do componente ResearchAssistant:
+const checkEasterEgg = (input) => {
+  // Normalizar entrada: remover espaços, pontuação e deixar em lowercase
+  const normalized = input
+    .toLowerCase()
+    .replace(/[\s\.,:\-\(\)]/g, ''); // Remove espaços, vírgulas, pontos, dois pontos, traços e parênteses
+  
+  // Verificar se começa com "ex" seguido de um framework
+  if (normalized.startsWith('ex')) {
+    const framework = normalized.substring(2); // Remove "ex"
+    
+    // Verificar se o framework existe no JSON
+    if (perfectQuestions[framework]) {
+      return perfectQuestions[framework];
+    }
+  }
+  
+  return null; // Não é um easter egg
+};
+
 // Traduções atualizadas com todos os elementos dos novos frameworks
 const translations = {
   // PICO, PICOT, PICOS
@@ -849,9 +871,8 @@ const ResearchAssistant = ({ isDark }) => {
     });
   };
 
-  // Função modificada handleSubmit
-  const handleSubmit = async () => {
-    if (!currentInput.trim()) return;
+  // Crie uma nova função handleSubmitWithValue para evitar duplicação de código:
+  const handleSubmitWithValue = async (value) => {
     setIsLoading(true);
 
     try {
@@ -860,7 +881,7 @@ const ResearchAssistant = ({ isDark }) => {
 
       const response = await generateScenarioContent({
         history: conversations,
-        currentInput,
+        currentInput: value, // Usa o valor passado ao invés de currentInput
         currentStep: conversations.length,
         suggestionMode,
         suggestedElement,
@@ -872,7 +893,7 @@ const ResearchAssistant = ({ isDark }) => {
       const newConversation = {
         question: nextQuestion.text,
         context: nextQuestion.context,
-        answer: currentInput,
+        answer: value, // Usa o valor passado
         quality: validatedResponse.quality,
         analysis: validatedResponse.analysis,
       };
@@ -999,6 +1020,31 @@ const ResearchAssistant = ({ isDark }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Função modificada handleSubmit
+  const handleSubmit = async () => {
+    if (!currentInput.trim()) return;
+    
+    // EASTER EGG CHECK - apenas na primeira pergunta
+    if (conversations.length === 0) {
+      const perfectQuestion = checkEasterEgg(currentInput);
+      if (perfectQuestion) {
+        // Se detectou o easter egg, substitui o input pela pergunta perfeita
+        setCurrentInput(perfectQuestion);
+        
+        // Aguarda um momento para o estado atualizar antes de continuar
+        setTimeout(() => {
+          // Faz o submit automático com a pergunta perfeita
+          handleSubmitWithValue(perfectQuestion);
+        }, 100);
+        
+        return;
+      }
+    }
+    
+    // Continua com o fluxo normal
+    handleSubmitWithValue(currentInput);
   };
 
   // Renderização condicional para sugestões
