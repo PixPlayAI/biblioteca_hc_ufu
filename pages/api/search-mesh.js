@@ -66,9 +66,6 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     - Use termos médicos comuns, não códigos ou nomenclaturas específicas
     - Para cada elemento, forneça múltiplas variações quando possível
     - PROCESSE TODOS OS ELEMENTOS FORNECIDOS
-    - SE UM ELEMENTO TIVER MUITOS CONCEITOS, ENTÃO ESCOLHA OS MAIS RELEVANTES.
-    - TENTE TRAZER UM BOM NÚMERO MÉDIO DE CONCEITOS POR CADA TERMO, EVITE TRAZER MUITOS CONCEITOS DE UM ELEMENTO E POUCOS DE OUTRO.
-    - CADA ELEMENTO DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS.
     
     Framework utilizado: ${frameworkType}
     
@@ -91,7 +88,12 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     As chaves devem ser EXATAMENTE as mesmas fornecidas no input.
     TODOS os elementos devem ter conceitos extraídos.
     NUNCA retorne arrays vazios.
-    
+  
+    IMPORTANTE, ANTES DE RETORNAR O JSON, SAIBA QUE:
+    - SE UM ELEMENTO TIVER MUITOS CONCEITOS, ENTÃO ESCOLHA OS MAIS RELEVANTES.
+    - TENTE TRAZER UM BOM NÚMERO MÉDIO DE CONCEITOS POR CADA TERMO, EVITE TRAZER MUITOS CONCEITOS DE UM ELEMENTO E POUCOS DE OUTRO.
+    - CADA ELEMENTO DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS.
+  
     Para o exemplo fornecido, você DEVE retornar algo como:
     {
       "P": ["obesity", "obese", "adults", "adult", "overweight"],
@@ -99,6 +101,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
       "C": ["low fat diet", "fat restricted diet", "low-fat", "reduced fat"],
       "O": ["weight loss", "weight reduction", "body weight", "weight change"]
     }
+    
   `;
   console.log('📤 Enviando prompt para DeepSeek');
 
