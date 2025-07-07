@@ -61,7 +61,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     Você vai extrair conceitos médicos simples dos elementos de pesquisa para busca posterior em bases de dados.
     
     IMPORTANTE: 
-    - NÃO tente adivinhar termos MeSH
+    - NÃO tente adivinhar termos MeSH (E CADA CHAVE COM AO MENOS CINCO CONCEITOS ABSTRAÍDOS, PENSANDO QUE ESSES CONCEITOS SERÃO SUBMETIDOS PARA A API DOS TERMOS MESH)
     - Extraia conceitos SIMPLES e DIRETOS em inglês
     - Use termos médicos comuns, não códigos ou nomenclaturas específicas
     - Para cada elemento, forneça múltiplas variações quando possível
@@ -88,8 +88,11 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     As chaves devem ser EXATAMENTE as mesmas fornecidas no input.
     TODOS os elementos devem ter conceitos extraídos.
     NUNCA retorne arrays vazios.
-    DENTRO DE CADA CHAVE TEM OS CONCEITOS E CADA CHAVE DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS. E CADA CHAVE COM AO MENOS TRÊS CONCEITOS.
-  
+    DENTRO DE CADA CHAVE TEM OS CONCEITOS E CADA CHAVE DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS. 
+    E CADA CHAVE COM AO MENOS CINCO CONCEITOS ABSTRAÍDOS, PENSANDO QUE ESSES CONCEITOS SERÃO SUBMETIDOS PARA A API DOS TERMOS MESH.
+    
+    IMPORTANTE: NÃO tente adivinhar termos MeSH. ELES SERÃO PROCESSADOS PELA API DO MESH, COM BASE NA PROXIMIDADE DOS CONCEITOS QUE VC GERAR AQUI
+    
     Para o exemplo fornecido, você DEVE retornar algo como:
     {
       "P": ["obesity", "obese", "adults", "adult", "overweight"],
