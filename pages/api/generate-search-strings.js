@@ -695,6 +695,7 @@ LEMBRETES FINAIS CRÍTICOS
 
 Agora, analise cuidadosamente o input fornecido e gere as strings de busca otimizadas para cada base de dados, seguindo RIGOROSAMENTE todas as instruções acima.`;
 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -706,46 +707,161 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'MeSH content is required' });
   }
 
+  // Configurar SSE (Server-Sent Events)
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no', // Desabilita buffering no Nginx
+    'Content-Encoding': 'none'
+  });
+
+  // Função helper para enviar eventos SSE
+  const sendEvent = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    // Força o flush dos dados
+    if (res.flush) res.flush();
+  };
+
+  // Enviar heartbeat a cada 10 segundos para manter conexão viva
+  const heartbeatInterval = setInterval(() => {
+    sendEvent({ type: 'heartbeat', timestamp: new Date().toISOString() });
+  }, 10000);
+
   try {
-    // Mudança 2: URL da API DeepSeek
-    // Mudança 3: Modelo deepseek-chat ao invés de gpt-4-1106-preview
+    // Enviar status inicial
+    sendEvent({ 
+      type: 'status', 
+      message: 'Conectado ao servidor. Iniciando processamento...' 
+    });
+
+    // Pequeno delay para garantir que o cliente recebeu a mensagem
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    sendEvent({ 
+      type: 'status', 
+      message: 'Preparando análise com DeepSeek...' 
+    });
+
+    // Configurar a requisição para o DeepSeek
+    const requestPayload = {
+      model: 'deepseek-chat', // Usando o modelo mais poderoso do DeepSeek
+      messages: [
+        { 
+          role: 'system', 
+          content: SEARCH_STRING_PROMPT
+        },
+        { 
+          role: 'user', 
+          content: meshContent
+        }
+      ],
+      temperature: 0,
+      max_tokens: 4000,
+      response_format: { type: "json_object" }
+    };
+
+    sendEvent({ 
+      type: 'status', 
+      message: 'Enviando dados para processamento...' 
+    });
+
+    // Fazer a chamada para o DeepSeek
+    const startTime = Date.now();
+    
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
-      {
-        model: 'deepseek-chat', // Usando o modelo mais poderoso do DeepSeek
-        messages: [
-          { 
-            role: 'system', 
-            content: SEARCH_STRING_PROMPT
-          },
-          { 
-            role: 'user', 
-            content: meshContent
-          }
-        ],
-        temperature: 0,
-        max_tokens: 4000,
-        response_format: { type: "json_object" }
-      },
+      requestPayload,
       {
         headers: {
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, // Mudança 4: Usando chave do DeepSeek
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
+        },
+        timeout: 180000, // 3 minutos de timeout
+        validateStatus: function (status) {
+          return status < 500; // Aceita qualquer status < 500
         }
       }
     );
 
+    const processingTime = Date.now() - startTime;
+
+    // Verificar se a resposta é válida
+    if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      throw new Error('Resposta inválida do DeepSeek');
+    }
+
+    sendEvent({ 
+      type: 'status', 
+      message: 'Processamento concluído. Preparando resultados...' 
+    });
+
+    // Parse do resultado
     const result = JSON.parse(response.data.choices[0].message.content);
     
-    res.status(200).json({ 
+    // Validar estrutura do resultado
+    if (!result.search_strings || !result.search_strings.specific || !result.search_strings.broad) {
+      throw new Error('Formato de resposta inválido');
+    }
+
+    // Enviar resultado final
+    sendEvent({ 
+      type: 'complete',
       success: true,
-      data: result
+      data: result,
+      processingTime: processingTime,
+      message: 'Strings de busca geradas com sucesso!'
     });
+    
   } catch (error) {
     console.error('Erro ao gerar strings de busca com DeepSeek:', error);
-    res.status(500).json({ 
-      error: 'Erro ao gerar strings de busca',
-      details: error.message
+    
+    // Determinar mensagem de erro apropriada
+    let errorMessage = 'Erro ao gerar strings de busca';
+    let errorDetails = error.message;
+    
+    if (error.response) {
+      // Erro da API DeepSeek
+      if (error.response.status === 401) {
+        errorMessage = 'Erro de autenticação com DeepSeek';
+        errorDetails = 'Verifique a chave da API';
+      } else if (error.response.status === 429) {
+        errorMessage = 'Limite de taxa excedido';
+        errorDetails = 'Tente novamente em alguns instantes';
+      } else if (error.response.status >= 500) {
+        errorMessage = 'Erro no servidor DeepSeek';
+        errorDetails = 'O serviço está temporariamente indisponível';
+      }
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Tempo limite excedido';
+      errorDetails = 'O processamento demorou muito tempo. Tente novamente.';
+    }
+    
+    sendEvent({ 
+      type: 'error',
+      error: errorMessage,
+      details: errorDetails,
+      code: error.code || error.response?.status
     });
+  } finally {
+    // Limpar intervalo e finalizar conexão
+    clearInterval(heartbeatInterval);
+    
+    // Enviar evento de fim
+    sendEvent({ type: 'done' });
+    
+    // Pequeno delay antes de fechar
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    res.end();
   }
 }
+
+// Configurar o runtime config
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
