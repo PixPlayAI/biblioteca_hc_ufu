@@ -32,8 +32,12 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [processingTime, setProcessingTime] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [dots, setDots] = useState('');
-  const [processingPart, setProcessingPart] = useState(null); // 'first', 'second', null
-  const [firstPartTime, setFirstPartTime] = useState(null);
+  const [processingPart, setProcessingPart] = useState(null); // 'first', 'second', 'third', null
+  const [partTimes, setPartTimes] = useState({
+    first: null,
+    second: null,
+    third: null
+  });
   const eventSourceRef = useRef(null);
 
   // Configuração das bases de dados com URLs
@@ -60,7 +64,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'green',
       baseUrl: 'https://europepmc.org/search?query=',
       needsAuth: false,
-      part: 'first',
+      part: 'second',
     },
     {
       key: 'CrossRef',
@@ -68,7 +72,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'purple',
       baseUrl: 'https://search.crossref.org/?q=',
       needsAuth: false,
-      part: 'first',
+      part: 'second',
     },
     {
       key: 'DOAJ',
@@ -92,7 +96,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       color: 'teal',
       baseUrl: 'https://pesquisa.bvsalud.org/portal/?q=',
       needsAuth: false,
-      part: 'second',
+      part: 'third',
     },
     {
       key: 'Scopus',
@@ -101,7 +105,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       baseUrl: 'https://www.scopus.com/search/form.uri?display=basic#basic',
       needsAuth: true,
       authMessage: 'Requer login institucional',
-      part: 'second',
+      part: 'third',
     },
     {
       key: 'Web_of_Science',
@@ -110,7 +114,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       baseUrl: 'https://www.webofscience.com/wos/woscc/basic-search',
       needsAuth: true,
       authMessage: 'Requer login institucional',
-      part: 'second',
+      part: 'third',
     },
   ];
 
@@ -146,7 +150,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   };
 
   // Função para processar uma parte específica
-  const processSearchPart = async (promptType, isFirstPart = true) => {
+  const processSearchPart = async (promptType, partName) => {
     const startTime = Date.now();
 
     try {
@@ -226,12 +230,14 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                       };
                     });
 
-                    if (isFirstPart) {
-                      setFirstPartTime(Math.round((Date.now() - startTime) / 1000));
-                    } else {
+                    const partTime = Math.round((Date.now() - startTime) / 1000);
+                    setPartTimes(prev => ({
+                      ...prev,
+                      [partName]: partTime
+                    }));
+
+                    if (partName === 'third') {
                       setHasGenerated(true);
-                      const totalTime = firstPartTime + Math.round((Date.now() - startTime) / 1000);
-                      setProcessingTime(totalTime);
                     }
                     
                     setStatusMessage('');
@@ -310,22 +316,35 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     setSearchStrings(null);
     setStatusMessage('Conectando ao servidor...');
     setProcessingTime(null);
-    setFirstPartTime(null);
+    setPartTimes({ first: null, second: null, third: null });
     setIsConnected(false);
     setProcessingPart('first');
 
     try {
       // Processar primeira parte
       console.log('Processando primeira parte...');
-      const firstSuccess = await processSearchPart('primeiraParte', true);
+      const firstSuccess = await processSearchPart('primeiraParte', 'first');
       
       if (firstSuccess) {
         // Processar segunda parte
         console.log('Processando segunda parte...');
         setProcessingPart('second');
-        setStatusMessage('Processando bases restantes...');
-        await processSearchPart('segundaParte', false);
+        setStatusMessage('Processando bases intermediárias...');
+        const secondSuccess = await processSearchPart('segundaParte', 'second');
+        
+        if (secondSuccess) {
+          // Processar terceira parte
+          console.log('Processando terceira parte...');
+          setProcessingPart('third');
+          setStatusMessage('Processando bases finais...');
+          await processSearchPart('terceiraParte', 'third');
+        }
       }
+
+      // Calcular tempo total
+      const totalTime = Object.values(partTimes).reduce((sum, time) => sum + (time || 0), 0);
+      setProcessingTime(totalTime);
+
     } finally {
       setIsGenerating(false);
       setStatusMessage('');
@@ -372,10 +391,47 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     return broadString || specificString;
   };
 
-  // Função para verificar se deve mostrar indicador de carregamento da segunda parte
-  const shouldShowSecondPartLoader = () => {
-    return processingPart === 'second' && searchStrings && 
-           databases.some(db => db.part === 'first' && shouldShowDatabase(db));
+  // Função para verificar se deve mostrar indicador de carregamento
+  const shouldShowLoader = (part) => {
+    if (!processingPart || !searchStrings) return false;
+    
+    if (part === 'second' && processingPart === 'second') {
+      return databases.some(db => db.part === 'first' && shouldShowDatabase(db));
+    }
+    
+    if (part === 'third' && processingPart === 'third') {
+      return databases.some(db => (db.part === 'first' || db.part === 'second') && shouldShowDatabase(db));
+    }
+    
+    return false;
+  };
+
+  // Função para obter mensagem de progresso
+  const getProgressMessage = () => {
+    switch (processingPart) {
+      case 'first':
+        return 'Gerando Strings Personalizadas (Parte 1/3)...';
+      case 'second':
+        return 'Gerando Strings Personalizadas (Parte 2/3)...';
+      case 'third':
+        return 'Gerando Strings Personalizadas (Parte 3/3)...';
+      default:
+        return 'Gerando Strings Personalizadas...';
+    }
+  };
+
+  // Função para obter informação de tempo
+  const getTimeInfo = () => {
+    const times = [];
+    if (partTimes.first) times.push(`${partTimes.first}s`);
+    if (partTimes.second) times.push(`${partTimes.second}s`);
+    if (partTimes.third) times.push(`${partTimes.third}s`);
+    
+    if (times.length === 0) return null;
+    if (times.length === 1) return times[0];
+    
+    const total = Object.values(partTimes).reduce((sum, time) => sum + (time || 0), 0);
+    return `${total}s total (${times.join(' + ')})`;
   };
 
   return (
@@ -395,11 +451,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
               <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
               <div className="flex flex-col items-start">
                 <span className="flex items-center gap-2">
-                  {processingPart === 'first' 
-                    ? 'Gerando Strings Personalizadas (Parte 1/2)...'
-                    : processingPart === 'second'
-                    ? 'Gerando Strings Personalizadas (Parte 2/2)...'
-                    : 'Gerando Strings Personalizadas...'}
+                  {getProgressMessage()}
                   {isConnected && <Wifi className="w-3 h-3 animate-pulse" />}
                 </span>
                 {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
@@ -410,10 +462,10 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
               <CheckCircle2 className="w-5 h-5" />
               <div className="flex flex-col items-start">
                 <span>Suas strings de pesquisa foram geradas abaixo</span>
-                {processingTime && (
+                {getTimeInfo() && (
                   <span className="text-xs opacity-80 mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Processado em {processingTime}s total ({firstPartTime}s + {processingTime - firstPartTime}s)
+                    Processado em {getTimeInfo()}
                   </span>
                 )}
               </div>
@@ -439,7 +491,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
           <div>
             <p className="text-sm font-medium">{error}</p>
             <p className="text-xs mt-1 opacity-80">
-              O processamento está dividido em duas partes. Por favor, tente novamente.
+              O processamento está dividido em três partes. Por favor, tente novamente.
             </p>
           </div>
         </div>
@@ -741,7 +793,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
             })}
 
             {/* Indicador de carregamento da segunda parte */}
-            {shouldShowSecondPartLoader() && (
+            {shouldShowLoader('second') && (
               <div className={cn(
                 'p-6 rounded-lg border transition-all',
                 isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
@@ -750,7 +802,23 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                 <div className="flex items-center justify-center gap-3">
                   <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
                   <span className="font-medium">
-                    Processando bases restantes (DOAJ, Cochrane, LILACS, Scopus, Web of Science)...
+                    Processando bases intermediárias (Europe PMC, CrossRef, DOAJ, Cochrane)...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Indicador de carregamento da terceira parte */}
+            {shouldShowLoader('third') && (
+              <div className={cn(
+                'p-6 rounded-lg border transition-all',
+                isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
+                'animate-pulse'
+              )}>
+                <div className="flex items-center justify-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                  <span className="font-medium">
+                    Processando bases finais (LILACS, Scopus, Web of Science)...
                   </span>
                 </div>
               </div>

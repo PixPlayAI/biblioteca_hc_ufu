@@ -10,6 +10,9 @@ import {
   SEARCH_STRING_BASES_SEGUNDA_PARTE 
 } from '../../lib/prompts/searchStringBasesSegundaParte';
 import { 
+  SEARCH_STRING_BASES_TERCEIRA_PARTE 
+} from '../../lib/prompts/searchStringBasesTerceiraParte';
+import { 
   SEARCH_STRING_POSAMBULO 
 } from '../../lib/prompts/searchStringPosambulo';
 
@@ -28,10 +31,17 @@ const montarPromptSegundaParte = () => {
          SEARCH_STRING_POSAMBULO;
 };
 
+const montarPromptTerceiraParte = () => {
+  return SEARCH_STRING_PREAMBULO + 
+         SEARCH_STRING_BASES_TERCEIRA_PARTE + 
+         SEARCH_STRING_POSAMBULO;
+};
+
 const montarPromptCompleto = () => {
   return SEARCH_STRING_PREAMBULO + 
          SEARCH_STRING_BASES_PRIMEIRA_PARTE + 
          SEARCH_STRING_BASES_SEGUNDA_PARTE + 
+         SEARCH_STRING_BASES_TERCEIRA_PARTE +
          SEARCH_STRING_POSAMBULO;
 };
 
@@ -53,13 +63,18 @@ export default async function handler(req, res) {
   switch (promptType) {
     case 'primeiraParte':
       promptSelecionado = montarPromptPrimeiraParte();
-      expectedBases = ['PubMed', 'SciELO', 'Europe_PMC', 'CrossRef'];
-      console.log('Processando primeira parte: PubMed, SciELO, Europe PMC, CrossRef');
+      expectedBases = ['PubMed', 'SciELO'];
+      console.log('Processando primeira parte: PubMed, SciELO');
       break;
     case 'segundaParte':
       promptSelecionado = montarPromptSegundaParte();
-      expectedBases = ['DOAJ', 'Cochrane_Library', 'LILACS_BVS', 'Scopus', 'Web_of_Science'];
-      console.log('Processando segunda parte: DOAJ, Cochrane, LILACS, Scopus, Web of Science');
+      expectedBases = ['Europe_PMC', 'CrossRef', 'DOAJ', 'Cochrane_Library'];
+      console.log('Processando segunda parte: Europe PMC, CrossRef, DOAJ, Cochrane');
+      break;
+    case 'terceiraParte':
+      promptSelecionado = montarPromptTerceiraParte();
+      expectedBases = ['LILACS_BVS', 'Scopus', 'Web_of_Science'];
+      console.log('Processando terceira parte: LILACS, Scopus, Web of Science');
       break;
     case 'completo':
     default:
@@ -84,9 +99,14 @@ export default async function handler(req, res) {
   };
 
   try {
+    let partLabel = '';
+    if (promptType === 'primeiraParte') partLabel = '(Parte 1/3)';
+    else if (promptType === 'segundaParte') partLabel = '(Parte 2/3)';
+    else if (promptType === 'terceiraParte') partLabel = '(Parte 3/3)';
+
     sendEvent({ 
       type: 'status', 
-      message: `Conectado ao servidor. Iniciando processamento ${promptType === 'primeiraParte' ? '(Parte 1/2)' : promptType === 'segundaParte' ? '(Parte 2/2)' : ''}...` 
+      message: `Conectado ao servidor. Iniciando processamento ${partLabel}...` 
     });
 
     // IMPORTANTE: Habilitar streaming na API DeepSeek
@@ -108,9 +128,15 @@ export default async function handler(req, res) {
       stream: true // ATIVAR STREAMING
     };
 
+    let basesInfo = '';
+    if (promptType === 'primeiraParte') basesInfo = '(Bases 1-2)';
+    else if (promptType === 'segundaParte') basesInfo = '(Bases 3-6)';
+    else if (promptType === 'terceiraParte') basesInfo = '(Bases 7-9)';
+    else basesInfo = '(Todas as bases)';
+
     sendEvent({ 
       type: 'status', 
-      message: `Processando com DeepSeek ${promptType === 'primeiraParte' ? '(Bases 1-4)' : promptType === 'segundaParte' ? '(Bases 5-9)' : '(Todas as bases)'}...` 
+      message: `Processando com DeepSeek ${basesInfo}...` 
     });
 
     const startTime = Date.now();
@@ -234,7 +260,7 @@ export default async function handler(req, res) {
       success: true,
       data: filteredResult,
       processingTime: processingTime,
-      message: `Strings de busca geradas com sucesso ${promptType === 'primeiraParte' ? '(Parte 1/2)' : promptType === 'segundaParte' ? '(Parte 2/2)' : ''}!`
+      message: `Strings de busca geradas com sucesso ${partLabel}!`
     });
 
   } catch (error) {
