@@ -694,6 +694,7 @@ Agora, analise cuidadosamente o input fornecido e gere as strings de busca otimi
 
 
 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -705,7 +706,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'MeSH content is required' });
   }
 
-  // Configurar SSE (Server-Sent Events)
+  // Configurar SSE
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -714,28 +715,10 @@ export default async function handler(req, res) {
     'Content-Encoding': 'none'
   });
 
-  // Função helper para enviar eventos SSE
   const sendEvent = (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
     if (res.flush) res.flush();
   };
-
-  // Enviar heartbeat a cada 10 segundos
-  const heartbeatInterval = setInterval(() => {
-    sendEvent({ type: 'heartbeat', timestamp: new Date().toISOString() });
-  }, 10000);
-
-  // Timeout de segurança para fechar a conexão após 5 minutos
-  const safetyTimeout = setTimeout(() => {
-    console.log('Timeout de segurança atingido - fechando conexão');
-    sendEvent({ 
-      type: 'error',
-      error: 'Tempo limite excedido',
-      details: 'O processamento demorou mais de 5 minutos. Por favor, tente novamente.'
-    });
-    clearInterval(heartbeatInterval);
-    res.end();
-  }, 300000); // 5 minutos
 
   try {
     sendEvent({ 
@@ -743,13 +726,7 @@ export default async function handler(req, res) {
       message: 'Conectado ao servidor. Iniciando processamento...' 
     });
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    sendEvent({ 
-      type: 'status', 
-      message: 'Preparando análise com DeepSeek...' 
-    });
-
+    // IMPORTANTE: Habilitar streaming na API DeepSeek
     const requestPayload = {
       model: 'deepseek-chat',
       messages: [
@@ -764,65 +741,101 @@ export default async function handler(req, res) {
       ],
       temperature: 0,
       max_tokens: 4000,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      stream: true // ATIVAR STREAMING
     };
 
     sendEvent({ 
       type: 'status', 
-      message: 'Enviando dados para processamento...' 
+      message: 'Processando com DeepSeek...' 
     });
 
-    console.log('Iniciando chamada para DeepSeek API...');
     const startTime = Date.now();
     
-    const response = await axios.post(
-      'https://api.deepseek.com/chat/completions',
-      requestPayload,
-      {
-        headers: {
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 240000, // Aumentado para 4 minutos
-        validateStatus: function (status) {
-          return status < 500;
-        }
-      }
-    );
+    // Fazer requisição com streaming
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+      },
+      body: JSON.stringify(requestPayload)
+    });
 
-    const processingTime = Date.now() - startTime;
-    console.log(`Resposta recebida do DeepSeek em ${processingTime}ms`);
-
-    // Log da resposta para debug
-    console.log('Status da resposta:', response.status);
-    console.log('Headers da resposta:', response.headers);
-
-    if (!response.data || !response.data.choices || !response.data.choices[0]) {
-      console.error('Resposta inválida:', response.data);
-      throw new Error('Resposta inválida do DeepSeek');
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status}`);
     }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+    let chunkCount = 0;
 
     sendEvent({ 
       type: 'status', 
-      message: 'Processamento concluído. Preparando resultados...' 
+      message: 'Recebendo resposta...' 
     });
 
-    console.log('Parseando resultado...');
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        if (line.trim() === 'data: [DONE]') continue;
+        
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+              fullContent += data.choices[0].delta.content;
+              chunkCount++;
+              
+              // Enviar progresso a cada 10 chunks
+              if (chunkCount % 10 === 0) {
+                sendEvent({ 
+                  type: 'progress', 
+                  message: `Processando... (${Math.min(chunkCount, 100)}%)`,
+                  chunks: chunkCount
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Erro ao processar chunk:', e);
+          }
+        }
+      }
+    }
+
+    const processingTime = Date.now() - startTime;
+    console.log(`Streaming concluído em ${processingTime}ms`);
+
+    // Parsear o resultado final
+    sendEvent({ 
+      type: 'status', 
+      message: 'Finalizando processamento...' 
+    });
+
     let result;
     try {
-      result = JSON.parse(response.data.choices[0].message.content);
+      result = JSON.parse(fullContent);
     } catch (parseError) {
-      console.error('Erro ao parsear JSON:', parseError);
-      console.error('Conteúdo recebido:', response.data.choices[0].message.content);
+      console.error('Erro ao parsear resultado:', parseError);
+      console.error('Conteúdo recebido:', fullContent.substring(0, 500) + '...');
       throw new Error('Erro ao processar resposta JSON');
     }
 
     if (!result.search_strings || !result.search_strings.specific || !result.search_strings.broad) {
-      console.error('Formato inválido:', result);
       throw new Error('Formato de resposta inválido');
     }
 
-    console.log('Enviando resultado final...');
     sendEvent({ 
       type: 'complete',
       success: true,
@@ -831,48 +844,27 @@ export default async function handler(req, res) {
       message: 'Strings de busca geradas com sucesso!'
     });
 
-    console.log('Processamento concluído com sucesso!');
-    
   } catch (error) {
-    console.error('Erro detalhado:', error);
-    console.error('Stack:', error.stack);
+    console.error('Erro:', error);
     
     let errorMessage = 'Erro ao gerar strings de busca';
     let errorDetails = error.message;
     
-    if (error.response) {
-      console.error('Erro da API:', error.response.data);
-      console.error('Status:', error.response.status);
-      
-      if (error.response.status === 401) {
-        errorMessage = 'Erro de autenticação com DeepSeek';
-        errorDetails = 'Verifique a chave da API';
-      } else if (error.response.status === 429) {
-        errorMessage = 'Limite de taxa excedido';
-        errorDetails = 'Tente novamente em alguns instantes';
-      } else if (error.response.status >= 500) {
-        errorMessage = 'Erro no servidor DeepSeek';
-        errorDetails = 'O serviço está temporariamente indisponível';
-      }
-    } else if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Tempo limite excedido';
-      errorDetails = 'O processamento demorou muito tempo. Tente novamente.';
+    if (error.message.includes('401')) {
+      errorMessage = 'Erro de autenticação com DeepSeek';
+      errorDetails = 'Verifique a chave da API';
+    } else if (error.message.includes('429')) {
+      errorMessage = 'Limite de taxa excedido';
+      errorDetails = 'Tente novamente em alguns instantes';
     }
     
     sendEvent({ 
       type: 'error',
       error: errorMessage,
-      details: errorDetails,
-      code: error.code || error.response?.status
+      details: errorDetails
     });
   } finally {
-    clearInterval(heartbeatInterval);
-    clearTimeout(safetyTimeout);
-    
     sendEvent({ type: 'done' });
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
     res.end();
   }
 }

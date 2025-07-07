@@ -215,6 +215,11 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   }
                   break;
 
+                case 'progress':
+                  setStatusMessage(data.message);
+                  console.log('Progresso:', data.message);
+                  break;
+                  
                 case 'error':
                   console.error('Evento de erro recebido:', data);
                   setError(data.error || 'Erro ao processar resposta');
