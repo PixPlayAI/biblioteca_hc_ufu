@@ -161,7 +161,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
 }
 
 // Função melhorada para buscar termos MeSH com limite mais generoso
-async function searchMeSHTerm(term, maxResults = 15) { // Aumentado de 5 para 15
+async function searchMeSHTerm(term, maxResults = 1000) { // Aumentado de 5 para 1000
   console.log(`🔍 searchMeSHTerm - Buscando termo: "${term}" (max: ${maxResults} resultados)`);
   
   const debugInfo = {
@@ -192,7 +192,7 @@ async function searchMeSHTerm(term, maxResults = 15) { // Aumentado de 5 para 15
     
     const searchResponse = await axios.get(searchUrl, { 
       params: searchParams,
-      timeout: 15000 // 15 segundos de timeout
+      timeout: 59000 // 59 segundos de timeout
     });
     
     debugInfo.apiCalls[0].response = {
@@ -227,7 +227,7 @@ async function searchMeSHTerm(term, maxResults = 15) { // Aumentado de 5 para 15
 
     const summaryResponse = await axios.get(summaryUrl, { 
       params: summaryParams,
-      timeout: 15000 // 15 segundos de timeout
+      timeout: 59000 // 59 segundos de timeout
     });
     
     const results = [];
@@ -508,7 +508,7 @@ export default async function handler(req, res) {
           };
 
           // Buscar com limite de resultados aumentado
-          const { results: meshTerms, debug: termDebug } = await searchMeSHTerm(searchTerm, 15);
+          const { results: meshTerms, debug: termDebug } = await searchMeSHTerm(searchTerm, 1000);
           
           searchDebug['📊 RESULTADOS'] = {
             encontrados: meshTerms.length,
