@@ -2,6 +2,12 @@
   "functions": {
     "pages/api/analyze.js": {
       "maxDuration": 60
+    },
+    "pages/api/generate-search-strings.js": {
+      "maxDuration": 60
+    },
+    "pages/api/search-mesh.js": {
+      "maxDuration": 60
     }
   }
 }
