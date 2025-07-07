@@ -11,20 +11,15 @@ import {
   Database,
   AlertCircle,
   CheckCircle2,
-  Target,
   BookOpen,
   Microscope,
   ExternalLink,
-  Rocket,
   Search,
   Clock,
   Wifi,
-  WifiOff,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
-
-const [dots, setDots] = useState('');
 
 const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -36,6 +31,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [statusMessage, setStatusMessage] = useState('');
   const [processingTime, setProcessingTime] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [dots, setDots] = useState(''); // Adicione este estado
   const eventSourceRef = useRef(null);
 
   // Configuração das bases de dados com URLs
@@ -106,6 +102,22 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       authMessage: 'Requer login institucional',
     },
   ];
+
+  // UseEffect para animar os pontos
+  useEffect(() => {
+    let interval;
+    if (!isGenerating && !hasGenerated && meshContent) {
+      interval = setInterval(() => {
+        setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
+      }, 500);
+    } else {
+      setDots('');
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGenerating, hasGenerated, meshContent]);
 
   // Função para gerar URL de busca
   const generateSearchUrl = (database, searchString) => {
@@ -180,7 +192,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   break;
 
                 case 'heartbeat':
-                  // Mantém conexão viva - podemos mostrar um indicador visual
+                  // Mantém conexão viva
                   console.log('Heartbeat recebido:', data.timestamp);
                   break;
 
@@ -207,6 +219,10 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   console.error('Evento de erro recebido:', data);
                   setError(data.error || 'Erro ao processar resposta');
                   setStatusMessage('');
+                  setIsConnected(false);
+                  break;
+
+                case 'done':
                   setIsConnected(false);
                   break;
               }
@@ -244,26 +260,12 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     }
   };
 
-  // Adicione este useEffect para animar os pontos
-  useEffect(() => {
-    let interval;
-    if (isGenerating && !statusMessage) {
-      interval = setInterval(() => {
-        setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
-      }, 500);
-    } else {
-      setDots('');
-    }
-
-    return () => clearInterval(interval);
-  }, [isGenerating, statusMessage]);
-
   // Gera automaticamente quando recebe meshContent
   useEffect(() => {
     if (meshContent && !hasGenerated && !isGenerating) {
       generateSearchStrings();
     }
-  }, [meshContent]);
+  }, [meshContent, hasGenerated, isGenerating]);
 
   // Cleanup
   useEffect(() => {
@@ -299,7 +301,6 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
             isGenerating && 'animate-pulse'
           )}
         >
-          // Modifique a parte do "Preparando geração das strings..."
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
@@ -353,7 +354,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
         </div>
       )}
 
-      {/* Resultados das strings geradas */}
+      {/* Resultados das strings geradas - O resto do código continua igual */}
       {searchStrings && (
         <div className="space-y-4 animate-fadeIn">
           {/* Pergunta de Pesquisa e Elementos */}
