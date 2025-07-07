@@ -4,13 +4,10 @@
       "maxDuration": 60,
       "memory": 1024
     },
-    
-     "pages/api/generate-search-strings.js": {
+    "pages/api/generate-search-strings.js": {
       "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "nodejs18.x"
+      "memory": 1024
     },
-
     "pages/api/search-mesh.js": {
       "maxDuration": 60,
       "memory": 1024
