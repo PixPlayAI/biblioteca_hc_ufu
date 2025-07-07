@@ -66,6 +66,8 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     - Use termos médicos comuns, não códigos ou nomenclaturas específicas
     - Para cada elemento, forneça múltiplas variações quando possível
     - PROCESSE TODOS OS ELEMENTOS FORNECIDOS
+    - SE UM ELEMENTO TIVER MUITOS CONCEITOS, ENTÃO ESCOLHA OS MAIS RELEVANTES.
+    - TENTE TRAZER UM BOM NÚMERO MÉDIO DE CONCEITOS POR CADA TERMO, EVITE TRAZER MUITOS CONCEITOS DE UM ELEMENTO E POUCOS DE OUTRO.
     - CADA ELEMENTO DEVE TER PELO MENOS UM CONCEITO
     
     Framework utilizado: ${frameworkType}
