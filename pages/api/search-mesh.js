@@ -74,7 +74,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     - "adultos obesos" → ["obesity", "obese", "adults", "adult", "overweight"]
     - "Metformina" → ["metformin"]
     - "dieta de baixo carboidrato" → ["low carbohydrate diet", "low-carb diet", "ketogenic diet", "carbohydrate restricted"]
-    - "dieta de baixo teor de gordura" → ["low fat diet", "fat restricted diet", "low-fat", "reduced fat"]
+    - "dieta de baixo teor de gordura" → ["low fat diet", "low carb", "fat restricted diet", "low-fat", "reduced fat"]
     - "maior perda de peso" → ["weight loss", "weight reduction", "body weight", "weight change"]
     - "Exercícios aeróbicos" → ["exercise", "aerobic exercise", "physical activity"]
     - "Controle glicêmico" → ["glycemic control", "blood glucose", "glucose control", "hba1c"]
@@ -88,11 +88,7 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     As chaves devem ser EXATAMENTE as mesmas fornecidas no input.
     TODOS os elementos devem ter conceitos extraídos.
     NUNCA retorne arrays vazios.
-  
-    IMPORTANTE, ANTES DE RETORNAR O JSON, SAIBA QUE:
-    - SE UM ELEMENTO TIVER MUITOS CONCEITOS, ENTÃO ESCOLHA OS MAIS RELEVANTES.
-    - TENTE TRAZER UM BOM NÚMERO MÉDIO DE CONCEITOS POR CADA TERMO, EVITE TRAZER MUITOS CONCEITOS DE UM ELEMENTO E POUCOS DE OUTRO.
-    - CADA ELEMENTO DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS.
+    DENTRO DE CADA CHAVE TEM OS CONCEITOS E CADA CHAVE DEVE TER PELO MENOS UM CONCEITO, NÃO DEIXE UM ELEMENTO COM MUITOS CONCEITOS DE MODO A PREJUDICAR O BALANCEAMENTO DOS OUTROS. E CADA CHAVE COM AO MENOS TRÊS CONCEITOS.
   
     Para o exemplo fornecido, você DEVE retornar algo como:
     {
@@ -206,7 +202,7 @@ async function searchMeSHTerm(term) {
       db: 'mesh',
       term: term,
       retmode: 'json',
-      retmax: 50, // Reduzido para 50 para evitar timeout
+      retmax: 59000, // Reduzido para 59S para evitar timeout
       ...(MESH_API_KEY && { api_key: MESH_API_KEY })
     };
     
