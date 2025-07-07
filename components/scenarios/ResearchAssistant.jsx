@@ -902,8 +902,8 @@ const ResearchAssistant = ({ isDark }) => {
             const x = (rect.left + rect.width / 2) / window.innerWidth;
             const y = (rect.top + rect.height / 2) / window.innerHeight;
 
-            // Disparar confetti por 5 segundos
-            const duration = 5 * 1000; // 5 segundos
+            // Disparar confetti por 1 segundos
+            const duration = 1 * 1000; // 1 segundos
             const animationEnd = Date.now() + duration;
 
             const colors = [
