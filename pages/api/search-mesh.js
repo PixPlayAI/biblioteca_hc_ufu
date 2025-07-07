@@ -1,7 +1,7 @@
 // pages/api/search-mesh.js
 import axios from 'axios';
 
-// Mudança 1: Usar DEEPSEEK_API_KEY ao invés de OPENAI_API_KEY
+// Usar DEEPSEEK_API_KEY ao invés de OPENAI_API_KEY
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const MESH_API_KEY = process.env.MESH_API_KEY;
 const NCBI_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
@@ -89,15 +89,13 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
     As chaves devem ser exatamente as mesmas fornecidas no input.
     Exemplo: {"P": ["diabetes", "adult"], "I": ["metformin", "exercise"], ...}
   `;
- console.log('📤 Enviando prompt para DeepSeek:', prompt);
+  console.log('📤 Enviando prompt para DeepSeek:', prompt);
 
   try {
-    // Mudança 2: URL da API DeepSeek
-    // Mudança 3: Modelo deepseek-chat ao invés de gpt-4-1106-preview
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
       {
-        model: 'deepseek-chat', // Usando o modelo mais poderoso do DeepSeek
+        model: 'deepseek-chat',
         messages: [
           { 
             role: 'system', 
@@ -110,9 +108,10 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
       },
       {
         headers: {
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, // Mudança 4: Usando chave do DeepSeek
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000 // 30 segundos de timeout
       }
     );
 
@@ -161,9 +160,9 @@ async function extractConcepts(frameworkElements, fullQuestion, frameworkType) {
   }
 }
 
-// Função melhorada para buscar termos MeSH
-async function searchMeSHTerm(term) {
-  console.log(`🔍 searchMeSHTerm - Buscando termo: "${term}"`);
+// Função melhorada para buscar termos MeSH com limite mais generoso
+async function searchMeSHTerm(term, maxResults = 15) { // Aumentado de 5 para 15
+  console.log(`🔍 searchMeSHTerm - Buscando termo: "${term}" (max: ${maxResults} resultados)`);
   
   const debugInfo = {
     searchTerm: term,
@@ -172,13 +171,13 @@ async function searchMeSHTerm(term) {
   };
 
   try {
-    // Primeiro, busca o ID do termo
+    // Primeiro, busca o ID do termo com limite
     const searchUrl = `${NCBI_BASE_URL}/esearch.fcgi`;
     const searchParams = {
       db: 'mesh',
       term: term,
       retmode: 'json',
-      retmax: 10,
+      retmax: maxResults,
       ...(MESH_API_KEY && { api_key: MESH_API_KEY })
     };
     
@@ -191,7 +190,10 @@ async function searchMeSHTerm(term) {
 
     console.log(`📡 Fazendo chamada para NCBI E-utilities: ${searchUrl}`);
     
-    const searchResponse = await axios.get(searchUrl, { params: searchParams });
+    const searchResponse = await axios.get(searchUrl, { 
+      params: searchParams,
+      timeout: 15000 // 15 segundos de timeout
+    });
     
     debugInfo.apiCalls[0].response = {
       count: searchResponse.data.esearchresult.count,
@@ -223,7 +225,10 @@ async function searchMeSHTerm(term) {
       hasApiKey: !!MESH_API_KEY
     });
 
-    const summaryResponse = await axios.get(summaryUrl, { params: summaryParams });
+    const summaryResponse = await axios.get(summaryUrl, { 
+      params: summaryParams,
+      timeout: 15000 // 15 segundos de timeout
+    });
     
     const results = [];
     const uids = summaryResponse.data.result.uids || [];
@@ -243,7 +248,7 @@ async function searchMeSHTerm(term) {
       
       // Primeiro, tentar ds_meshhierarchy se existir
       if (meshData.ds_meshhierarchy && Array.isArray(meshData.ds_meshhierarchy)) {
-        treeNumbers = meshData.ds_meshhierarchy.filter(h => typeof h === 'string');
+        treeNumbers = meshData.ds_meshhierarchy.filter(h => typeof h === 'string').slice(0, 5); // Aumentado para 5
       }
       
       // Se não encontrou, tentar ds_idxlinks
@@ -254,9 +259,6 @@ async function searchMeSHTerm(term) {
             
             // Se for objeto, tentar extrair propriedades comuns
             if (typeof link === 'object' && link !== null) {
-              // Logar a estrutura do objeto para debug
-              console.log('Tree number object structure:', JSON.stringify(link, null, 2));
-              
               // Tentar várias propriedades possíveis
               if (link.parent) return link.parent;
               if (link.code) return link.code;
@@ -271,42 +273,31 @@ async function searchMeSHTerm(term) {
                 }
               }
               
-              // Não retornar [object Object], retornar null
               return null;
             }
             
             return null;
-          }).filter(Boolean); // Remove valores null/undefined
+          }).filter(Boolean).slice(0, 5); // Aumentado para 5
         }
       }
       
-      // Se ainda não tem tree numbers, tentar outras propriedades
-      if (treeNumbers.length === 0) {
-        // Verificar se há tree numbers em outras propriedades
-        const possibleTreeProps = ['ds_treecode', 'ds_tree', 'treecode', 'tree_number'];
-        for (const prop of possibleTreeProps) {
-          if (meshData[prop]) {
-            if (Array.isArray(meshData[prop])) {
-              treeNumbers = meshData[prop].filter(t => typeof t === 'string');
-            } else if (typeof meshData[prop] === 'string') {
-              treeNumbers = [meshData[prop]];
-            }
-            if (treeNumbers.length > 0) break;
-          }
-        }
-      }
+      // Manter mais sinônimos
+      const synonyms = (meshData.ds_meshsynonyms || []).slice(0, 10); // Aumentado para 10
+      
+      // Manter definição completa ou até 1000 caracteres
+      const definition = meshData.ds_scopenote ? 
+        meshData.ds_scopenote.substring(0, 1000) + (meshData.ds_scopenote.length > 1000 ? '...' : '') : 
+        '';
       
       const result = {
         meshId: uid,
         meshUI: preferredTerm,
         term: meshTerms[0] || term,
-        allTerms: meshTerms,
-        definition: meshData.ds_scopenote || '',
-        synonyms: meshData.ds_meshsynonyms || [],
+        allTerms: meshTerms.slice(0, 5), // Aumentado para 5
+        definition: definition,
+        synonyms: synonyms,
         treeNumbers: treeNumbers,
-        relevanceScore: Math.round(95 - (results.length * 5)),
-        // Adicionar dados brutos para debug se necessário
-        _rawData: meshData
+        relevanceScore: Math.round(95 - (results.length * 5))
       };
       
       results.push(result);
@@ -333,11 +324,76 @@ async function searchMeSHTerm(term) {
   }
 }
 
+// Função para otimizar o tamanho da resposta apenas se necessário
+function optimizeResponse(data, targetSizeKB = 4000) { // 4MB como alvo
+  const currentSize = JSON.stringify(data).length / 1024;
+  console.log(`📏 Tamanho atual da resposta: ${currentSize.toFixed(2)} KB`);
+  
+  // Se estiver dentro do limite, retorna sem modificações
+  if (currentSize <= targetSizeKB) {
+    return data;
+  }
+  
+  console.warn(`⚠️ Resposta muito grande (${currentSize.toFixed(2)} KB), aplicando otimização...`);
+  
+  // Aplicar otimizações progressivas
+  let optimized = JSON.parse(JSON.stringify(data)); // Deep clone
+  
+  // Nível 1: Remover dados de debug em produção
+  if (process.env.NODE_ENV === 'production' && optimized.debug) {
+    delete optimized.debug;
+  }
+  
+  // Verificar tamanho após nível 1
+  if (JSON.stringify(optimized).length / 1024 <= targetSizeKB) {
+    return optimized;
+  }
+  
+  // Nível 2: Reduzir definições longas
+  if (optimized.results) {
+    optimized.results = optimized.results.map(result => ({
+      ...result,
+      terms: result.terms.map(term => ({
+        ...term,
+        definition: term.definition ? 
+          term.definition.substring(0, 500) + (term.definition.length > 500 ? '...' : '') : 
+          '',
+        synonyms: term.synonyms ? term.synonyms.slice(0, 5) : [],
+        treeNumbers: term.treeNumbers ? term.treeNumbers.slice(0, 3) : []
+      }))
+    }));
+  }
+  
+  // Verificar tamanho após nível 2
+  if (JSON.stringify(optimized).length / 1024 <= targetSizeKB) {
+    return optimized;
+  }
+  
+  // Nível 3: Limitar número de termos (última opção)
+  if (optimized.results) {
+    optimized.results = optimized.results.map(r => ({
+      ...r,
+      terms: r.terms.slice(0, 10) // Ainda mantém 10 termos por elemento
+    }));
+  }
+  
+  if (optimized.allMeshTerms) {
+    optimized.allMeshTerms = optimized.allMeshTerms.slice(0, 50); // Ainda mantém 50 termos únicos
+  }
+  
+  const finalSize = JSON.stringify(optimized).length / 1024;
+  console.log(`📏 Tamanho otimizado: ${finalSize.toFixed(2)} KB`);
+  
+  return optimized;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Configurar headers para otimizar resposta
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
   // Debug dos dados recebidos
   console.log('\n🚀 API MeSH - INÍCIO DO PROCESSAMENTO');
@@ -374,9 +430,9 @@ export default async function handler(req, res) {
     
     fullDebug['🔄 PROCESSO'].push({
       '🤖 PASSO 1': 'EXTRAÇÃO DE CONCEITOS COM IA',
-      '📤 ENVIADO PARA OPENAI': {
+      '📤 ENVIADO PARA DEEPSEEK': {
         objetivo: 'Extrair conceitos simples (NÃO termos MeSH) para busca posterior',
-        modelo: 'gpt-4-1106-preview',
+        modelo: 'deepseek-chat',
         framework: frameworkType
       }
     });
@@ -411,7 +467,7 @@ export default async function handler(req, res) {
     console.log('=====================================\n');
     
     // CORREÇÃO CRÍTICA: Garantir que TODOS os elementos do framework sejam incluídos
-    // MODIFICADO: Processar apenas elementos válidos
+    // MODIFICADO: Processar elementos com limites mais generosos
     for (const [element, originalText] of Object.entries(validFrameworkElements)) {
       console.log(`\n📌 PROCESSANDO ELEMENTO: ${element}`);
       console.log(`📝 Texto original: "${originalText}"`);
@@ -437,8 +493,11 @@ export default async function handler(req, res) {
         console.log(`🔍 Conceitos a buscar: ${JSON.stringify(terms)}`);
         console.log(`📊 Total de conceitos para buscar: ${terms.length}`);
         
+        // Processar até 5 conceitos por elemento (aumentado de 3)
+        const limitedTerms = terms.slice(0, 5);
+        
         // Busca todos os termos do elemento
-        for (const searchTerm of terms) {
+        for (const searchTerm of limitedTerms) {
           console.log(`\n   🔍 Buscando conceito: "${searchTerm}"`);
           
           const searchDebug = {
@@ -448,7 +507,8 @@ export default async function handler(req, res) {
             '💰 CUSTO': 'GRATUITO'
           };
 
-          const { results: meshTerms, debug: termDebug } = await searchMeSHTerm(searchTerm);
+          // Buscar com limite de resultados aumentado
+          const { results: meshTerms, debug: termDebug } = await searchMeSHTerm(searchTerm, 15);
           
           searchDebug['📊 RESULTADOS'] = {
             encontrados: meshTerms.length,
@@ -480,6 +540,7 @@ export default async function handler(req, res) {
         
         // Ordena por relevância
         elementResults.terms.sort((a, b) => b.relevanceScore - a.relevanceScore);
+        // Não limitar aqui - deixar todos os termos encontrados
       }
       
       fullDebug['🔄 PROCESSO'].push(elementDebug);
@@ -495,9 +556,8 @@ export default async function handler(req, res) {
     }
 
     // Remove duplicatas globais de allMeshTerms
-    const uniqueMeshTerms = allMeshTerms.filter((term, index, self) =>
-      index === self.findIndex(t => t.meshId === term.meshId)
-    );
+    const uniqueMeshTerms = allMeshTerms
+      .filter((term, index, self) => index === self.findIndex(t => t.meshId === term.meshId));
 
     fullDebug['📊 RESUMO FINAL'] = {
       '✅ STATUS': 'SUCESSO',
@@ -506,8 +566,8 @@ export default async function handler(req, res) {
       '💰 CUSTO': 'GRATUITO',
       '📈 ESTATÍSTICAS': {
         framework: frameworkType,
-        elementosProcessados: Object.keys(frameworkElements).length, // Mudança aqui
-        elementosIncluídosNosResultados: results.length, // Nova métrica
+        elementosProcessados: Object.keys(frameworkElements).length,
+        elementosIncluídosNosResultados: results.length,
         totalConceitosExtraidos: Object.values(concepts).flat().length,
         totalTermosMeshEncontrados: uniqueMeshTerms.length,
         termosUnicos: uniqueMeshTerms.map(t => t.term),
@@ -538,21 +598,26 @@ export default async function handler(req, res) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🚀 API MeSH - FIM DO PROCESSAMENTO\n');
 
-      
-    res.status(200).json({ 
+    // Preparar resposta
+    const responseData = {
       results, 
       allMeshTerms: uniqueMeshTerms,
-      debug: fullDebug 
-    });
+      debug: fullDebug
+    };
+    
+    // Otimizar apenas se necessário (resposta maior que 4MB)
+    const optimizedResponse = optimizeResponse(responseData);
+      
+    res.status(200).json(optimizedResponse);
   } catch (error) {
     console.error('❌ Erro na busca MeSH:', error);
     res.status(500).json({ 
       error: 'Erro ao buscar termos MeSH',
       details: error.message,
-      debug: { 
+      debug: process.env.NODE_ENV === 'development' ? { 
         '❌ ERRO': error.toString(),
         '📍 STACK': error.stack 
-      }
+      } : undefined
     });
   }
 }
