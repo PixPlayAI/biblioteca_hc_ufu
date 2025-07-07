@@ -1,5 +1,4 @@
 // pages/api/generate-search-strings.js
-import axios from 'axios';
 import { 
   SEARCH_STRING_PREAMBULO 
 } from '../../lib/prompts/searchStringPreambulo';
@@ -84,32 +83,10 @@ export default async function handler(req, res) {
       break;
   }
 
-  // Configurar SSE
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-transform',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-    'Content-Encoding': 'none'
-  });
-
-  const sendEvent = (data) => {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-    if (res.flush) res.flush();
-  };
-
   try {
-    let partLabel = '';
-    if (promptType === 'primeiraParte') partLabel = '(Parte 1/3)';
-    else if (promptType === 'segundaParte') partLabel = '(Parte 2/3)';
-    else if (promptType === 'terceiraParte') partLabel = '(Parte 3/3)';
-
-    sendEvent({ 
-      type: 'status', 
-      message: `Conectado ao servidor. Iniciando processamento ${partLabel}...` 
-    });
-
-    // IMPORTANTE: Habilitar streaming na API DeepSeek
+    const startTime = Date.now();
+    
+    // Fazer requisição SEM streaming para DeepSeek
     const requestPayload = {
       model: 'deepseek-chat',
       messages: [
@@ -125,29 +102,16 @@ export default async function handler(req, res) {
       temperature: 0,
       max_tokens: 4000,
       response_format: { type: "json_object" },
-      stream: true // ATIVAR STREAMING
+      stream: false // DESATIVAR STREAMING
     };
 
-    let basesInfo = '';
-    if (promptType === 'primeiraParte') basesInfo = '(Bases 1-2)';
-    else if (promptType === 'segundaParte') basesInfo = '(Bases 3-6)';
-    else if (promptType === 'terceiraParte') basesInfo = '(Bases 7-9)';
-    else basesInfo = '(Todas as bases)';
+    console.log(`Enviando requisição para DeepSeek (${promptType})...`);
 
-    sendEvent({ 
-      type: 'status', 
-      message: `Processando com DeepSeek ${basesInfo}...` 
-    });
-
-    const startTime = Date.now();
-    
-    // Fazer requisição com streaming
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestPayload)
     });
@@ -158,68 +122,21 @@ export default async function handler(req, res) {
       throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullContent = '';
-    let chunkCount = 0;
-
-    sendEvent({ 
-      type: 'status', 
-      message: 'Recebendo resposta...' 
-    });
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.trim() === '') continue;
-        if (line.trim() === 'data: [DONE]') continue;
-        
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
-              fullContent += data.choices[0].delta.content;
-              chunkCount++;
-              
-              // Enviar progresso a cada 10 chunks
-              if (chunkCount % 10 === 0) {
-                sendEvent({ 
-                  type: 'progress', 
-                  message: `Processando... (${Math.min(chunkCount, 100)}%)`,
-                  chunks: chunkCount
-                });
-              }
-            }
-          } catch (e) {
-            console.error('Erro ao processar chunk:', e);
-          }
-        }
-      }
-    }
-
+    const responseData = await response.json();
     const processingTime = Date.now() - startTime;
-    console.log(`Streaming concluído em ${processingTime}ms para ${promptType}`);
+    
+    console.log(`Resposta recebida do DeepSeek em ${processingTime}ms`);
 
-    // Parsear o resultado final
-    sendEvent({ 
-      type: 'status', 
-      message: 'Finalizando processamento...' 
-    });
-
+    // Extrair o conteúdo da resposta
+    const content = responseData.choices[0].message.content;
+    
+    // Parsear o resultado
     let result;
     try {
-      result = JSON.parse(fullContent);
+      result = JSON.parse(content);
     } catch (parseError) {
       console.error('Erro ao parsear resultado:', parseError);
-      console.error('Conteúdo recebido:', fullContent.substring(0, 500) + '...');
+      console.error('Conteúdo recebido:', content.substring(0, 500) + '...');
       throw new Error('Erro ao processar resposta JSON');
     }
 
@@ -253,14 +170,14 @@ export default async function handler(req, res) {
       }
     });
 
-    console.log(`Enviando resultado filtrado para ${promptType}:`, Object.keys(filteredResult.search_strings.specific));
+    console.log(`Retornando resultado para ${promptType}:`, Object.keys(filteredResult.search_strings.specific));
 
-    sendEvent({ 
-      type: 'complete',
+    // Retornar resposta JSON normal
+    return res.status(200).json({
       success: true,
       data: filteredResult,
       processingTime: processingTime,
-      message: `Strings de busca geradas com sucesso ${partLabel}!`
+      promptType: promptType
     });
 
   } catch (error) {
@@ -280,14 +197,11 @@ export default async function handler(req, res) {
       errorDetails = 'A operação demorou muito. Tente com menos bases por vez.';
     }
     
-    sendEvent({ 
-      type: 'error',
+    return res.status(500).json({ 
+      success: false,
       error: errorMessage,
       details: errorDetails
     });
-  } finally {
-    sendEvent({ type: 'done' });
-    res.end();
   }
 }
 

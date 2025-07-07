@@ -1,5 +1,5 @@
 // components/SearchStringGenerator.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sparkles,
@@ -16,7 +16,6 @@ import {
   ExternalLink,
   Search,
   Clock,
-  Wifi,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
@@ -30,15 +29,13 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [processingTime, setProcessingTime] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [dots, setDots] = useState('');
-  const [processingPart, setProcessingPart] = useState(null); // 'first', 'second', 'third', null
+  const [processingPart, setProcessingPart] = useState(null);
   const [partTimes, setPartTimes] = useState({
     first: null,
     second: null,
     third: null
   });
-  const eventSourceRef = useRef(null);
 
   // Configuração das bases de dados com URLs
   const databases = [
@@ -162,150 +159,52 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
         body: JSON.stringify({ meshContent, promptType }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      setIsConnected(true);
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        // Decodificar e adicionar ao buffer
-        buffer += decoder.decode(value, { stream: true });
-
-        // Processar linhas completas
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Guardar última linha incompleta
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr) continue;
-
-              const data = JSON.parse(jsonStr);
-
-              switch (data.type) {
-                case 'status':
-                  setStatusMessage(data.message);
-                  console.log('Status:', data.message);
-                  break;
-
-                case 'heartbeat':
-                  console.log('Heartbeat recebido:', data.timestamp);
-                  break;
-
-                case 'complete':
-                  console.log('Evento complete recebido:', data);
-                  if (data.success && data.data) {
-                    console.log('Dados das strings:', data.data);
-                    
-                    // Mesclar resultados
-                    setSearchStrings(prevStrings => {
-                      if (!prevStrings) {
-                        return data.data;
-                      }
-                      
-                      // Mesclar as strings específicas e amplas
-                      return {
-                        search_strings: {
-                          specific: {
-                            ...prevStrings.search_strings.specific,
-                            ...data.data.search_strings.specific
-                          },
-                          broad: {
-                            ...prevStrings.search_strings.broad,
-                            ...data.data.search_strings.broad
-                          }
-                        }
-                      };
-                    });
-
-                    const partTime = Math.round((Date.now() - startTime) / 1000);
-                    setPartTimes(prev => ({
-                      ...prev,
-                      [partName]: partTime
-                    }));
-
-                    if (partName === 'third') {
-                      setHasGenerated(true);
-                    }
-                    
-                    setStatusMessage('');
-                    setIsConnected(false);
-
-                    console.log('Parte concluída!', promptType);
-                  } else {
-                    console.error('Dados incompletos no evento complete:', data);
-                  }
-                  break;
-
-                case 'progress':
-                  setStatusMessage(data.message);
-                  console.log('Progresso:', data.message);
-                  break;
-                  
-                case 'error':
-                  console.error('Evento de erro recebido:', data);
-                  setError(data.error || 'Erro ao processar resposta');
-                  setStatusMessage('');
-                  setIsConnected(false);
-                  break;
-
-                case 'done':
-                  setIsConnected(false);
-                  break;
+      if (data.success && data.data) {
+        // Mesclar resultados
+        setSearchStrings(prevStrings => {
+          if (!prevStrings) {
+            return data.data;
+          }
+          
+          // Mesclar as strings específicas e amplas
+          return {
+            search_strings: {
+              specific: {
+                ...prevStrings.search_strings.specific,
+                ...data.data.search_strings.specific
+              },
+              broad: {
+                ...prevStrings.search_strings.broad,
+                ...data.data.search_strings.broad
               }
-            } catch (e) {
-              console.error('Erro ao parsear SSE data:', e, 'Linha:', line);
             }
-          }
-        }
-      }
+          };
+        });
 
-      // Processar qualquer dado restante no buffer
-      if (buffer.trim() && buffer.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(buffer.slice(6));
-          if (data.type === 'complete' && data.success) {
-            setSearchStrings(prevStrings => {
-              if (!prevStrings) {
-                return data.data;
-              }
-              
-              return {
-                search_strings: {
-                  specific: {
-                    ...prevStrings.search_strings.specific,
-                    ...data.data.search_strings.specific
-                  },
-                  broad: {
-                    ...prevStrings.search_strings.broad,
-                    ...data.data.search_strings.broad
-                  }
-                }
-              };
-            });
-          }
-        } catch (e) {
-          console.error('Erro ao processar buffer final:', e);
-        }
-      }
+        const partTime = Math.round((Date.now() - startTime) / 1000);
+        setPartTimes(prev => ({
+          ...prev,
+          [partName]: partTime
+        }));
 
-      return true; // Sucesso
+        if (partName === 'third') {
+          setHasGenerated(true);
+        }
+
+        console.log('Parte concluída!', promptType);
+        return true; // Sucesso
+      } else {
+        throw new Error('Resposta inválida do servidor');
+      }
     } catch (err) {
       console.error('Erro ao gerar strings:', err);
       setError(err.message || 'Erro ao gerar strings de busca');
-      setIsConnected(false);
       return false; // Erro
     }
   };
@@ -317,26 +216,26 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     setStatusMessage('Conectando ao servidor...');
     setProcessingTime(null);
     setPartTimes({ first: null, second: null, third: null });
-    setIsConnected(false);
     setProcessingPart('first');
 
     try {
       // Processar primeira parte
       console.log('Processando primeira parte...');
+      setStatusMessage('Processando PubMed e SciELO...');
       const firstSuccess = await processSearchPart('primeiraParte', 'first');
       
       if (firstSuccess) {
         // Processar segunda parte
         console.log('Processando segunda parte...');
         setProcessingPart('second');
-        setStatusMessage('Processando bases intermediárias...');
+        setStatusMessage('Processando Europe PMC, CrossRef, DOAJ e Cochrane...');
         const secondSuccess = await processSearchPart('segundaParte', 'second');
         
         if (secondSuccess) {
           // Processar terceira parte
           console.log('Processando terceira parte...');
           setProcessingPart('third');
-          setStatusMessage('Processando bases finais...');
+          setStatusMessage('Processando LILACS, Scopus e Web of Science...');
           await processSearchPart('terceiraParte', 'third');
         }
       }
@@ -357,16 +256,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     if (meshContent && !hasGenerated && !isGenerating) {
       generateSearchStrings();
     }
-  }, [meshContent, hasGenerated, isGenerating]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
+  }, [meshContent]);
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -452,7 +342,6 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
               <div className="flex flex-col items-start">
                 <span className="flex items-center gap-2">
                   {getProgressMessage()}
-                  {isConnected && <Wifi className="w-3 h-3 animate-pulse" />}
                 </span>
                 {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
               </div>
@@ -641,6 +530,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
                       {/* String Ampla */}
                       {broadString && (
+                        
                         <div className="p-4">
                           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                             <div className="flex items-center gap-2">
@@ -657,8 +547,8 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                               </h6>
                             </div>
                             <div className="flex items-center gap-2">
-                              <a
-                                href={generateSearchUrl(db, broadString)}
+                              
+                               <a href={generateSearchUrl(db, broadString)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={cn(
@@ -711,6 +601,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                             </pre>
                           </div>
                         </div>
+                        
                       )}
 
                       {/* String Específica */}
@@ -731,8 +622,8 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                               </h6>
                             </div>
                             <div className="flex items-center gap-2">
-                              <a
-                                href={generateSearchUrl(db, specificString)}
+                              
+                                <a href={generateSearchUrl(db, specificString)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={cn(
