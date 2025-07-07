@@ -1,10 +1,7 @@
 // pages/api/generate-search-strings.js
 import axios from 'axios';
 
-// Mudança 1: Usar DEEPSEEK_API_KEY ao invés de OPENAI_API_KEY
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-
-// Prompt completo para geração de strings de busca
 const SEARCH_STRING_PROMPT = `PROMPT COMPLETO PARA GERAÇÃO DE STRINGS DE BUSCA EM BASES DE DADOS CIENTÍFICAS
 
 CONTEXTO INICIAL E OBJETIVO PRINCIPAL
@@ -696,6 +693,7 @@ LEMBRETES FINAIS CRÍTICOS
 Agora, analise cuidadosamente o input fornecido e gere as strings de busca otimizadas para cada base de dados, seguindo RIGOROSAMENTE todas as instruções acima.`;
 
 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -712,30 +710,39 @@ export default async function handler(req, res) {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no', // Desabilita buffering no Nginx
+    'X-Accel-Buffering': 'no',
     'Content-Encoding': 'none'
   });
 
   // Função helper para enviar eventos SSE
   const sendEvent = (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
-    // Força o flush dos dados
     if (res.flush) res.flush();
   };
 
-  // Enviar heartbeat a cada 10 segundos para manter conexão viva
+  // Enviar heartbeat a cada 10 segundos
   const heartbeatInterval = setInterval(() => {
     sendEvent({ type: 'heartbeat', timestamp: new Date().toISOString() });
   }, 10000);
 
+  // Timeout de segurança para fechar a conexão após 5 minutos
+  const safetyTimeout = setTimeout(() => {
+    console.log('Timeout de segurança atingido - fechando conexão');
+    sendEvent({ 
+      type: 'error',
+      error: 'Tempo limite excedido',
+      details: 'O processamento demorou mais de 5 minutos. Por favor, tente novamente.'
+    });
+    clearInterval(heartbeatInterval);
+    res.end();
+  }, 300000); // 5 minutos
+
   try {
-    // Enviar status inicial
     sendEvent({ 
       type: 'status', 
       message: 'Conectado ao servidor. Iniciando processamento...' 
     });
 
-    // Pequeno delay para garantir que o cliente recebeu a mensagem
     await new Promise(resolve => setTimeout(resolve, 100));
 
     sendEvent({ 
@@ -743,9 +750,8 @@ export default async function handler(req, res) {
       message: 'Preparando análise com DeepSeek...' 
     });
 
-    // Configurar a requisição para o DeepSeek
     const requestPayload = {
-      model: 'deepseek-chat', // Usando o modelo mais poderoso do DeepSeek
+      model: 'deepseek-chat',
       messages: [
         { 
           role: 'system', 
@@ -766,7 +772,7 @@ export default async function handler(req, res) {
       message: 'Enviando dados para processamento...' 
     });
 
-    // Fazer a chamada para o DeepSeek
+    console.log('Iniciando chamada para DeepSeek API...');
     const startTime = Date.now();
     
     const response = await axios.post(
@@ -777,17 +783,22 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 180000, // 3 minutos de timeout
+        timeout: 240000, // Aumentado para 4 minutos
         validateStatus: function (status) {
-          return status < 500; // Aceita qualquer status < 500
+          return status < 500;
         }
       }
     );
 
     const processingTime = Date.now() - startTime;
+    console.log(`Resposta recebida do DeepSeek em ${processingTime}ms`);
 
-    // Verificar se a resposta é válida
+    // Log da resposta para debug
+    console.log('Status da resposta:', response.status);
+    console.log('Headers da resposta:', response.headers);
+
     if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      console.error('Resposta inválida:', response.data);
       throw new Error('Resposta inválida do DeepSeek');
     }
 
@@ -796,15 +807,22 @@ export default async function handler(req, res) {
       message: 'Processamento concluído. Preparando resultados...' 
     });
 
-    // Parse do resultado
-    const result = JSON.parse(response.data.choices[0].message.content);
-    
-    // Validar estrutura do resultado
+    console.log('Parseando resultado...');
+    let result;
+    try {
+      result = JSON.parse(response.data.choices[0].message.content);
+    } catch (parseError) {
+      console.error('Erro ao parsear JSON:', parseError);
+      console.error('Conteúdo recebido:', response.data.choices[0].message.content);
+      throw new Error('Erro ao processar resposta JSON');
+    }
+
     if (!result.search_strings || !result.search_strings.specific || !result.search_strings.broad) {
+      console.error('Formato inválido:', result);
       throw new Error('Formato de resposta inválido');
     }
 
-    // Enviar resultado final
+    console.log('Enviando resultado final...');
     sendEvent({ 
       type: 'complete',
       success: true,
@@ -812,16 +830,20 @@ export default async function handler(req, res) {
       processingTime: processingTime,
       message: 'Strings de busca geradas com sucesso!'
     });
+
+    console.log('Processamento concluído com sucesso!');
     
   } catch (error) {
-    console.error('Erro ao gerar strings de busca com DeepSeek:', error);
+    console.error('Erro detalhado:', error);
+    console.error('Stack:', error.stack);
     
-    // Determinar mensagem de erro apropriada
     let errorMessage = 'Erro ao gerar strings de busca';
     let errorDetails = error.message;
     
     if (error.response) {
-      // Erro da API DeepSeek
+      console.error('Erro da API:', error.response.data);
+      console.error('Status:', error.response.status);
+      
       if (error.response.status === 401) {
         errorMessage = 'Erro de autenticação com DeepSeek';
         errorDetails = 'Verifique a chave da API';
@@ -844,20 +866,17 @@ export default async function handler(req, res) {
       code: error.code || error.response?.status
     });
   } finally {
-    // Limpar intervalo e finalizar conexão
     clearInterval(heartbeatInterval);
+    clearTimeout(safetyTimeout);
     
-    // Enviar evento de fim
     sendEvent({ type: 'done' });
     
-    // Pequeno delay antes de fechar
     await new Promise(resolve => setTimeout(resolve, 100));
     
     res.end();
   }
 }
 
-// Configurar o runtime config
 export const config = {
   api: {
     bodyParser: {

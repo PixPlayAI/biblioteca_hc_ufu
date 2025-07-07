@@ -24,6 +24,8 @@ import {
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
 
+const [dots, setDots] = useState('');
+
 const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchStrings, setSearchStrings] = useState(null);
@@ -183,7 +185,9 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                   break;
 
                 case 'complete':
+                  console.log('Evento complete recebido:', data);
                   if (data.success && data.data) {
+                    console.log('Dados das strings:', data.data);
                     setSearchStrings(data.data);
                     setHasGenerated(true);
                     setStatusMessage('');
@@ -194,17 +198,15 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                     }
 
                     console.log('Geração concluída!', data);
+                  } else {
+                    console.error('Dados incompletos no evento complete:', data);
                   }
                   break;
 
                 case 'error':
+                  console.error('Evento de erro recebido:', data);
                   setError(data.error || 'Erro ao processar resposta');
                   setStatusMessage('');
-                  setIsConnected(false);
-                  console.error('Erro recebido:', data);
-                  break;
-
-                case 'done':
                   setIsConnected(false);
                   break;
               }
@@ -241,6 +243,20 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       }
     }
   };
+
+  // Adicione este useEffect para animar os pontos
+  useEffect(() => {
+    let interval;
+    if (isGenerating && !statusMessage) {
+      interval = setInterval(() => {
+        setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
+      }, 500);
+    } else {
+      setDots('');
+    }
+
+    return () => clearInterval(interval);
+  }, [isGenerating, statusMessage]);
 
   // Gera automaticamente quando recebe meshContent
   useEffect(() => {
@@ -283,6 +299,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
             isGenerating && 'animate-pulse'
           )}
         >
+          // Modifique a parte do "Preparando geração das strings..."
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
@@ -309,8 +326,8 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
-              Preparando geração das strings...
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              <span>Preparando geração das strings{dots}</span>
             </>
           )}
         </div>
