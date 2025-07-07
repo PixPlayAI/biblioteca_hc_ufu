@@ -3,44 +3,44 @@ import {
   SEARCH_STRING_PREAMBULO 
 } from '../../lib/prompts/searchStringPreambulo';
 import { 
-  SEARCH_STRING_BASES_PRIMEIRA_PARTE 
-} from '../../lib/prompts/searchStringBasesPrimeiraParte';
-import { 
-  SEARCH_STRING_BASES_SEGUNDA_PARTE 
-} from '../../lib/prompts/searchStringBasesSegundaParte';
-import { 
-  SEARCH_STRING_BASES_TERCEIRA_PARTE 
-} from '../../lib/prompts/searchStringBasesTerceiraParte';
-import { 
   SEARCH_STRING_POSAMBULO 
 } from '../../lib/prompts/searchStringPosambulo';
 
+// Importar prompts individuais de cada base
+import { SEARCH_STRING_PUBMED } from '../../lib/prompts/searchStringPubMed';
+import { SEARCH_STRING_SCIELO } from '../../lib/prompts/searchStringSciELO';
+import { SEARCH_STRING_EUROPE_PMC } from '../../lib/prompts/searchStringEuropePMC';
+import { SEARCH_STRING_CROSSREF } from '../../lib/prompts/searchStringCrossRef';
+import { SEARCH_STRING_DOAJ } from '../../lib/prompts/searchStringDOAJ';
+import { SEARCH_STRING_COCHRANE } from '../../lib/prompts/searchStringCochrane';
+import { SEARCH_STRING_LILACS } from '../../lib/prompts/searchStringLILACS';
+import { SEARCH_STRING_SCOPUS } from '../../lib/prompts/searchStringScopus';
+import { SEARCH_STRING_WEB_OF_SCIENCE } from '../../lib/prompts/searchStringWebOfScience';
+
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
-// Função para montar os prompts dinamicamente
-const montarPromptPrimeiraParte = () => {
-  return SEARCH_STRING_PREAMBULO + 
-         SEARCH_STRING_BASES_PRIMEIRA_PARTE + 
-         SEARCH_STRING_POSAMBULO;
+// Mapeamento de bases para prompts
+const DATABASE_PROMPTS = {
+  'pubmed': SEARCH_STRING_PUBMED,
+  'scielo': SEARCH_STRING_SCIELO,
+  'europe_pmc': SEARCH_STRING_EUROPE_PMC,
+  'crossref': SEARCH_STRING_CROSSREF,
+  'doaj': SEARCH_STRING_DOAJ,
+  'cochrane': SEARCH_STRING_COCHRANE,
+  'lilacs': SEARCH_STRING_LILACS,
+  'scopus': SEARCH_STRING_SCOPUS,
+  'web_of_science': SEARCH_STRING_WEB_OF_SCIENCE
 };
 
-const montarPromptSegundaParte = () => {
+// Função para montar o prompt para uma base específica
+const montarPromptBase = (database) => {
+  const promptBase = DATABASE_PROMPTS[database];
+  if (!promptBase) {
+    throw new Error(`Base de dados inválida: ${database}`);
+  }
+  
   return SEARCH_STRING_PREAMBULO + 
-         SEARCH_STRING_BASES_SEGUNDA_PARTE + 
-         SEARCH_STRING_POSAMBULO;
-};
-
-const montarPromptTerceiraParte = () => {
-  return SEARCH_STRING_PREAMBULO + 
-         SEARCH_STRING_BASES_TERCEIRA_PARTE + 
-         SEARCH_STRING_POSAMBULO;
-};
-
-const montarPromptCompleto = () => {
-  return SEARCH_STRING_PREAMBULO + 
-         SEARCH_STRING_BASES_PRIMEIRA_PARTE + 
-         SEARCH_STRING_BASES_SEGUNDA_PARTE + 
-         SEARCH_STRING_BASES_TERCEIRA_PARTE +
+         promptBase + 
          SEARCH_STRING_POSAMBULO;
 };
 
@@ -49,44 +49,37 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { meshContent, promptType = 'completo' } = req.body;
+  const { meshContent, database = 'pubmed' } = req.body;
 
   if (!meshContent) {
     return res.status(400).json({ error: 'MeSH content is required' });
   }
 
-  // Selecionar o prompt baseado no tipo solicitado
-  let promptSelecionado;
-  let expectedBases = [];
-  
-  switch (promptType) {
-    case 'primeiraParte':
-      promptSelecionado = montarPromptPrimeiraParte();
-      expectedBases = ['PubMed', 'SciELO'];
-      console.log('Processando primeira parte: PubMed, SciELO');
-      break;
-    case 'segundaParte':
-      promptSelecionado = montarPromptSegundaParte();
-      expectedBases = ['Europe_PMC', 'CrossRef', 'DOAJ', 'Cochrane_Library'];
-      console.log('Processando segunda parte: Europe PMC, CrossRef, DOAJ, Cochrane');
-      break;
-    case 'terceiraParte':
-      promptSelecionado = montarPromptTerceiraParte();
-      expectedBases = ['LILACS_BVS', 'Scopus', 'Web_of_Science'];
-      console.log('Processando terceira parte: LILACS, Scopus, Web of Science');
-      break;
-    case 'completo':
-    default:
-      promptSelecionado = montarPromptCompleto();
-      expectedBases = ['PubMed', 'SciELO', 'Europe_PMC', 'CrossRef', 'DOAJ', 'Cochrane_Library', 'LILACS_BVS', 'Scopus', 'Web_of_Science'];
-      console.log('Processando prompt completo: todas as 9 bases');
-      break;
+  // Validar a base de dados
+  const databaseLower = database.toLowerCase();
+  if (!DATABASE_PROMPTS[databaseLower]) {
+    return res.status(400).json({ error: 'Invalid database specified' });
   }
+
+  // Determinar o nome da base esperada no resultado
+  const expectedBase = databaseLower === 'pubmed' ? 'PubMed' :
+                      databaseLower === 'scielo' ? 'SciELO' :
+                      databaseLower === 'europe_pmc' ? 'Europe_PMC' :
+                      databaseLower === 'crossref' ? 'CrossRef' :
+                      databaseLower === 'doaj' ? 'DOAJ' :
+                      databaseLower === 'cochrane' ? 'Cochrane_Library' :
+                      databaseLower === 'lilacs' ? 'LILACS_BVS' :
+                      databaseLower === 'scopus' ? 'Scopus' :
+                      databaseLower === 'web_of_science' ? 'Web_of_Science' : '';
 
   try {
     const startTime = Date.now();
+    console.log(`Processando base: ${expectedBase}`);
     
-    // Fazer requisição SEM streaming para DeepSeek
+    // Montar o prompt específico para a base
+    const promptSelecionado = montarPromptBase(databaseLower);
+    
+    // Fazer requisição para DeepSeek
     const requestPayload = {
       model: 'deepseek-chat',
       messages: [
@@ -102,10 +95,10 @@ export default async function handler(req, res) {
       temperature: 0,
       max_tokens: 4000,
       response_format: { type: "json_object" },
-      stream: false // DESATIVAR STREAMING
+      stream: false
     };
 
-    console.log(`Enviando requisição para DeepSeek (${promptType})...`);
+    console.log(`Enviando requisição para DeepSeek (${expectedBase})...`);
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -145,15 +138,7 @@ export default async function handler(req, res) {
       throw new Error('Formato de resposta inválido');
     }
 
-    // Validar que recebemos as bases esperadas
-    const receivedBases = Object.keys(result.search_strings.specific);
-    const missingBases = expectedBases.filter(base => !receivedBases.includes(base));
-    
-    if (missingBases.length > 0) {
-      console.warn(`Bases esperadas mas não recebidas: ${missingBases.join(', ')}`);
-    }
-
-    // Filtrar apenas as bases esperadas para esta parte
+    // Filtrar apenas a base solicitada
     const filteredResult = {
       search_strings: {
         specific: {},
@@ -161,23 +146,22 @@ export default async function handler(req, res) {
       }
     };
 
-    expectedBases.forEach(base => {
-      if (result.search_strings.specific[base]) {
-        filteredResult.search_strings.specific[base] = result.search_strings.specific[base];
-      }
-      if (result.search_strings.broad[base]) {
-        filteredResult.search_strings.broad[base] = result.search_strings.broad[base];
-      }
-    });
+    // Adicionar apenas a string da base solicitada
+    if (result.search_strings.specific[expectedBase]) {
+      filteredResult.search_strings.specific[expectedBase] = result.search_strings.specific[expectedBase];
+    }
+    if (result.search_strings.broad[expectedBase]) {
+      filteredResult.search_strings.broad[expectedBase] = result.search_strings.broad[expectedBase];
+    }
 
-    console.log(`Retornando resultado para ${promptType}:`, Object.keys(filteredResult.search_strings.specific));
+    console.log(`Retornando resultado para ${expectedBase}`);
 
-    // Retornar resposta JSON normal
+    // Retornar resposta
     return res.status(200).json({
       success: true,
       data: filteredResult,
       processingTime: processingTime,
-      promptType: promptType
+      database: expectedBase
     });
 
   } catch (error) {
@@ -194,7 +178,7 @@ export default async function handler(req, res) {
       errorDetails = 'Tente novamente em alguns instantes';
     } else if (error.message.includes('timeout')) {
       errorMessage = 'Tempo limite excedido';
-      errorDetails = 'A operação demorou muito. Tente com menos bases por vez.';
+      errorDetails = 'A operação demorou muito. Tente novamente.';
     }
     
     return res.status(500).json({ 

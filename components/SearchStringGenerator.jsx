@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Search,
   Clock,
+  Plus,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
@@ -30,88 +31,85 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [statusMessage, setStatusMessage] = useState('');
   const [processingTime, setProcessingTime] = useState(null);
   const [dots, setDots] = useState('');
-  const [processingPart, setProcessingPart] = useState(null);
-  const [partTimes, setPartTimes] = useState({
-    first: null,
-    second: null,
-    third: null
-  });
+  const [generatedDatabases, setGeneratedDatabases] = useState(new Set());
+  const [currentDatabase, setCurrentDatabase] = useState(null);
+  const [showDatabaseButtons, setShowDatabaseButtons] = useState(false);
 
   // Configuração das bases de dados com URLs
   const databases = [
     {
       key: 'PubMed',
+      value: 'pubmed',
       name: 'PubMed',
       color: 'blue',
       baseUrl: 'https://pubmed.ncbi.nlm.nih.gov/?term=',
       needsAuth: false,
-      part: 'first',
     },
     {
       key: 'SciELO',
+      value: 'scielo',
       name: 'SciELO',
       color: 'amber',
       baseUrl: 'https://search.scielo.org/?q=',
       needsAuth: false,
-      part: 'first',
     },
     {
       key: 'Europe_PMC',
+      value: 'europe_pmc',
       name: 'Europe PMC',
       color: 'green',
       baseUrl: 'https://europepmc.org/search?query=',
       needsAuth: false,
-      part: 'second',
     },
     {
       key: 'CrossRef',
+      value: 'crossref',
       name: 'CrossRef',
       color: 'purple',
       baseUrl: 'https://search.crossref.org/?q=',
       needsAuth: false,
-      part: 'second',
     },
     {
       key: 'DOAJ',
+      value: 'doaj',
       name: 'DOAJ',
       color: 'orange',
       baseUrl: 'https://doaj.org/search/articles?q=',
       needsAuth: false,
-      part: 'second',
     },
     {
       key: 'Cochrane_Library',
+      value: 'cochrane',
       name: 'Cochrane Library',
       color: 'red',
       baseUrl: 'https://www.cochranelibrary.com/search?q=',
       needsAuth: false,
-      part: 'second',
     },
     {
       key: 'LILACS_BVS',
+      value: 'lilacs',
       name: 'LILACS (via BVS)',
       color: 'teal',
       baseUrl: 'https://pesquisa.bvsalud.org/portal/?q=',
       needsAuth: false,
-      part: 'third',
     },
     {
       key: 'Scopus',
+      value: 'scopus',
       name: 'Scopus',
       color: 'indigo',
       baseUrl: 'https://www.scopus.com/search/form.uri?display=basic#basic',
       needsAuth: true,
       authMessage: 'Requer login institucional',
-      part: 'third',
     },
     {
       key: 'Web_of_Science',
+      value: 'web_of_science',
       name: 'Web of Science',
       color: 'pink',
       baseUrl: 'https://www.webofscience.com/wos/woscc/basic-search',
       needsAuth: true,
       authMessage: 'Requer login institucional',
-      part: 'third',
     },
   ];
 
@@ -146,9 +144,11 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     return `${database.baseUrl}${encodeURIComponent(searchString)}`;
   };
 
-  // Função para processar uma parte específica
-  const processSearchPart = async (promptType, partName) => {
+  // Função para processar uma base específica
+  const processDatabase = async (database) => {
     const startTime = Date.now();
+    setCurrentDatabase(database.name);
+    setStatusMessage(`Gerando strings para ${database.name}...`);
 
     try {
       const response = await fetch('/api/generate-search-strings', {
@@ -156,7 +156,10 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ meshContent, promptType }),
+        body: JSON.stringify({ 
+          meshContent, 
+          database: database.value 
+        }),
       });
 
       const data = await response.json();
@@ -187,17 +190,13 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
           };
         });
 
+        // Adicionar à lista de bases geradas
+        setGeneratedDatabases(prev => new Set([...prev, database.key]));
+
         const partTime = Math.round((Date.now() - startTime) / 1000);
-        setPartTimes(prev => ({
-          ...prev,
-          [partName]: partTime
-        }));
+        setProcessingTime(prev => (prev || 0) + partTime);
 
-        if (partName === 'third') {
-          setHasGenerated(true);
-        }
-
-        console.log('Parte concluída!', promptType);
+        console.log(`Base ${database.name} concluída!`);
         return true; // Sucesso
       } else {
         throw new Error('Resposta inválida do servidor');
@@ -209,52 +208,56 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     }
   };
 
-  const generateSearchStrings = async () => {
+  // Função para gerar strings do PubMed automaticamente
+  const generatePubMedStrings = async () => {
     setIsGenerating(true);
     setError(null);
     setSearchStrings(null);
     setStatusMessage('Conectando ao servidor...');
     setProcessingTime(null);
-    setPartTimes({ first: null, second: null, third: null });
-    setProcessingPart('first');
+    setGeneratedDatabases(new Set());
+    setShowDatabaseButtons(false);
 
     try {
-      // Processar primeira parte
-      console.log('Processando primeira parte...');
-      setStatusMessage('Processando PubMed e SciELO...');
-      const firstSuccess = await processSearchPart('primeiraParte', 'first');
+      // Processar apenas PubMed
+      const pubmedDb = databases.find(db => db.value === 'pubmed');
+      const success = await processDatabase(pubmedDb);
       
-      if (firstSuccess) {
-        // Processar segunda parte
-        console.log('Processando segunda parte...');
-        setProcessingPart('second');
-        setStatusMessage('Processando Europe PMC, CrossRef, DOAJ e Cochrane...');
-        const secondSuccess = await processSearchPart('segundaParte', 'second');
-        
-        if (secondSuccess) {
-          // Processar terceira parte
-          console.log('Processando terceira parte...');
-          setProcessingPart('third');
-          setStatusMessage('Processando LILACS, Scopus e Web of Science...');
-          await processSearchPart('terceiraParte', 'third');
-        }
+      if (success) {
+        setHasGenerated(true);
+        setShowDatabaseButtons(true);
       }
-
-      // Calcular tempo total
-      const totalTime = Object.values(partTimes).reduce((sum, time) => sum + (time || 0), 0);
-      setProcessingTime(totalTime);
-
     } finally {
       setIsGenerating(false);
       setStatusMessage('');
-      setProcessingPart(null);
+      setCurrentDatabase(null);
     }
   };
 
-  // Gera automaticamente quando recebe meshContent
+  // Função para gerar strings de uma base específica
+  const generateDatabaseStrings = async (database) => {
+    if (generatedDatabases.has(database.key) || isGenerating) return;
+
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const success = await processDatabase(database);
+      
+      if (success) {
+        console.log(`Strings geradas para ${database.name}`);
+      }
+    } finally {
+      setIsGenerating(false);
+      setStatusMessage('');
+      setCurrentDatabase(null);
+    }
+  };
+
+  // Gera automaticamente PubMed quando recebe meshContent
   useEffect(() => {
     if (meshContent && !hasGenerated && !isGenerating) {
-      generateSearchStrings();
+      generatePubMedStrings();
     }
   }, [meshContent]);
 
@@ -273,75 +276,48 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
 
   // Função para verificar se deve mostrar a base
   const shouldShowDatabase = (db) => {
-    if (!searchStrings || !searchStrings.search_strings) return false;
-    
-    const broadString = searchStrings.search_strings?.broad?.[db.key];
-    const specificString = searchStrings.search_strings?.specific?.[db.key];
-    
-    return broadString || specificString;
-  };
-
-  // Função para verificar se deve mostrar indicador de carregamento
-  const shouldShowLoader = (part) => {
-    if (!processingPart || !searchStrings) return false;
-    
-    if (part === 'second' && processingPart === 'second') {
-      return databases.some(db => db.part === 'first' && shouldShowDatabase(db));
-    }
-    
-    if (part === 'third' && processingPart === 'third') {
-      return databases.some(db => (db.part === 'first' || db.part === 'second') && shouldShowDatabase(db));
-    }
-    
-    return false;
-  };
-
-  // Função para obter mensagem de progresso
-  const getProgressMessage = () => {
-    switch (processingPart) {
-      case 'first':
-        return 'Gerando Strings Personalizadas (Parte 1/3)...';
-      case 'second':
-        return 'Gerando Strings Personalizadas (Parte 2/3)...';
-      case 'third':
-        return 'Gerando Strings Personalizadas (Parte 3/3)...';
-      default:
-        return 'Gerando Strings Personalizadas...';
-    }
+    return generatedDatabases.has(db.key);
   };
 
   // Função para obter informação de tempo
   const getTimeInfo = () => {
-    const times = [];
-    if (partTimes.first) times.push(`${partTimes.first}s`);
-    if (partTimes.second) times.push(`${partTimes.second}s`);
-    if (partTimes.third) times.push(`${partTimes.third}s`);
-    
-    if (times.length === 0) return null;
-    if (times.length === 1) return times[0];
-    
-    const total = Object.values(partTimes).reduce((sum, time) => sum + (time || 0), 0);
-    return `${total}s total (${times.join(' + ')})`;
+    if (!processingTime) return null;
+    return `${processingTime}s`;
+  };
+
+  // Função para obter o estilo do botão
+  const getButtonStyle = (isGenerated, isProcessing) => {
+    if (isGenerated) {
+      return {
+        background: 'linear-gradient(to right, rgb(156, 163, 175), rgb(107, 114, 128))',
+        cursor: 'not-allowed',
+        opacity: '0.6'
+      };
+    }
+    if (isGenerating) {
+      return {
+        background: 'linear-gradient(to right, rgb(209, 213, 219), rgb(156, 163, 175))',
+        cursor: 'not-allowed',
+        opacity: '0.7'
+      };
+    }
+    return {
+      background: 'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153))',
+      cursor: 'pointer'
+    };
   };
 
   return (
     <div className="space-y-4 mt-6">
       {/* Indicador de status */}
       <div className="flex justify-center">
-        <div
-          className={cn(
-            'flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all',
-            'bg-gradient-to-r from-purple-500 to-pink-500',
-            'text-white shadow-lg',
-            isGenerating && 'animate-pulse'
-          )}
-        >
+        <div className={`flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg ${isGenerating ? 'animate-pulse' : ''}`}>
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
               <div className="flex flex-col items-start">
                 <span className="flex items-center gap-2">
-                  {getProgressMessage()}
+                  Gerando Strings Personalizadas...
                 </span>
                 {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
               </div>
@@ -354,7 +330,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                 {getTimeInfo() && (
                   <span className="text-xs opacity-80 mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Processado em {getTimeInfo()}
+                    Tempo total: {getTimeInfo()}
                   </span>
                 )}
               </div>
@@ -380,9 +356,47 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
           <div>
             <p className="text-sm font-medium">{error}</p>
             <p className="text-xs mt-1 opacity-80">
-              O processamento está dividido em três partes. Por favor, tente novamente.
+              Por favor, tente novamente.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Botões para gerar strings de outras bases */}
+      {showDatabaseButtons && (
+        <div className={`p-5 rounded-lg border ${isDark ? 'bg-gray-900/50 border-purple-800/50' : 'bg-purple-50 border-purple-200'}`}>
+          <h4 className={`font-semibold text-base mb-4 ${isDark ? 'text-purple-200' : 'text-purple-800'}`}>
+            Gerar Strings para Outras Bases de Dados
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {databases.filter(db => db.value !== 'pubmed').map((db) => {
+              const isGenerated = generatedDatabases.has(db.key);
+              const isProcessing = isGenerating && currentDatabase === db.name;
+              const buttonStyle = getButtonStyle(isGenerated, isProcessing);
+              
+              return (
+                <button
+                  key={db.key}
+                  onClick={() => generateDatabaseStrings(db)}
+                  disabled={isGenerated || isGenerating}
+                  className="relative flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shadow-md transform text-white overflow-hidden hover:shadow-xl hover:scale-105"
+                  style={buttonStyle}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                  ) : isGenerated ? (
+                    <CheckCheck className="w-4 h-4 relative z-10" />
+                  ) : (
+                    <Plus className="w-4 h-4 relative z-10" />
+                  )}
+                  <span className="relative z-10">{db.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className={`text-xs mt-4 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Clique em cada base para gerar suas strings de busca personalizadas
+          </p>
         </div>
       )}
 
@@ -682,38 +696,6 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                 </div>
               );
             })}
-
-            {/* Indicador de carregamento da segunda parte */}
-            {shouldShowLoader('second') && (
-              <div className={cn(
-                'p-6 rounded-lg border transition-all',
-                isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
-                'animate-pulse'
-              )}>
-                <div className="flex items-center justify-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-                  <span className="font-medium">
-                    Processando bases intermediárias (Europe PMC, CrossRef, DOAJ, Cochrane)...
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Indicador de carregamento da terceira parte */}
-            {shouldShowLoader('third') && (
-              <div className={cn(
-                'p-6 rounded-lg border transition-all',
-                isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
-                'animate-pulse'
-              )}>
-                <div className="flex items-center justify-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-                  <span className="font-medium">
-                    Processando bases finais (LILACS, Scopus, Web of Science)...
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
