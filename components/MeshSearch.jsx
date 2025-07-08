@@ -42,8 +42,9 @@ import { cn } from '../lib/utils';
 import axios from 'axios';
 import SearchStringGenerator from './SearchStringGenerator';
 import { getElementLabel, getElementColor, getElementSigla } from '../lib/frameworkMappings';
+import FloatingActionButtons from './FloatingActionButtons';
 
-const MeshSearch = ({ researchData, isDark }) => {
+const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
   const [meshResults, setMeshResults] = useState(null);
   const [allMeshTerms, setAllMeshTerms] = useState(null);
   const [meshLoading, setMeshLoading] = useState(false);
@@ -51,7 +52,7 @@ const MeshSearch = ({ researchData, isDark }) => {
   const [copiedString, setCopiedString] = useState(null);
   const [collapsedElements, setCollapsedElements] = useState({});
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-  const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(true);
+  const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(false); // ALTERADO PARA false (expandido por padrão)
 
   const searchMeSH = async () => {
     setMeshLoading(true);
@@ -689,28 +690,6 @@ const MeshSearch = ({ researchData, isDark }) => {
                 </div>
               )}
             </div>
- {/*
-          
-            <div className="space-y-4">
-              <h4 className="font-semibold text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
-                Strings de Busca Personalizadas
-              </h4>
-            
-              Integração do componente SearchStringGenerator 
-              {meshContent && (
-                <SearchStringGenerator
-                  meshContent={meshContent}
-                  researchData={researchData}
-                  isDark={isDark}
-                  meshResults={meshResults} // Adicione esta linha
-                />
-              )}
-              
-
-              
-            </div>
-            */}
           </div>
         )}
       </div>
@@ -803,8 +782,28 @@ const MeshSearch = ({ researchData, isDark }) => {
             <CardContent className="p-6">{renderResults(meshResults)}</CardContent>
           </Card>
 
+          {/* PRIMEIRO FloatingActionButtons - Entre os resultados MeSH e o resumo final */}
+          <div className="flex justify-center my-8">
+            <FloatingActionButtons
+              variant="final"
+              isDark={isDark}
+              conversations={conversations}
+              finalResult={finalResult}
+            />
+          </div>
+
           {/* Resumo Final */}
           {renderFinalSummary()}
+
+          {/* SEGUNDO FloatingActionButtons - Depois do resumo final */}
+          <div className="flex justify-center mt-8">
+            <FloatingActionButtons
+              variant="final"
+              isDark={isDark}
+              conversations={conversations}
+              finalResult={finalResult}
+            />
+          </div>
         </div>
       )}
 
@@ -926,6 +925,8 @@ MeshSearch.propTypes = {
     }).isRequired,
   }).isRequired,
   isDark: PropTypes.bool.isRequired,
+  conversations: PropTypes.array,
+  finalResult: PropTypes.object,
 };
 
 export default MeshSearch;

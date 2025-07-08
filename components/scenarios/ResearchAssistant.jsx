@@ -1,3 +1,4 @@
+//components/scenarios/ResearchAssistant.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardHeader, CardContent } from '../ui/card';
@@ -780,7 +781,12 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
       {/* Componente MeshSearch integrado */}
       {showMeshSearch && (
         <div className="mt-8 animate-fadeIn">
-          <MeshSearch researchData={meshData} isDark={isDark} />
+          <MeshSearch 
+            researchData={meshData} 
+            isDark={isDark} 
+            conversations={conversations}
+            finalResult={result}
+          />
         </div>
       )}
 
@@ -1171,4 +1177,4 @@ ResearchAssistant.propTypes = {
 };
 
 // Exportando o componente principal
-export default ResearchAssistant;
+export default ResearchAssistant; 
