@@ -65,7 +65,7 @@ const MeshSearch = ({ researchData, isDark }) => {
     console.log('❓ Pergunta:', researchData.question);
     console.log('📋 Elementos explícitos completos:', researchData.elements?.explicit);
     console.log('📝 Descrições dos elementos:', researchData.elementDescriptions?.explicit);
-    
+
     // Log cada elemento individualmente
     if (researchData.elements?.explicit) {
       console.log('🔍 Detalhamento dos elementos:');
@@ -73,16 +73,16 @@ const MeshSearch = ({ researchData, isDark }) => {
         console.log(`   ${key}: "${value}"`);
       });
     }
-    
+
     console.log('📦 ResearchData completo:', JSON.stringify(researchData, null, 2));
 
     try {
       const payload = {
         frameworkElements: researchData.elements.explicit,
         fullQuestion: researchData.question,
-        frameworkType: researchData.format
+        frameworkType: researchData.format,
       };
-      
+
       console.log('📤 Enviando payload para API:', JSON.stringify(payload, null, 2));
 
       const response = await axios.post('/api/search-mesh', payload);
@@ -91,19 +91,21 @@ const MeshSearch = ({ researchData, isDark }) => {
       console.log('📥 Resposta recebida da API:', response.data);
       console.log('✅ Número de resultados:', response.data.results?.length);
       console.log('🎯 Número de termos únicos:', response.data.allMeshTerms?.length);
-      
+
       // Log dos resultados por elemento
       if (response.data.results) {
         console.log('📊 Resultados por elemento:');
-        response.data.results.forEach(result => {
-          console.log(`   ${result.element}: "${result.originalText}" (${result.terms.length} termos)`);
+        response.data.results.forEach((result) => {
+          console.log(
+            `   ${result.element}: "${result.originalText}" (${result.terms.length} termos)`
+          );
         });
       }
 
       setMeshResults(response.data.results);
       setAllMeshTerms(response.data.allMeshTerms);
       setMeshDebug(response.data.debug);
-      
+
       console.log('✅ MeshSearch - BUSCA CONCLUÍDA COM SUCESSO');
     } catch (error) {
       console.error('❌ Erro na busca MeSH:', error);
@@ -124,7 +126,7 @@ const MeshSearch = ({ researchData, isDark }) => {
         meshResults,
         researchData,
         elementosExplicit: researchData.elements.explicit,
-        primeiroResultado: meshResults[0]
+        primeiroResultado: meshResults[0],
       });
     }
   }, [meshResults, researchData]);
@@ -194,7 +196,7 @@ const MeshSearch = ({ researchData, isDark }) => {
     console.log('Dados disponíveis:', {
       results,
       researchData,
-      elementosExplicitos: researchData.elements.explicit
+      elementosExplicitos: researchData.elements.explicit,
     });
 
     return (
@@ -215,7 +217,9 @@ const MeshSearch = ({ researchData, isDark }) => {
             className={cn('p-4 rounded-lg text-center', isDark ? 'bg-gray-800' : 'bg-purple-50')}
           >
             <div className="text-2xl font-bold text-purple-600">
-              {Math.max(...results.flatMap((r) => r.terms.map((t) => t.relevanceScore || 0)), 0) || 0}%
+              {Math.max(...results.flatMap((r) => r.terms.map((t) => t.relevanceScore || 0)), 0) ||
+                0}
+              %
             </div>
             <div className="text-sm opacity-70">Maior Relevância</div>
           </div>
@@ -233,19 +237,21 @@ const MeshSearch = ({ researchData, isDark }) => {
         {results.map((elementResult, idx) => {
           // CORREÇÃO: Verificar se há termos antes de processar
           const hasTerms = elementResult.terms && elementResult.terms.length > 0;
-          
+
           let highRelevanceTerms = [];
           let lowRelevanceTerms = [];
           let visibleTerms = [];
           let collapsedTerms = [];
-          
+
           if (hasTerms) {
             highRelevanceTerms = elementResult.terms.filter((t) => t.relevanceScore >= 95);
             lowRelevanceTerms = elementResult.terms.filter((t) => t.relevanceScore < 95);
-            
+
             // Se todos os termos são < 95%, mostrar o primeiro e colapsar o resto
-            visibleTerms = highRelevanceTerms.length > 0 ? highRelevanceTerms : [elementResult.terms[0]];
-            collapsedTerms = highRelevanceTerms.length > 0 ? lowRelevanceTerms : elementResult.terms.slice(1);
+            visibleTerms =
+              highRelevanceTerms.length > 0 ? highRelevanceTerms : [elementResult.terms[0]];
+            collapsedTerms =
+              highRelevanceTerms.length > 0 ? lowRelevanceTerms : elementResult.terms.slice(1);
           }
 
           const elementKey = `element-${idx}`;
@@ -255,8 +261,9 @@ const MeshSearch = ({ researchData, isDark }) => {
           const elementLabel = getElementLabel(elementResult.element, researchData.format);
 
           // Obter a sigla correta baseada no framework
-          const elementSigla = getElementSigla(elementResult.element, researchData.format) || elementResult.element;
-        
+          const elementSigla =
+            getElementSigla(elementResult.element, researchData.format) || elementResult.element;
+
           return (
             <div key={idx} className="mesh-result-card">
               <div
@@ -275,25 +282,23 @@ const MeshSearch = ({ researchData, isDark }) => {
                 >
                   <div className="flex items-center justify-between">
                     <div className="element-display-item flex-1">
-                      <span className="acronym-letter">
-                        {elementSigla}
-                      </span>
+                      <span className="acronym-letter">{elementSigla}</span>
                       <div className="flex-1 text-left">
-                        <div className="font-medium">
-                          {elementLabel}
-                        </div>
+                        <div className="font-medium">{elementLabel}</div>
                         <p className="acronym-description mt-1">
-                          {elementResult.originalText || 
-                           researchData.elements.explicit[elementResult.element] || 
-                           researchData.elements.explicit[elementSigla] || 
-                           "Descrição não disponível"}
+                          {elementResult.originalText ||
+                            researchData.elements.explicit[elementResult.element] ||
+                            researchData.elements.explicit[elementSigla] ||
+                            'Descrição não disponível'}
                         </p>
                       </div>
                     </div>
-                    <span className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium',
-                      isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-                    )}>
+                    <span
+                      className={cn(
+                        'px-3 py-1 rounded-full text-xs font-medium',
+                        isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                      )}
+                    >
                       {elementResult.terms.length} termos
                     </span>
                   </div>
@@ -319,11 +324,15 @@ const MeshSearch = ({ researchData, isDark }) => {
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-yellow-500" />
-                                <h5 className="font-semibold text-lg term-highlight">{term.term}</h5>
+                                <h5 className="font-semibold text-lg term-highlight">
+                                  {term.term}
+                                </h5>
                               </div>
 
                               {term.definition && (
-                                <p className="text-sm opacity-80 leading-relaxed">{term.definition}</p>
+                                <p className="text-sm opacity-80 leading-relaxed">
+                                  {term.definition}
+                                </p>
                               )}
 
                               {term.synonyms && term.synonyms.length > 0 && (
@@ -523,7 +532,8 @@ const MeshSearch = ({ researchData, isDark }) => {
                                       )}
                                       title="Copiar termo"
                                     >
-                                      {copiedString === `element-${idx}-collapsed-term-${termIdx}` ? (
+                                      {copiedString ===
+                                      `element-${idx}-collapsed-term-${termIdx}` ? (
                                         <CheckCheck className="w-4 h-4 text-green-500" />
                                       ) : (
                                         <Copy className="w-4 h-4 opacity-50" />
@@ -538,10 +548,12 @@ const MeshSearch = ({ researchData, isDark }) => {
                     </>
                   ) : (
                     // Mensagem quando não há termos MeSH
-                    <div className={cn(
-                      'p-6 text-center rounded-lg',
-                      isDark ? 'bg-gray-900' : 'bg-gray-50'
-                    )}>
+                    <div
+                      className={cn(
+                        'p-6 text-center rounded-lg',
+                        isDark ? 'bg-gray-900' : 'bg-gray-50'
+                      )}
+                    >
                       <Info className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p className="text-sm opacity-70">
                         Nenhum termo MeSH encontrado para este elemento
@@ -691,6 +703,7 @@ const MeshSearch = ({ researchData, isDark }) => {
                   meshContent={meshContent}
                   researchData={researchData}
                   isDark={isDark}
+                  meshResults={meshResults} // Adicione esta linha
                 />
               )}
             </div>
@@ -883,14 +896,14 @@ const MeshSearch = ({ researchData, isDark }) => {
           z-index: 1;
           background: inherit;
         }
-        
+
         /* Ajuste para element-display-item dentro do MeshSearch */
         .mesh-result-card .element-display-item {
           background-color: transparent;
           padding: 0;
           width: 100%;
         }
-        
+
         .mesh-result-card .element-display-item:hover {
           transform: none;
           box-shadow: none;

@@ -44,15 +44,143 @@ const montarPromptBase = (database) => {
          SEARCH_STRING_POSAMBULO;
 };
 
+// Função para converter dados estruturados em formato de texto esperado pelo prompt
+const createFormattedContent = (structuredData) => {
+  let content = `Na pesquisa essa foi a pergunta de pesquisa estruturada:\n`;
+  content += `${structuredData.question}\n\n`;
+  content += `Essa pergunta foi classificada no acrônimo: ${structuredData.frameworkType}\n\n`;
+
+  // Adicionar elementos e termos MeSH
+  Object.entries(structuredData.elements).forEach(([key, description]) => {
+    const label = getFrameworkElementLabel(key, structuredData.frameworkType);
+    
+    content += `A ${label} foi: ${description}\n`;
+    
+    // Adicionar termos MeSH se existirem
+    const meshTerms = structuredData.meshTerms[key];
+    if (meshTerms && meshTerms.length > 0) {
+      content += `E os principais termos MeSH e descrição dos termos relacionados a ${label.toLowerCase()}, foram:\n`;
+      
+      meshTerms.forEach(term => {
+        content += `${term.term}: ${term.definition || 'Sem descrição disponível no momento.'}\n`;
+      });
+    } else {
+      content += `Para a ${label.toLowerCase()}, não foram encontrados termos MeSH com alta relevância nesta busca.\n`;
+    }
+    
+    content += '\n';
+  });
+
+  return content.trim();
+};
+
+// Função auxiliar para obter label do elemento do framework
+const getFrameworkElementLabel = (key, frameworkType) => {
+  // Mapeamento simplificado - adapte conforme necessário
+  const mappings = {
+    PICO: {
+      P: 'População',
+      I: 'Intervenção',
+      C: 'Comparação',
+      O: 'Desfecho'
+    },
+    PICOT: {
+      P: 'População',
+      I: 'Intervenção',
+      C: 'Comparação',
+      O: 'Desfecho',
+      T: 'Tempo'
+    },
+    PICOS: {
+      P: 'População',
+      I: 'Intervenção',
+      C: 'Comparação',
+      O: 'Desfecho',
+      S: 'Tipo de Estudo'
+    },
+    PEO: {
+      P: 'População',
+      E: 'Exposição',
+      O: 'Desfecho'
+    },
+    PECO: {
+      P: 'População',
+      E: 'Exposição',
+      C: 'Comparação',
+      O: 'Desfecho'
+    },
+    PCC: {
+      P: 'População',
+      C: 'Conceito',
+      C2: 'Contexto'
+    },
+    SPIDER: {
+      S: 'Amostra',
+      PI: 'Fenômeno de Interesse',
+      D: 'Desenho',
+      E: 'Avaliação',
+      R: 'Tipo de Pesquisa'
+    },
+    PIRD: {
+      P: 'População',
+      I: 'Teste Índice',
+      R: 'Teste de Referência',
+      D: 'Diagnóstico'
+    },
+    CoCoPop: {
+      Co: 'Condição',
+      Co2: 'Contexto',
+      Pop: 'População'
+    },
+    SPICE: {
+      S: 'Contexto',
+      P: 'Perspectiva',
+      I: 'Intervenção',
+      C: 'Comparação',
+      E: 'Avaliação'
+    },
+    ECLIPSE: {
+      E: 'Expectativa',
+      C: 'Grupo de Clientes',
+      L: 'Local',
+      I: 'Impacto',
+      P: 'Profissionais',
+      SE: 'Serviço'
+    },
+    BeHEMoTh: {
+      Be: 'Comportamento',
+      HE: 'Contexto de Saúde',
+      Mo: 'Exclusões',
+      Th: 'Modelos/Teorias'
+    }
+  };
+
+  return mappings[frameworkType]?.[key] || key;
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { meshContent, database = 'pubmed' } = req.body;
+  const { meshContent, structuredData, database = 'pubmed' } = req.body;
 
-  if (!meshContent) {
-    return res.status(400).json({ error: 'MeSH content is required' });
+  // Usar dados estruturados se disponíveis, senão usar meshContent
+  let contentToProcess = meshContent;
+  
+  if (structuredData) {
+    try {
+      contentToProcess = createFormattedContent(structuredData);
+      console.log('Usando dados estruturados formatados');
+    } catch (error) {
+      console.error('Erro ao formatar dados estruturados:', error);
+      // Fallback para meshContent original
+      contentToProcess = meshContent;
+    }
+  }
+
+  if (!contentToProcess) {
+    return res.status(400).json({ error: 'Content is required' });
   }
 
   // Validar a base de dados
@@ -75,6 +203,7 @@ export default async function handler(req, res) {
   try {
     const startTime = Date.now();
     console.log(`Processando base: ${expectedBase}`);
+    console.log(`Tipo de framework: ${structuredData?.frameworkType || 'não especificado'}`);
     
     // Montar o prompt específico para a base
     const promptSelecionado = montarPromptBase(databaseLower);
@@ -89,7 +218,7 @@ export default async function handler(req, res) {
         },
         { 
           role: 'user', 
-          content: meshContent
+          content: contentToProcess
         }
       ],
       temperature: 0,

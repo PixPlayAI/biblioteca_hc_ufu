@@ -24,7 +24,7 @@ import {
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
 
-const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
+const SearchStringGenerator = ({ meshContent, researchData, isDark, meshResults }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchStrings, setSearchStrings] = useState(null);
   const [error, setError] = useState(null);
@@ -149,6 +149,48 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     return `${database.baseUrl}${encodeURIComponent(searchString)}`;
   };
 
+  // Função para criar o payload estruturado para a API
+  const createStructuredPayload = () => {
+    // Criar um objeto estruturado com os dados necessários
+    const structuredData = {
+      question: researchData.question,
+      frameworkType: researchData.format,
+      elements: {},
+      meshTerms: {}
+    };
+
+    // Processar cada elemento e seus termos MeSH
+    if (meshResults && meshResults.length > 0) {
+      meshResults.forEach((result) => {
+        const elementKey = result.element;
+        
+        // Adicionar descrição do elemento
+        structuredData.elements[elementKey] = result.originalText || 
+          researchData.elements.explicit[elementKey] || 
+          "Descrição não disponível";
+        
+        // Adicionar termos MeSH do elemento
+        structuredData.meshTerms[elementKey] = result.terms
+          .filter(term => term.relevanceScore >= 50) // Filtrar apenas termos relevantes
+          .map(term => ({
+            term: term.term,
+            definition: term.definition || '',
+            relevanceScore: term.relevanceScore,
+            meshId: term.meshId,
+            treeNumbers: term.treeNumbers || []
+          }));
+      });
+    } else {
+      // Se não houver meshResults, usar dados básicos
+      Object.entries(researchData.elements.explicit).forEach(([key, value]) => {
+        structuredData.elements[key] = value;
+        structuredData.meshTerms[key] = [];
+      });
+    }
+
+    return structuredData;
+  };
+
   // Função para processar uma base específica
   const processDatabase = async (database) => {
     const startTime = Date.now();
@@ -164,13 +206,17 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     });
 
     try {
+      // Criar payload estruturado
+      const structuredPayload = createStructuredPayload();
+      
       const response = await fetch('/api/generate-search-strings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          meshContent, 
+          meshContent, // Manter para compatibilidade
+          structuredData: structuredPayload, // Novo campo estruturado
           database: database.value 
         }),
       });
@@ -870,6 +916,7 @@ SearchStringGenerator.propTypes = {
     }).isRequired,
   }).isRequired,
   isDark: PropTypes.bool.isRequired,
+  meshResults: PropTypes.array, // Novo prop para receber os resultados MeSH
 };
 
 export default SearchStringGenerator;
