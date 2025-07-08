@@ -730,7 +730,7 @@ const MeshSearch = ({ researchData, isDark }) => {
             Buscar Descritores MeSH
           </h3>
           <p className="text-sm opacity-70 mt-1">
-            Encontre os melhores termos MeSH para sua estratégia de busca
+            Encontre sugestões termos MeSH para sua estratégia de busca
           </p>
         </div>
 
