@@ -17,6 +17,9 @@ import {
   Search,
   Clock,
   Plus,
+  RefreshCw,
+  CloudOff,
+  Zap,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getElementLabel } from '../lib/frameworkMappings';
@@ -34,6 +37,8 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   const [generatedDatabases, setGeneratedDatabases] = useState(new Set());
   const [currentDatabase, setCurrentDatabase] = useState(null);
   const [showDatabaseButtons, setShowDatabaseButtons] = useState(false);
+  const [databaseErrors, setDatabaseErrors] = useState({});
+  const [retryingDatabase, setRetryingDatabase] = useState(null);
 
   // Configuração das bases de dados com URLs
   const databases = [
@@ -116,7 +121,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   // UseEffect para animar os pontos
   useEffect(() => {
     let interval;
-    if (!isGenerating && !hasGenerated && meshContent) {
+    if (!isGenerating && !hasGenerated && meshContent && !error) {
       interval = setInterval(() => {
         setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
       }, 500);
@@ -127,7 +132,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isGenerating, hasGenerated, meshContent]);
+  }, [isGenerating, hasGenerated, meshContent, error]);
 
   // Função para gerar URL de busca
   const generateSearchUrl = (database, searchString) => {
@@ -149,6 +154,14 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     const startTime = Date.now();
     setCurrentDatabase(database.name);
     setStatusMessage(`Gerando strings para ${database.name}...`);
+    setRetryingDatabase(null);
+
+    // Limpar erro anterior desta base
+    setDatabaseErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[database.key];
+      return newErrors;
+    });
 
     try {
       const response = await fetch('/api/generate-search-strings', {
@@ -203,7 +216,18 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
       }
     } catch (err) {
       console.error('Erro ao gerar strings:', err);
-      setError(err.message || 'Erro ao gerar strings de busca');
+      
+      // Armazenar erro específico da base
+      setDatabaseErrors(prev => ({
+        ...prev,
+        [database.key]: err.message || 'Erro ao gerar strings de busca'
+      }));
+
+      // Se for PubMed, definir erro global também
+      if (database.value === 'pubmed') {
+        setError(err.message || 'Erro ao gerar strings de busca');
+      }
+
       return false; // Erro
     }
   };
@@ -217,6 +241,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     setProcessingTime(null);
     setGeneratedDatabases(new Set());
     setShowDatabaseButtons(false);
+    setDatabaseErrors({});
 
     try {
       // Processar apenas PubMed
@@ -254,6 +279,12 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     }
   };
 
+  // Função para tentar novamente
+  const retryDatabase = async (database) => {
+    setRetryingDatabase(database.key);
+    await generateDatabaseStrings(database);
+  };
+
   // Gera automaticamente PubMed quando recebe meshContent
   useEffect(() => {
     if (meshContent && !hasGenerated && !isGenerating) {
@@ -286,7 +317,17 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
   };
 
   // Função para obter o estilo do botão
-  const getButtonStyle = (isGenerated, isProcessing) => {
+  const getButtonStyle = (database) => {
+    const isGenerated = generatedDatabases.has(database.key);
+    const hasError = databaseErrors[database.key];
+    const isProcessing = isGenerating && currentDatabase === database.name;
+    
+    if (hasError) {
+      return {
+        background: 'linear-gradient(to right, rgb(239, 68, 68), rgb(220, 38, 38))',
+        cursor: 'pointer'
+      };
+    }
     if (isGenerated) {
       return {
         background: 'linear-gradient(to right, rgb(156, 163, 175), rgb(107, 114, 128))',
@@ -307,60 +348,125 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
     };
   };
 
+  // Componente de erro amigável
+  const ErrorDisplay = ({ database, errorMessage }) => (
+    <div className={cn(
+      'p-6 rounded-lg text-center space-y-4',
+      isDark ? 'bg-gray-800' : 'bg-orange-50'
+    )}>
+      <div className="flex justify-center">
+        <div className={cn(
+          'w-20 h-20 rounded-full flex items-center justify-center',
+          isDark ? 'bg-orange-900/20' : 'bg-orange-100'
+        )}>
+          <CloudOff className={cn(
+            'w-10 h-10',
+            isDark ? 'text-orange-400' : 'text-orange-600'
+          )} />
+        </div>
+      </div>
+      
+      <div>
+        <h3 className={cn(
+          'text-lg font-semibold mb-2',
+          isDark ? 'text-orange-300' : 'text-orange-800'
+        )}>
+          Ops! Algo não saiu como esperado
+        </h3>
+        <p className={cn(
+          'text-sm mb-1',
+          isDark ? 'text-gray-300' : 'text-gray-700'
+        )}>
+          Não conseguimos gerar as strings para {database.name} desta vez.
+        </p>
+        <p className={cn(
+          'text-xs opacity-70',
+          isDark ? 'text-gray-400' : 'text-gray-600'
+        )}>
+          Mas não se preocupe, isso acontece às vezes!
+        </p>
+      </div>
+
+      <button
+        onClick={() => retryDatabase(database)}
+        disabled={retryingDatabase === database.key}
+        className={cn(
+          'inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all',
+          'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
+          'text-white shadow-lg hover:shadow-xl transform hover:scale-105',
+          retryingDatabase === database.key && 'opacity-70 cursor-not-allowed'
+        )}
+      >
+        {retryingDatabase === database.key ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <RefreshCw className="w-5 h-5" />
+        )}
+        <span>
+          {retryingDatabase === database.key 
+            ? 'Tentando novamente...' 
+            : 'Vamos tentar de novo! Vai dar certo!'
+          }
+        </span>
+        <Zap className="w-4 h-4" />
+      </button>
+
+      <p className={cn(
+        'text-xs',
+        isDark ? 'text-gray-500' : 'text-gray-500'
+      )}>
+        Detalhes técnicos: {errorMessage}
+      </p>
+    </div>
+  );
+
   return (
     <div className="space-y-4 mt-6">
       {/* Indicador de status */}
       <div className="flex justify-center">
-        <div className={`flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg ${isGenerating ? 'animate-pulse' : ''}`}>
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
-              <div className="flex flex-col items-start">
-                <span className="flex items-center gap-2">
-                  Gerando Strings Personalizadas...
-                </span>
-                {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
-              </div>
-            </>
-          ) : hasGenerated ? (
-            <>
-              <CheckCircle2 className="w-5 h-5" />
-              <div className="flex flex-col items-start">
-                <span>Suas strings de pesquisa foram geradas abaixo</span>
-                {getTimeInfo() && (
-                  <span className="text-xs opacity-80 mt-1 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Tempo total: {getTimeInfo()}
-                  </span>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5 animate-pulse" />
-              <span>Preparando geração das strings{dots}</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Erro */}
-      {error && (
-        <div
-          className={cn(
-            'p-4 rounded-lg flex items-center gap-3',
-            isDark ? 'bg-red-900/20 text-red-400' : 'bg-red-50 text-red-600'
-          )}
-        >
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium">{error}</p>
-            <p className="text-xs mt-1 opacity-80">
-              Por favor, tente novamente.
-            </p>
+        {error && !showDatabaseButtons ? (
+          // Erro no PubMed - mostrar botão de retry
+          <div className="space-y-4">
+            <ErrorDisplay 
+              database={databases.find(db => db.value === 'pubmed')} 
+              errorMessage={error}
+            />
           </div>
-        </div>
-      )}
+        ) : (
+          // Status normal
+          <div className={`flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg ${isGenerating ? 'animate-pulse' : ''}`}>
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                <div className="flex flex-col items-start">
+                  <span className="flex items-center gap-2">
+                    Gerando Strings Personalizadas...
+                  </span>
+                  {statusMessage && <span className="text-xs opacity-80 mt-1">{statusMessage}</span>}
+                </div>
+              </>
+            ) : hasGenerated ? (
+              <>
+                <CheckCircle2 className="w-5 h-5" />
+                <div className="flex flex-col items-start">
+                  <span>Suas strings de pesquisa foram geradas abaixo</span>
+                  {getTimeInfo() && (
+                    <span className="text-xs opacity-80 mt-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Tempo total: {getTimeInfo()}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 animate-pulse" />
+                <span>Preparando geração das strings{dots}</span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Botões para gerar strings de outras bases */}
       {showDatabaseButtons && (
@@ -371,25 +477,31 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {databases.filter(db => db.value !== 'pubmed').map((db) => {
               const isGenerated = generatedDatabases.has(db.key);
+              const hasError = databaseErrors[db.key];
               const isProcessing = isGenerating && currentDatabase === db.name;
-              const buttonStyle = getButtonStyle(isGenerated, isProcessing);
+              const isRetrying = retryingDatabase === db.key;
+              const buttonStyle = getButtonStyle(db);
               
               return (
                 <button
                   key={db.key}
-                  onClick={() => generateDatabaseStrings(db)}
-                  disabled={isGenerated || isGenerating}
+                  onClick={() => hasError ? retryDatabase(db) : generateDatabaseStrings(db)}
+                  disabled={(isGenerated && !hasError) || isGenerating}
                   className="relative flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shadow-md transform text-white overflow-hidden hover:shadow-xl hover:scale-105"
                   style={buttonStyle}
                 >
-                  {isProcessing ? (
+                  {isProcessing || isRetrying ? (
                     <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                  ) : hasError ? (
+                    <RefreshCw className="w-4 h-4 relative z-10" />
                   ) : isGenerated ? (
                     <CheckCheck className="w-4 h-4 relative z-10" />
                   ) : (
                     <Plus className="w-4 h-4 relative z-10" />
                   )}
-                  <span className="relative z-10">{db.name}</span>
+                  <span className="relative z-10">
+                    {hasError ? 'Tentar Novamente' : db.name}
+                  </span>
                 </button>
               );
             })}
@@ -492,8 +604,10 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
               const broadString = searchStrings.search_strings?.broad?.[db.key];
               const specificString = searchStrings.search_strings?.specific?.[db.key];
               const isCollapsed = collapsedDatabases[db.key] === true;
+              const hasError = databaseErrors[db.key];
 
-              if (!broadString && !specificString) return null;
+              // Mostrar se tem erro ou se tem strings geradas
+              if (!broadString && !specificString && !hasError) return null;
 
               return (
                 <div
@@ -529,6 +643,11 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                         )}
                       />
                       <h5 className="font-medium">{db.name}</h5>
+                      {hasError && (
+                        <span className="text-xs text-red-500 font-medium">
+                          (Erro - Clique para expandir)
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {isCollapsed ? (
@@ -539,157 +658,164 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark }) => {
                     </div>
                   </div>
 
-                  {/* Conteúdo das strings - Expandido por padrão */}
+                  {/* Conteúdo das strings ou erro - Expandido por padrão */}
                   {!isCollapsed && (
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {/* String Ampla */}
-                      {broadString && (
-                        
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                            <div className="flex items-center gap-2">
+                      {hasError ? (
+                        <div className="p-6">
+                          <ErrorDisplay 
+                            database={db} 
+                            errorMessage={hasError}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          {/* String Ampla */}
+                          {broadString && (
+                            <div className="p-4">
+                              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={cn(
+                                      'w-6 h-6 rounded flex items-center justify-center flex-shrink-0',
+                                      'bg-gradient-to-br from-blue-400 to-blue-600 text-white'
+                                    )}
+                                  >
+                                    <BookOpen className="w-3 h-3" />
+                                  </div>
+                                  <h6 className="font-medium text-sm">
+                                    Sugestão de String Ampla para Revisão de Literatura
+                                  </h6>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a href={generateSearchUrl(db, broadString)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={cn(
+                                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                                      'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                                      'text-white shadow-md hover:shadow-lg transform hover:scale-105'
+                                    )}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Search className="w-3 h-3" />
+                                    {db.needsAuth ? db.authMessage : 'Buscar'}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyToClipboard(broadString, `broad-${db.key}`);
+                                    }}
+                                    className={cn(
+                                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                                      isDark
+                                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
+                                    )}
+                                  >
+                                    {copiedString === `broad-${db.key}` ? (
+                                      <>
+                                        <CheckCheck className="w-4 h-4 text-green-500" />
+                                        Copiado!
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-4 h-4" />
+                                        Copiar
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
                               <div
                                 className={cn(
-                                  'w-6 h-6 rounded flex items-center justify-center flex-shrink-0',
-                                  'bg-gradient-to-br from-blue-400 to-blue-600 text-white'
+                                  'p-3 rounded font-mono text-sm overflow-x-auto',
+                                  isDark ? 'bg-gray-800' : 'bg-blue-50',
+                                  'border',
+                                  isDark ? 'border-gray-700' : 'border-blue-200'
                                 )}
                               >
-                                <BookOpen className="w-3 h-3" />
+                                <pre className="whitespace-pre-wrap break-words text-xs">
+                                  {broadString}
+                                </pre>
                               </div>
-                              <h6 className="font-medium text-sm">
-                                Sugestão de String Ampla para Revisão de Literatura
-                              </h6>
                             </div>
-                            <div className="flex items-center gap-2">
-                              
-                               <a href={generateSearchUrl(db, broadString)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={cn(
-                                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                                  'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-                                  'text-white shadow-md hover:shadow-lg transform hover:scale-105'
-                                )}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Search className="w-3 h-3" />
-                                {db.needsAuth ? db.authMessage : 'Buscar'}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyToClipboard(broadString, `broad-${db.key}`);
-                                }}
-                                className={cn(
-                                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                                  isDark
-                                    ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                                )}
-                              >
-                                {copiedString === `broad-${db.key}` ? (
-                                  <>
-                                    <CheckCheck className="w-4 h-4 text-green-500" />
-                                    Copiado!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4" />
-                                    Copiar
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <div
-                            className={cn(
-                              'p-3 rounded font-mono text-sm overflow-x-auto',
-                              isDark ? 'bg-gray-800' : 'bg-blue-50',
-                              'border',
-                              isDark ? 'border-gray-700' : 'border-blue-200'
-                            )}
-                          >
-                            <pre className="whitespace-pre-wrap break-words text-xs">
-                              {broadString}
-                            </pre>
-                          </div>
-                        </div>
-                        
-                      )}
+                          )}
 
-                      {/* String Específica */}
-                      {specificString && (
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                            <div className="flex items-center gap-2">
+                          {/* String Específica */}
+                          {specificString && (
+                            <div className="p-4">
+                              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={cn(
+                                      'w-6 h-6 rounded flex items-center justify-center flex-shrink-0',
+                                      'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
+                                    )}
+                                  >
+                                    <Microscope className="w-3 h-3" />
+                                  </div>
+                                  <h6 className="font-medium text-sm">
+                                    Sugestão de String Específica para Busca Focada
+                                  </h6>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a href={generateSearchUrl(db, specificString)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={cn(
+                                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                                      'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+                                      'text-white shadow-md hover:shadow-lg transform hover:scale-105'
+                                    )}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Search className="w-3 h-3" />
+                                    {db.needsAuth ? db.authMessage : 'Buscar'}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyToClipboard(specificString, `specific-${db.key}`);
+                                    }}
+                                    className={cn(
+                                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                                      isDark
+                                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
+                                    )}
+                                  >
+                                    {copiedString === `specific-${db.key}` ? (
+                                      <>
+                                        <CheckCheck className="w-4 h-4 text-green-500" />
+                                        Copiado!
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-4 h-4" />
+                                        Copiar
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
                               <div
                                 className={cn(
-                                  'w-6 h-6 rounded flex items-center justify-center flex-shrink-0',
-                                  'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
+                                  'p-3 rounded font-mono text-sm overflow-x-auto',
+                                  isDark ? 'bg-gray-800' : 'bg-purple-50',
+                                  'border',
+                                  isDark ? 'border-gray-700' : 'border-purple-200'
                                 )}
                               >
-                                <Microscope className="w-3 h-3" />
+                                <pre className="whitespace-pre-wrap break-words text-xs">
+                                  {specificString}
+                                </pre>
                               </div>
-                              <h6 className="font-medium text-sm">
-                                Sugestão de String Específica para Busca Focada
-                              </h6>
                             </div>
-                            <div className="flex items-center gap-2">
-                              
-                                <a href={generateSearchUrl(db, specificString)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={cn(
-                                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                                  'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-                                  'text-white shadow-md hover:shadow-lg transform hover:scale-105'
-                                )}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Search className="w-3 h-3" />
-                                {db.needsAuth ? db.authMessage : 'Buscar'}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyToClipboard(specificString, `specific-${db.key}`);
-                                }}
-                                className={cn(
-                                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                                  isDark
-                                    ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
-                                )}
-                              >
-                                {copiedString === `specific-${db.key}` ? (
-                                  <>
-                                    <CheckCheck className="w-4 h-4 text-green-500" />
-                                    Copiado!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4" />
-                                    Copiar
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <div
-                            className={cn(
-                              'p-3 rounded font-mono text-sm overflow-x-auto',
-                              isDark ? 'bg-gray-800' : 'bg-purple-50',
-                              'border',
-                              isDark ? 'border-gray-700' : 'border-purple-200'
-                            )}
-                          >
-                            <pre className="whitespace-pre-wrap break-words text-xs">
-                              {specificString}
-                            </pre>
-                          </div>
-                        </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
