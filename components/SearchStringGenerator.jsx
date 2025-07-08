@@ -449,7 +449,7 @@ const SearchStringGenerator = ({ meshContent, researchData, isDark, meshResults 
         <span>
           {retryingDatabase === database.key
             ? 'Tentando novamente...'
-            : 'Vamos tentar de novo! Vai dar certo!'}
+            : 'Deseja tentar novamente?'}
         </span>
         <Zap className="w-4 h-4" />
       </button>
