@@ -689,15 +689,15 @@ const MeshSearch = ({ researchData, isDark }) => {
                 </div>
               )}
             </div>
-
-            {/* Strings de busca por base de dados */}
+ {/*
+          
             <div className="space-y-4">
               <h4 className="font-semibold text-lg flex items-center gap-2">
                 <Zap className="w-5 h-5 text-yellow-500" />
                 Strings de Busca Personalizadas
               </h4>
             
-              {/* Integração do componente SearchStringGenerator 
+              Integração do componente SearchStringGenerator 
               {meshContent && (
                 <SearchStringGenerator
                   meshContent={meshContent}
@@ -706,8 +706,11 @@ const MeshSearch = ({ researchData, isDark }) => {
                   meshResults={meshResults} // Adicione esta linha
                 />
               )}
-              */}
+              
+
+              
             </div>
+            */}
           </div>
         )}
       </div>
