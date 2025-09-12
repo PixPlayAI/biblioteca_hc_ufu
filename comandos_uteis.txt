@@ -11,6 +11,7 @@ git commit -m "Inserindo termos DeCS V2 - OK RECUPERADO"
 git push origin main
 
 
+
 git push origin main --force
 
 
