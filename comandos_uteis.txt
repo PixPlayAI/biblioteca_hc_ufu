@@ -4,10 +4,10 @@ Nome do repositório:  biblioteca_hc_ufu
 
 git reset --hard <commit-hash>
 
-git reset --hard 0f0bb333c5bd23ee1ed4d68713e9459e53f70e83
+git reset --hard 7165649c8658e5717f3401029d3b7705c0c4f228
 
 git add .
-git commit -m "Inserindo termos DeCS V2"
+git commit -m "Inserindo termos DeCS V2 - OK RECUPERADO"
 git push origin main
 
 
