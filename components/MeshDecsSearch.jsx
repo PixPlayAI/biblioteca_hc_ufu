@@ -46,7 +46,6 @@ import {
   Languages,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import axios from 'axios';
 import SearchStringGenerator from './SearchStringGenerator';
 import { getElementLabel, getElementColor, getElementSigla } from '../lib/frameworkMappings';
 import FloatingActionButtons from './FloatingActionButtons';
@@ -88,18 +87,35 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) =>
         frameworkType: researchData.format,
       };
 
-      const response = await axios.post('/api/search-mesh', payload);
+      console.log('📤 Enviando payload para busca MeSH:', payload);
 
-      setMeshResults(response.data.results);
-      setAllMeshTerms(response.data.allMeshTerms);
-      setMeshDebug(response.data.debug);
+      const response = await fetch('/api/search-mesh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro na resposta: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📥 Resposta da busca MeSH:', data);
+
+      setMeshResults(data.results);
+      setAllMeshTerms(data.allMeshTerms);
+      setMeshDebug(data.debug);
 
     } catch (error) {
-      console.error('Erro na busca MeSH:', error);
+      console.error('❌ Erro na busca MeSH:', error);
       setMeshDebug({
         'ERRO': error.message,
-        'DETALHES': error.response?.data,
+        'STACK': error.stack,
       });
+      // Adicionar feedback visual para o usuário
+      alert(`Erro ao buscar termos MeSH: ${error.message}`);
     } finally {
       setMeshLoading(false);
     }
@@ -122,13 +138,30 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) =>
         frameworkType: researchData.format,
       };
 
-      const response = await axios.post('/api/search-decs', payload);
+      console.log('📤 Enviando payload para busca DeCS:', payload);
 
-      setDecsResults(response.data.results);
-      setAllDecsTerms(response.data.allDecsTerms);
+      const response = await fetch('/api/search-decs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro na resposta: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📥 Resposta da busca DeCS:', data);
+
+      setDecsResults(data.results);
+      setAllDecsTerms(data.allDecsTerms);
 
     } catch (error) {
-      console.error('Erro na busca DeCS:', error);
+      console.error('❌ Erro na busca DeCS:', error);
+      // Adicionar feedback visual para o usuário
+      alert(`Erro ao buscar termos DeCS: ${error.message}`);
     } finally {
       setDecsLoading(false);
     }
@@ -834,7 +867,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) =>
 
   return (
     <div className="space-y-8">
-      {/* Seção de busca principal */}
+      {/* Seção de busca principal - com os dois botões já visíveis */}
       <Card className={cn('overflow-hidden', isDark ? 'bg-gray-800 border-gray-700' : 'bg-white')}>
         <div
           className={cn(
@@ -897,7 +930,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) =>
             </div>
           )}
 
-          {/* Área de seleção de busca */}
+          {/* Área de seleção de busca - sempre visível */}
           {activeView === 'selection' && (
             <div className="flex justify-center gap-6">
               {/* Botão MeSH */}

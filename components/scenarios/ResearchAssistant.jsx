@@ -705,9 +705,6 @@ ConversationHistory.propTypes = {
  * Exibe a pergunta estruturada completa e opções de busca de descritores
  */
 const FinalResult = ({ result, conversations, onReset, isDark }) => {
-  // Estado para controlar a visibilidade do MeshDecsSearch
-  const [showMeshDecsSearch, setShowMeshDecsSearch] = useState(false);
-
   // Garantir que estamos usando elementos explícitos se disponíveis
   const elementsToUse = result.elements?.explicit || result.elements?.implicit || {};
   const descriptionsToUse =
@@ -754,23 +751,6 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
             </div>
           )}
 
-          {/* Botão para buscar termos MeSH e DeCS */}
-          <div className="flex justify-center pt-4">
-            <button
-              onClick={() => setShowMeshDecsSearch(!showMeshDecsSearch)}
-              className={cn(
-                'px-6 py-3 rounded-lg transition-all',
-                'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
-                'hover:from-blue-600 hover:to-blue-700',
-                'shadow-md hover:shadow-lg transform hover:scale-105',
-                'flex items-center gap-2 font-medium'
-              )}
-            >
-              <Globe className="w-5 h-5" />
-              {showMeshDecsSearch ? 'Ocultar Busca de Descritores' : 'Pesquisar Descritores Controlados'}
-            </button>
-          </div>
-
           <div className="flex justify-center">
             <button
               onClick={onReset}
@@ -782,17 +762,15 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
         </CardContent>
       </Card>
 
-      {/* Componente MeshDecsSearch integrado */}
-      {showMeshDecsSearch && (
-        <div className="mt-8 animate-fadeIn">
-          <MeshDecsSearch 
-            researchData={meshDecsData} 
-            isDark={isDark} 
-            conversations={conversations}
-            finalResult={result}
-          />
-        </div>
-      )}
+      {/* MeshDecsSearch integrado automaticamente - sem botão intermediário */}
+      <div className="mt-8 animate-fadeIn">
+        <MeshDecsSearch 
+          researchData={meshDecsData} 
+          isDark={isDark} 
+          conversations={conversations}
+          finalResult={result}
+        />
+      </div>
 
       <style jsx>{`
         @keyframes fadeIn {

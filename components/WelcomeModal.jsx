@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Play, Info, Brain, CheckCircle2, Target } from 'lucide-react';
+import { Play, Info, Brain, CheckCircle2, Target, Globe, Languages } from 'lucide-react';
 
 const WelcomeModal = ({ isOpen, onStart, isDark }) => {
   if (!isOpen) return null;
@@ -67,6 +67,31 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       Interagir com perguntas personalizadas que ajudam a refletir sobre o escopo da
                       sua pesquisa, permitindo que você desenvolva uma pergunta final mais adequada
                     </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
+                      <div>
+                        <span>Buscar descritores controlados em bases internacionais:</span>
+                        <div className="mt-2 space-y-2 ml-2">
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium">MeSH</span> (Medical Subject Headings) 
+                            <span className="text-xs">🇺🇸</span>
+                            <span className="text-xs opacity-75">- Vocabulário em inglês da National Library of Medicine</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Languages className="w-4 h-4 text-green-500" />
+                            <span className="font-medium">DeCS</span> (Descritores em Ciências da Saúde)
+                            <div className="flex items-center gap-1 ml-1">
+                              <span className="text-xs" title="Português">🇧🇷</span>
+                              <span className="text-xs" title="Español">🇪🇸</span>
+                              <span className="text-xs" title="English">🇺🇸</span>
+                              <span className="text-xs" title="Français">🇫🇷</span>
+                            </div>
+                            <span className="text-xs opacity-75">- Vocabulário multilíngue da BIREME</span>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
                       Conectar-se com a equipe da biblioteca para esclarecer dúvidas e obter o apoio
@@ -97,6 +122,9 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       <li>Juntos, refinaremos sua pergunta de pesquisa passo a passo ✨</li>
                       <li>Você receberá uma versão estruturada e bem definida da sua pergunta 🎯</li>
                       <li>
+                        Pesquise descritores controlados em <strong>MeSH</strong> 🇺🇸 e <strong>DeCS</strong> 🇧🇷🇪🇸🇺🇸🇫🇷 para sua estratégia de busca 📖
+                      </li>
+                      <li>
                         Se desejar, podemos conectar você com a equipe da biblioteca para suporte
                         extra 📚
                       </li>
@@ -110,6 +138,42 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                         confiança em sua pesquisa. Conte conosco para tornar esse processo mais
                         simples e eficiente!
                       </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Features Highlight - NEW SECTION */}
+            <div
+              className={`rounded-lg border p-4 ${
+                isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gradient-to-r from-blue-50 to-green-50 border-blue-200'
+              }`}
+            >
+              <div className="text-center space-y-2">
+                <h4 className="font-semibold text-sm">🌐 Recursos de Busca Internacional</h4>
+                <div className="flex justify-center items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg ${isDark ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
+                      <Globe className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-medium">MeSH</p>
+                      <p className="text-xs opacity-75">Inglês 🇺🇸</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg ${isDark ? 'bg-green-900/50' : 'bg-green-100'}`}>
+                      <Languages className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-medium">DeCS</p>
+                      <div className="flex gap-1">
+                        <span className="text-xs" title="Português">🇧🇷</span>
+                        <span className="text-xs" title="Español">🇪🇸</span>
+                        <span className="text-xs" title="English">🇺🇸</span>
+                        <span className="text-xs" title="Français">🇫🇷</span>
+                      </div>
                     </div>
                   </div>
                 </div>

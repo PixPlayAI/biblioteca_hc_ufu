@@ -7,9 +7,13 @@ git reset --hard <commit-hash>
 git reset --hard 0f0bb333c5bd23ee1ed4d68713e9459e53f70e83
 
 git add .
-git commit -m "Inserindo termos DeCS"
+git commit -m "Inserindo termos DeCS V2"
+git push origin main
+
+
 git push origin main --force
-v2
+
+
 
 
 rm -rf node_modules package-lock.json
