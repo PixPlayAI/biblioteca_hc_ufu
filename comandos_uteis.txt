@@ -7,7 +7,7 @@ git reset --hard <commit-hash>
 git reset --hard 0f0bb333c5bd23ee1ed4d68713e9459e53f70e83
 
 git add .
-git commit -m "Updating to modified version"
+git commit -m "Inserindo termos DeCS"
 git push origin main --force
 v2
 

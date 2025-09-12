@@ -1,4 +1,10 @@
-//components/scenarios/ResearchAssistant.jsx
+// components/scenarios/ResearchAssistant.jsx
+/**
+ * Componente principal do Assistente de Pesquisa
+ * Gerencia o fluxo de perguntas e respostas para construção de perguntas de pesquisa estruturadas
+ * utilizando diversos frameworks acadêmicos (PICO, PICOT, PICOS, etc.)
+ */
+
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardHeader, CardContent } from '../ui/card';
@@ -10,13 +16,17 @@ import FloatingActionButtons from '../FloatingActionButtons';
 import confetti from 'canvas-confetti';
 import { cn } from '../../lib/utils';
 
-// Adicionar após os outros imports
-import MeshSearch from '../MeshSearch';
+// Imports relacionados à busca de descritores
+import MeshDecsSearch from '../MeshDecsSearch'; // Renomeado de MeshSearch
 import { convertToMeshFormat } from '../../lib/frameworkMappings';
 
+// Dados para easter eggs (perguntas perfeitas por framework)
 import perfectQuestions from '../../lib/data/perfectQuestions.json';
 
-// Adicionar esta função ANTES do componente ResearchAssistant:
+/**
+ * Função para detectar easter eggs no input do usuário
+ * Formato: "ex:[framework]" retorna uma pergunta perfeita para o framework
+ */
 const checkEasterEgg = (input) => {
   // Normalizar entrada: remover espaços, pontuação e deixar em lowercase
   const normalized = input
@@ -36,7 +46,10 @@ const checkEasterEgg = (input) => {
   return null; // Não é um easter egg
 };
 
-// Traduções atualizadas com todos os elementos dos novos frameworks
+/**
+ * Mapeamento de traduções para elementos dos frameworks
+ * Cada elemento tem seu termo em inglês e tradução em português
+ */
 const translations = {
   // PICO, PICOT, PICOS
   population: { term: 'Population/Patient', translation: 'População/Paciente' },
@@ -87,14 +100,11 @@ const translations = {
   modelsOrTheories: { term: 'Models or Theories', translation: 'Modelos ou Teorias' },
 };
 
-// Função auxiliar para normalizar elementos
-
-// Função auxiliar para garantir que todos os elementos do formato estejam presentes
-// Função auxiliar para garantir que todos os elementos do formato estejam presentes
+/**
+ * Função auxiliar para garantir que todos os elementos do formato estejam presentes
+ * Mapeia siglas para elementos completos e vice-versa
+ */
 const ensureAllFormatElements = (format, elements) => {
-  console.log('Ensuring all elements for format:', format);
-  console.log('Original elements:', elements);
-
   // Mapeamento completo de siglas para elementos por framework
   const frameworkMappings = {
     PICO: {
@@ -252,20 +262,18 @@ const ensureAllFormatElements = (format, elements) => {
       }
     });
     
-    console.log('BeHEMoTh normalized elements:', behemothElements);
     return behemothElements;
   }
 
-  // NÃO APLICAR normalização genérica - apenas retornar elementos processados
-  console.log('Final elements:', processedElements);
+  // Retornar elementos processados
   return processedElements;
 };
 
-// Atualizar a função getOrderedElements para usar as siglas corretas
+/**
+ * Função para obter elementos ordenados conforme o framework
+ * Retorna array com key, letter (sigla) e value para cada elemento
+ */
 const getOrderedElements = (format, elements) => {
-  console.log('Getting ordered elements for format:', format);
-  console.log('Input elements:', elements);
-
   const formatOrder = {
     // PICO
     PICO: {
@@ -391,7 +399,7 @@ const getOrderedElements = (format, elements) => {
       },
     },
 
-    // BeHEMoTh - CORRIGIR AS SIGLAS
+    // BeHEMoTh
     BeHEMoTh: {
       order: ['behavior', 'healthContext', 'exclusions', 'modelsOrTheories'],
       letters: {
@@ -418,19 +426,14 @@ const getOrderedElements = (format, elements) => {
     value: elements[key] || '',
   }));
 
-  console.log('Ordered elements:', ordered);
   return ordered;
 };
 
-// Função atualizada para validar a resposta
+/**
+ * Função para validar a resposta da API
+ * Garante que todos os campos obrigatórios estejam presentes
+ */
 export const validateResponse = (response) => {
-  console.log('Validating response:', response);
-
-  // Se for BeHEMoTh, log especial
-  if (response.finalResult?.format === 'BeHEMoTh') {
-    console.log('BeHEMoTh detected - checking elements:', response.finalResult.elements);
-  }
-
   const requiredFields = ['quality', 'analysis', 'nextQuestion', 'canGenerateFinal'];
 
   // Validar estrutura básica
@@ -449,21 +452,21 @@ export const validateResponse = (response) => {
 
   // Garantir que todos os elementos específicos do formato estejam presentes
   if (response.finalResult?.format) {
-    console.log('Format detected:', response.finalResult.format);
     const elements = response.finalResult.elements?.explicit || {};
-    console.log('Original elements:', elements);
 
     response.finalResult.elements.explicit = ensureAllFormatElements(
       response.finalResult.format,
       elements
     );
-    console.log('Updated elements:', response.finalResult.elements.explicit);
   }
 
   return response;
 };
 
-// Componente de indicador de qualidade
+/**
+ * Componente indicador de qualidade da resposta
+ * Exibe uma barra de progresso colorida baseada no score
+ */
 const QualityIndicator = ({ score }) => {
   // Garantir que score seja um número
   const validScore = typeof score === 'number' ? score : 0;
@@ -492,7 +495,10 @@ QualityIndicator.propTypes = {
   score: PropTypes.number.isRequired,
 };
 
-// Componente para exibir cada elemento
+/**
+ * Componente para exibir cada elemento do framework
+ * Mostra a sigla, termo, tradução e descrição
+ */
 const ElementDisplay = ({ letter, term, translation, description }) => (
   <div className="element-display-item">
     <span className="acronym-letter">{letter}</span>
@@ -516,12 +522,11 @@ ElementDisplay.defaultProps = {
   description: '',
 };
 
-// Componente para exibir elementos detalhados
-// Componente para exibir elementos detalhados - CORRIGIDO
-// Componente para exibir elementos detalhados - CORRIGIDO
+/**
+ * Componente para exibir elementos detalhados
+ * Pode renderizar em formato padrão ou formatado
+ */
 const DetailedElements = ({ elements, format, variant = 'default', descriptions = {} }) => {
-  console.log('DetailedElements Input:', { elements, format, variant, descriptions });
-
   // Criar um objeto que combina elementos e descrições
   const combinedElements = {};
   
@@ -537,10 +542,9 @@ const DetailedElements = ({ elements, format, variant = 'default', descriptions 
     }
   });
 
-  // Obter elementos normalizados - SEM adicionar elementos extras
+  // Obter elementos normalizados
   const normalizedElements = ensureAllFormatElements(format, combinedElements);
   const orderedElements = getOrderedElements(format, normalizedElements);
-
 
   // Usar o valor do elemento normalizado ou a descrição
   const elementsWithDescriptions = orderedElements.map(({ key, letter, value }) => {
@@ -601,15 +605,18 @@ DetailedElements.propTypes = {
   elements: PropTypes.object.isRequired,
   format: PropTypes.string.isRequired,
   variant: PropTypes.oneOf(['default', 'formatted']),
-  descriptions: PropTypes.object, // Adicionando PropType para descriptions
+  descriptions: PropTypes.object,
 };
 
 DetailedElements.defaultProps = {
   variant: 'default',
-  descriptions: {}, // Adicionando valor padrão para descriptions
+  descriptions: {},
 };
 
-// Componente AIAnalysis atualizado
+/**
+ * Componente de análise da IA
+ * Mostra o status atual da pergunta de pesquisa e próximos passos
+ */
 const AIAnalysis = ({ analysis }) => {
   if (!analysis?.identifiedElements) return null;
 
@@ -649,7 +656,6 @@ const AIAnalysis = ({ analysis }) => {
   );
 };
 
-// Definição completa dos PropTypes para o componente AIAnalysis
 AIAnalysis.propTypes = {
   analysis: PropTypes.shape({
     identifiedElements: PropTypes.objectOf(PropTypes.string),
@@ -658,7 +664,10 @@ AIAnalysis.propTypes = {
   }).isRequired,
 };
 
-// Componente ConversationHistory atualizado
+/**
+ * Componente para exibir o histórico de conversas
+ * Mostra perguntas, respostas e indicadores de qualidade
+ */
 const ConversationHistory = ({ conversations }) => (
   <div className="space-y-4">
     {conversations.map((conv, index) => (
@@ -691,26 +700,21 @@ ConversationHistory.propTypes = {
   ).isRequired,
 };
 
-// Componente FinalResult atualizado
-
-// Componente FinalResult atualizado
+/**
+ * Componente do resultado final
+ * Exibe a pergunta estruturada completa e opções de busca de descritores
+ */
 const FinalResult = ({ result, conversations, onReset, isDark }) => {
-  console.log('FinalResult rendering with:', result);
-  console.log('Result elements:', result.elements);
-  console.log('Result descriptions:', result.elementDescriptions);
+  // Estado para controlar a visibilidade do MeshDecsSearch
+  const [showMeshDecsSearch, setShowMeshDecsSearch] = useState(false);
 
-  // Estado para controlar a visibilidade do MeshSearch
-  const [showMeshSearch, setShowMeshSearch] = useState(false);
-
-  // Garantir que estamos usando elementos explícitos se disponíveis, caso contrário, implícitos
+  // Garantir que estamos usando elementos explícitos se disponíveis
   const elementsToUse = result.elements?.explicit || result.elements?.implicit || {};
   const descriptionsToUse =
     result.elementDescriptions?.explicit || result.elementDescriptions?.implicit || {};
 
-  // Preparar dados para o MeshSearch no formato esperado
-  const meshData = convertToMeshFormat(result);
-
-  console.log('✅ Dados convertidos para MeshSearch:', meshData);
+  // Preparar dados para o MeshDecsSearch no formato esperado
+  const meshDecsData = convertToMeshFormat(result);
 
   return (
     <div className="space-y-8">
@@ -750,10 +754,10 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
             </div>
           )}
 
-          {/* Botão para buscar termos MeSH */}
+          {/* Botão para buscar termos MeSH e DeCS */}
           <div className="flex justify-center pt-4">
             <button
-              onClick={() => setShowMeshSearch(!showMeshSearch)}
+              onClick={() => setShowMeshDecsSearch(!showMeshDecsSearch)}
               className={cn(
                 'px-6 py-3 rounded-lg transition-all',
                 'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
@@ -763,7 +767,7 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
               )}
             >
               <Globe className="w-5 h-5" />
-              {showMeshSearch ? 'Ocultar Busca MeSH' : 'Pesquisar Termos MeSH'}
+              {showMeshDecsSearch ? 'Ocultar Busca de Descritores' : 'Pesquisar Descritores Controlados'}
             </button>
           </div>
 
@@ -778,11 +782,11 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
         </CardContent>
       </Card>
 
-      {/* Componente MeshSearch integrado */}
-      {showMeshSearch && (
+      {/* Componente MeshDecsSearch integrado */}
+      {showMeshDecsSearch && (
         <div className="mt-8 animate-fadeIn">
-          <MeshSearch 
-            researchData={meshData} 
+          <MeshDecsSearch 
+            researchData={meshDecsData} 
             isDark={isDark} 
             conversations={conversations}
             finalResult={result}
@@ -828,12 +832,18 @@ FinalResult.propTypes = {
   onReset: PropTypes.func.isRequired,
   isDark: PropTypes.bool.isRequired,
 };
-// Componente principal ResearchAssistant atualizado
+
+/**
+ * Componente principal ResearchAssistant
+ * Gerencia todo o fluxo de criação da pergunta de pesquisa
+ */
 const ResearchAssistant = ({ isDark }) => {
+  // Estados para controle de sugestões
   const [suggestionMode, setSuggestionMode] = useState(false);
   const [suggestedElement, setSuggestedElement] = useState(null);
   const [questionRepetitions, setQuestionRepetitions] = useState(new Map());
 
+  // Estados principais do componente
   const [conversations, setConversations] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -847,6 +857,10 @@ const ResearchAssistant = ({ isDark }) => {
       'Descreva o foco do seu estudo (ex: uma condição específica, grupo populacional ou situação clínica)',
   });
 
+  /**
+   * Effect para verificar se deve resetar o formulário
+   * Usado quando o usuário volta de outra página
+   */
   useEffect(() => {
     const shouldReset = sessionStorage.getItem('shouldResetForm');
     if (shouldReset) {
@@ -867,7 +881,10 @@ const ResearchAssistant = ({ isDark }) => {
     }
   }, []);
 
-  // Função para contar repetições de perguntas similares
+  /**
+   * Função para contar repetições de perguntas similares
+   * Usado para detectar quando o usuário está com dificuldades
+   */
   const updateQuestionRepetitions = (question) => {
     setQuestionRepetitions((prev) => {
       const newMap = new Map(prev);
@@ -877,7 +894,10 @@ const ResearchAssistant = ({ isDark }) => {
     });
   };
 
-  // Crie uma nova função handleSubmitWithValue para evitar duplicação de código:
+  /**
+   * Função principal para processar submissão com um valor específico
+   * Usada tanto para submissão normal quanto para easter eggs
+   */
   const handleSubmitWithValue = async (value) => {
     setIsLoading(true);
 
@@ -887,7 +907,7 @@ const ResearchAssistant = ({ isDark }) => {
 
       const response = await generateScenarioContent({
         history: conversations,
-        currentInput: value, // Usa o valor passado ao invés de currentInput
+        currentInput: value,
         currentStep: conversations.length,
         suggestionMode,
         suggestedElement,
@@ -899,7 +919,7 @@ const ResearchAssistant = ({ isDark }) => {
       const newConversation = {
         question: nextQuestion.text,
         context: nextQuestion.context,
-        answer: value, // Usa o valor passado
+        answer: value,
         quality: validatedResponse.quality,
         analysis: validatedResponse.analysis,
       };
@@ -917,20 +937,20 @@ const ResearchAssistant = ({ isDark }) => {
         setSuggestedElement(null);
       }
 
+      // Se chegamos ao resultado final
       if (validatedResponse.canGenerateFinal && validatedResponse.finalResult) {
         setFinalResult(validatedResponse.finalResult);
 
-        // Aguardar um momento para o DOM renderizar o resultado final
+        // Disparar confetti para celebrar
         setTimeout(() => {
-          // Encontrar o elemento da pergunta de pesquisa
           const questionElement = document.querySelector('.final-presentation-container');
           if (questionElement) {
             const rect = questionElement.getBoundingClientRect();
             const x = (rect.left + rect.width / 2) / window.innerWidth;
             const y = (rect.top + rect.height / 2) / window.innerHeight;
 
-            // Disparar confetti por 1 segundos
-            const duration = 1 * 1000; // 1 segundos
+            // Disparar confetti por 1 segundo
+            const duration = 1 * 1000;
             const animationEnd = Date.now() + duration;
 
             const colors = [
@@ -946,10 +966,10 @@ const ResearchAssistant = ({ isDark }) => {
             const defaults = {
               startVelocity: 45,
               spread: 360,
-              ticks: 200, // Mais visível
+              ticks: 200,
               zIndex: 9999,
               gravity: 0.5,
-              scalar: 1.2, // Partículas maiores
+              scalar: 1.2,
               colors: colors,
               disableForReducedMotion: false,
               useWorker: true,
@@ -1013,6 +1033,7 @@ const ResearchAssistant = ({ isDark }) => {
           }
         }, 100);
       }
+      
       // Exibir FeedbackModal apenas se a qualidade for muito baixa
       if (validatedResponse.quality < 3) {
         setErrorMessage(
@@ -1028,7 +1049,10 @@ const ResearchAssistant = ({ isDark }) => {
     }
   };
 
-  // Função modificada handleSubmit
+  /**
+   * Função de submissão principal
+   * Verifica easter eggs e processa a resposta
+   */
   const handleSubmit = async () => {
     if (!currentInput.trim()) return;
     
@@ -1053,7 +1077,10 @@ const ResearchAssistant = ({ isDark }) => {
     handleSubmitWithValue(currentInput);
   };
 
-  // Renderização condicional para sugestões
+  /**
+   * Renderização condicional do conteúdo da pergunta
+   * Mostra sugestões ou campo de texto normal
+   */
   const renderQuestionContent = () => {
     if (suggestionMode) {
       return (
@@ -1100,12 +1127,16 @@ const ResearchAssistant = ({ isDark }) => {
     );
   };
 
+  /**
+   * Função para resetar todo o formulário
+   */
   const handleReset = () => {
     sessionStorage.setItem('shouldResetForm', 'true');
     setIsFeedbackModalOpen(false);
     window.location.reload();
   };
 
+  // Se temos o resultado final, mostra o componente FinalResult
   if (finalResult) {
     return (
       <FinalResult
@@ -1117,6 +1148,7 @@ const ResearchAssistant = ({ isDark }) => {
     );
   }
 
+  // Interface principal do assistente
   return (
     <div className={`max-w-[1200px] mx-auto p-2 sm:p-4 text-primary-foreground`}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -1138,7 +1170,7 @@ const ResearchAssistant = ({ isDark }) => {
                   disabled={isLoading || !currentInput.trim()}
                   className={`btn-enviar w-full sm:w-auto ${
                     isLoading || !currentInput.trim() ? 'disabled' : ''
-                  } justify-center`} // Adicionado justify-center aqui
+                  } justify-center`}
                 >
                   {isLoading ? (
                     <>
@@ -1176,5 +1208,4 @@ ResearchAssistant.propTypes = {
   isDark: PropTypes.bool.isRequired,
 };
 
-// Exportando o componente principal
-export default ResearchAssistant; 
+export default ResearchAssistant;

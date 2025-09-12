@@ -1,4 +1,10 @@
-// components/MeshSearch.jsx
+// components/MeshDecsSearch.jsx
+/**
+ * Componente para busca de descritores controlados MeSH e DeCS
+ * Permite pesquisar termos em ambas as bases de dados para auxiliar na construção
+ * de estratégias de busca em bases de dados biomédicas
+ */
+
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardContent } from './ui/card';
@@ -37,6 +43,7 @@ import {
   Tag,
   List,
   TreePine,
+  Languages,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
@@ -44,38 +51,35 @@ import SearchStringGenerator from './SearchStringGenerator';
 import { getElementLabel, getElementColor, getElementSigla } from '../lib/frameworkMappings';
 import FloatingActionButtons from './FloatingActionButtons';
 
-const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
+const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) => {
+  // ========== Estados para MeSH ==========
   const [meshResults, setMeshResults] = useState(null);
   const [allMeshTerms, setAllMeshTerms] = useState(null);
   const [meshLoading, setMeshLoading] = useState(false);
   const [meshDebug, setMeshDebug] = useState(null);
+  
+  // ========== Estados para DeCS ==========
+  const [decsResults, setDecsResults] = useState(null);
+  const [allDecsTerms, setAllDecsTerms] = useState(null);
+  const [decsLoading, setDecsLoading] = useState(false);
+  
+  // ========== Estados gerais ==========
+  const [activeView, setActiveView] = useState('selection'); // 'selection', 'mesh', 'decs'
   const [copiedString, setCopiedString] = useState(null);
   const [collapsedElements, setCollapsedElements] = useState({});
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-  const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(false); // ALTERADO PARA false (expandido por padrão)
+  const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(false);
 
+  /**
+   * Função para buscar termos MeSH
+   * Utiliza a API NCBI E-utilities para pesquisar no vocabulário MeSH
+   */
   const searchMeSH = async () => {
     setMeshLoading(true);
     setMeshResults(null);
     setAllMeshTerms(null);
     setMeshDebug(null);
-
-    // Debug detalhado dos dados
-    console.log('🚀 MeshSearch - INICIANDO BUSCA MESH');
-    console.log('📊 Framework:', researchData.format);
-    console.log('❓ Pergunta:', researchData.question);
-    console.log('📋 Elementos explícitos completos:', researchData.elements?.explicit);
-    console.log('📝 Descrições dos elementos:', researchData.elementDescriptions?.explicit);
-
-    // Log cada elemento individualmente
-    if (researchData.elements?.explicit) {
-      console.log('🔍 Detalhamento dos elementos:');
-      Object.entries(researchData.elements.explicit).forEach(([key, value]) => {
-        console.log(`   ${key}: "${value}"`);
-      });
-    }
-
-    console.log('📦 ResearchData completo:', JSON.stringify(researchData, null, 2));
+    setActiveView('mesh');
 
     try {
       const payload = {
@@ -84,65 +88,91 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
         frameworkType: researchData.format,
       };
 
-      console.log('📤 Enviando payload para API:', JSON.stringify(payload, null, 2));
-
       const response = await axios.post('/api/search-mesh', payload);
-
-      // Debug da resposta
-      console.log('📥 Resposta recebida da API:', response.data);
-      console.log('✅ Número de resultados:', response.data.results?.length);
-      console.log('🎯 Número de termos únicos:', response.data.allMeshTerms?.length);
-
-      // Log dos resultados por elemento
-      if (response.data.results) {
-        console.log('📊 Resultados por elemento:');
-        response.data.results.forEach((result) => {
-          console.log(
-            `   ${result.element}: "${result.originalText}" (${result.terms.length} termos)`
-          );
-        });
-      }
 
       setMeshResults(response.data.results);
       setAllMeshTerms(response.data.allMeshTerms);
       setMeshDebug(response.data.debug);
 
-      console.log('✅ MeshSearch - BUSCA CONCLUÍDA COM SUCESSO');
     } catch (error) {
-      console.error('❌ Erro na busca MeSH:', error);
-      console.error('❌ Detalhes do erro:', error.response?.data);
+      console.error('Erro na busca MeSH:', error);
       setMeshDebug({
-        '❌ ERRO': error.message,
-        '📍 DETALHES': error.response?.data,
+        'ERRO': error.message,
+        'DETALHES': error.response?.data,
       });
     } finally {
       setMeshLoading(false);
     }
   };
 
-  // Debug do estado atual
-  useEffect(() => {
-    if (meshResults && researchData) {
-      console.log('MeshSearch - Estado atual:', {
-        meshResults,
-        researchData,
-        elementosExplicit: researchData.elements.explicit,
-        primeiroResultado: meshResults[0],
-      });
-    }
-  }, [meshResults, researchData]);
+  /**
+   * Função para buscar termos DeCS
+   * Utiliza a API da BIREME para pesquisar no vocabulário DeCS multilíngue
+   */
+  const searchDeCS = async () => {
+    setDecsLoading(true);
+    setDecsResults(null);
+    setAllDecsTerms(null);
+    setActiveView('decs');
 
+    try {
+      const payload = {
+        frameworkElements: researchData.elements.explicit,
+        fullQuestion: researchData.question,
+        frameworkType: researchData.format,
+      };
+
+      const response = await axios.post('/api/search-decs', payload);
+
+      setDecsResults(response.data.results);
+      setAllDecsTerms(response.data.allDecsTerms);
+
+    } catch (error) {
+      console.error('Erro na busca DeCS:', error);
+    } finally {
+      setDecsLoading(false);
+    }
+  };
+
+  /**
+   * Helpers para internacionalização
+   */
+  const getFlagEmoji = (language) => {
+    const flags = {
+      pt: '🇧🇷',
+      es: '🇪🇸',
+      en: '🇺🇸',
+      fr: '🇫🇷'
+    };
+    return flags[language] || '🌍';
+  };
+
+  const getLanguageName = (language) => {
+    const names = {
+      pt: 'Português',
+      es: 'Español',
+      en: 'English',
+      fr: 'Français'
+    };
+    return names[language] || language.toUpperCase();
+  };
+
+  /**
+   * Função para copiar texto para a área de transferência
+   */
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedString(id);
     setTimeout(() => setCopiedString(null), 2000);
   };
 
-  // Função para gerar o conteúdo MeSH formatado
+  /**
+   * Gera conteúdo formatado dos termos MeSH para exportação
+   * Usado para criar relatórios com os termos de alta relevância
+   */
   const generateDatabaseContent = () => {
     if (!allMeshTerms || allMeshTerms.length === 0 || !meshResults) return '';
 
-    // Função para obter termos com relevância >= 95% para cada elemento
     const getHighRelevanceTermsByElement = () => {
       const termsByElement = {};
 
@@ -166,13 +196,11 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
     content += `${researchData.question}\n\n`;
     content += `Essa pergunta foi classificada no acrônimo: ${researchData.format}\n\n`;
 
-    // Adiciona informações sobre cada elemento do framework
     Object.entries(researchData.elements.explicit).forEach(([key, value]) => {
       const label = getElementLabel(key, researchData.format);
 
       content += `A ${label} foi: ${value}\n`;
 
-      // Verifica se há termos MeSH com relevância >= 95% para este elemento
       if (highRelevanceTermsByElement[key]) {
         content += `E os principais termos MeSH e descrição dos termos relacionados a ${label.toLowerCase()}, foram:\n`;
 
@@ -189,20 +217,17 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
     return content.trim();
   };
 
-  // No componente MeshSearch, dentro da função renderResults:
-  const renderResults = (results) => {
+  /**
+   * Renderiza os resultados da busca (MeSH ou DeCS)
+   * @param {Array} results - Array com os resultados da busca
+   * @param {boolean} isDeCS - Indica se são resultados DeCS (true) ou MeSH (false)
+   */
+  const renderResults = (results, isDeCS = false) => {
     if (!results) return null;
-
-    // Debug dos dados disponíveis
-    console.log('Dados disponíveis:', {
-      results,
-      researchData,
-      elementosExplicitos: researchData.elements.explicit,
-    });
 
     return (
       <div className="space-y-6">
-        {/* Summary Stats */}
+        {/* Cards de estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className={cn('p-4 rounded-lg text-center', isDark ? 'bg-gray-800' : 'bg-blue-50')}>
             <div className="text-2xl font-bold text-blue-600">{results.length}</div>
@@ -228,15 +253,14 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
             className={cn('p-4 rounded-lg text-center', isDark ? 'bg-gray-800' : 'bg-orange-50')}
           >
             <div className="text-2xl font-bold text-orange-600">
-              {allMeshTerms ? allMeshTerms.length : 0}
+              {isDeCS ? (allDecsTerms ? allDecsTerms.length : 0) : (allMeshTerms ? allMeshTerms.length : 0)}
             </div>
             <div className="text-sm opacity-70">Termos Únicos</div>
           </div>
         </div>
 
-        {/* Results by Element */}
+        {/* Resultados por elemento do framework */}
         {results.map((elementResult, idx) => {
-          // CORREÇÃO: Verificar se há termos antes de processar
           const hasTerms = elementResult.terms && elementResult.terms.length > 0;
 
           let highRelevanceTerms = [];
@@ -245,10 +269,11 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
           let collapsedTerms = [];
 
           if (hasTerms) {
+            // Separar termos por relevância
             highRelevanceTerms = elementResult.terms.filter((t) => t.relevanceScore >= 95);
             lowRelevanceTerms = elementResult.terms.filter((t) => t.relevanceScore < 95);
 
-            // Se todos os termos são < 95%, mostrar o primeiro e colapsar o resto
+            // Determinar quais termos mostrar expandidos por padrão
             visibleTerms =
               highRelevanceTerms.length > 0 ? highRelevanceTerms : [elementResult.terms[0]];
             collapsedTerms =
@@ -258,10 +283,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
           const elementKey = `element-${idx}`;
           const isCollapsed = collapsedElements[elementKey] !== false;
 
-          // Obter o label do elemento baseado no framework
           const elementLabel = getElementLabel(elementResult.element, researchData.format);
-
-          // Obter a sigla correta baseada no framework
           const elementSigla =
             getElementSigla(elementResult.element, researchData.format) || elementResult.element;
 
@@ -274,7 +296,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                   'shadow-sm hover:shadow-lg transition-shadow'
                 )}
               >
-                {/* Element Header - Com estilo element-display-item */}
+                {/* Cabeçalho do elemento */}
                 <div
                   className={cn(
                     'p-6 border-b',
@@ -305,12 +327,11 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                   </div>
                 </div>
 
-                {/* Terms */}
+                {/* Lista de termos */}
                 <div className="p-6 space-y-3">
-                  {/* CORREÇÃO: Só renderizar se houver termos */}
                   {hasTerms ? (
                     <>
-                      {/* Visible Terms */}
+                      {/* Termos visíveis (alta relevância ou primeiro termo) */}
                       {visibleTerms.map((term, termIdx) => (
                         <div
                           key={termIdx}
@@ -326,44 +347,123 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                               <div className="flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-yellow-500" />
                                 <h5 className="font-semibold text-lg term-highlight">
-                                  {term.term}
+                                  {isDeCS ? (
+                                    // Para DeCS, mostrar termos em múltiplos idiomas
+                                    <div className="space-y-1">
+                                      {term.terms && Object.entries(term.terms).map(([lang, termText]) => (
+                                        termText && (
+                                          <div key={lang} className="flex items-center gap-2">
+                                            <span className="text-sm">{getFlagEmoji(lang)}</span>
+                                            <span>{termText}</span>
+                                          </div>
+                                        )
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    // Para MeSH
+                                    term.term
+                                  )}
                                 </h5>
                               </div>
 
-                              {term.definition && (
-                                <p className="text-sm opacity-80 leading-relaxed">
-                                  {term.definition}
-                                </p>
-                              )}
-
-                              {term.synonyms && term.synonyms.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {term.synonyms.map((syn, synIdx) => (
-                                    <span
-                                      key={synIdx}
-                                      className={cn(
-                                        'px-2 py-1 rounded text-xs',
-                                        isDark ? 'bg-gray-800' : 'bg-gray-200'
-                                      )}
-                                    >
-                                      {syn}
-                                    </span>
+                              {/* Definições */}
+                              {isDeCS && term.definitions ? (
+                                // Para DeCS, mostrar definições em múltiplos idiomas
+                                <div className="space-y-2">
+                                  {Object.entries(term.definitions).map(([lang, def]) => (
+                                    def && (
+                                      <div key={lang} className="text-sm opacity-80">
+                                        <span className="font-medium">{getFlagEmoji(lang)} {getLanguageName(lang)}:</span>
+                                        <p className="mt-1">{def}</p>
+                                      </div>
+                                    )
                                   ))}
                                 </div>
+                              ) : (
+                                // Para MeSH
+                                term.definition && (
+                                  <p className="text-sm opacity-80 leading-relaxed">
+                                    {term.definition}
+                                  </p>
+                                )
                               )}
 
+                              {/* Sinônimos */}
+                              {term.synonyms && (
+                                isDeCS ? (
+                                  // Para DeCS
+                                  Object.entries(term.synonyms).some(([_, syns]) => syns && syns.length > 0) && (
+                                    <div className="space-y-2">
+                                      {Object.entries(term.synonyms).map(([lang, syns]) => (
+                                        syns && syns.length > 0 && (
+                                          <div key={lang}>
+                                            <span className="text-xs font-medium">{getFlagEmoji(lang)} Sinônimos:</span>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                              {syns.map((syn, synIdx) => (
+                                                <span
+                                                  key={synIdx}
+                                                  className={cn(
+                                                    'px-2 py-1 rounded text-xs',
+                                                    isDark ? 'bg-gray-800' : 'bg-gray-200'
+                                                  )}
+                                                >
+                                                  {syn}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )
+                                      ))}
+                                    </div>
+                                  )
+                                ) : (
+                                  // Para MeSH
+                                  term.synonyms.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {term.synonyms.map((syn, synIdx) => (
+                                        <span
+                                          key={synIdx}
+                                          className={cn(
+                                            'px-2 py-1 rounded text-xs',
+                                            isDark ? 'bg-gray-800' : 'bg-gray-200'
+                                          )}
+                                        >
+                                          {syn}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )
+                                )
+                              )}
+
+                              {/* Metadados (IDs e hierarquia) */}
                               <div className="flex items-center gap-4 mt-3 text-xs opacity-60">
-                                {term.meshId && (
-                                  <span className="flex items-center gap-1">
-                                    <Shield className="w-3 h-3" />
-                                    <strong>MeSH ID: {term.meshId}</strong>
-                                  </span>
-                                )}
-                                {term.meshUI && (
-                                  <span className="flex items-center gap-1">
-                                    <Tag className="w-3 h-3" />
-                                    <strong>UI: {term.meshUI}</strong>
-                                  </span>
+                                {isDeCS ? (
+                                  // Para DeCS
+                                  <>
+                                    {term.decsId && (
+                                      <span className="flex items-center gap-1">
+                                        <Shield className="w-3 h-3" />
+                                        <strong>DeCS ID: {term.decsId}</strong>
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  // Para MeSH
+                                  <>
+                                    {term.meshId && (
+                                      <span className="flex items-center gap-1">
+                                        <Shield className="w-3 h-3" />
+                                        <strong>MeSH ID: {term.meshId}</strong>
+                                      </span>
+                                    )}
+                                    {term.meshUI && (
+                                      <span className="flex items-center gap-1">
+                                        <Tag className="w-3 h-3" />
+                                        <strong>UI: {term.meshUI}</strong>
+                                      </span>
+                                    )}
+                                  </>
                                 )}
                                 {term.treeNumbers && term.treeNumbers.length > 0 && (
                                   <span className="flex items-center gap-1">
@@ -375,6 +475,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                             </div>
 
                             <div className="flex items-start gap-2">
+                              {/* Badge de relevância */}
                               {term.relevanceScore && (
                                 <div
                                   className={cn(
@@ -390,10 +491,14 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                                 </div>
                               )}
 
+                              {/* Botão copiar */}
                               <button
-                                onClick={() =>
-                                  copyToClipboard(term.term, `element-${idx}-term-${termIdx}`)
-                                }
+                                onClick={() => {
+                                  const textToCopy = isDeCS && term.terms ? 
+                                    Object.values(term.terms).filter(t => t).join(' | ') : 
+                                    term.term;
+                                  copyToClipboard(textToCopy, `element-${idx}-term-${termIdx}`);
+                                }}
                                 className={cn(
                                   'p-1.5 rounded transition-all copy-button',
                                   isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
@@ -411,10 +516,9 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                         </div>
                       ))}
 
-                      {/* Collapsed Terms */}
+                      {/* Botão para expandir/colapsar termos de menor relevância */}
                       {collapsedTerms.length > 0 && (
                         <>
-                          {/* Toggle Button */}
                           <button
                             onClick={() =>
                               setCollapsedElements({
@@ -439,7 +543,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                               : `Ocultar ${collapsedTerms.length} termos relacionados`}
                           </button>
 
-                          {/* Collapsed Terms Content */}
+                          {/* Termos colapsados (baixa relevância) */}
                           {!isCollapsed &&
                             collapsedTerms.map((term, termIdx) => (
                               <div
@@ -456,44 +560,67 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                                     <div className="flex items-center gap-2">
                                       <Sparkles className="w-4 h-4 text-yellow-500" />
                                       <h5 className="font-semibold text-lg term-highlight">
-                                        {term.term}
+                                        {isDeCS ? (
+                                          <div className="space-y-1">
+                                            {term.terms && Object.entries(term.terms).map(([lang, termText]) => (
+                                              termText && (
+                                                <div key={lang} className="flex items-center gap-2">
+                                                  <span className="text-sm">{getFlagEmoji(lang)}</span>
+                                                  <span>{termText}</span>
+                                                </div>
+                                              )
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          term.term
+                                        )}
                                       </h5>
                                     </div>
 
-                                    {term.definition && (
-                                      <p className="text-sm opacity-80 leading-relaxed">
-                                        {term.definition}
-                                      </p>
-                                    )}
-
-                                    {term.synonyms && term.synonyms.length > 0 && (
-                                      <div className="flex flex-wrap gap-2 mt-2">
-                                        {term.synonyms.map((syn, synIdx) => (
-                                          <span
-                                            key={synIdx}
-                                            className={cn(
-                                              'px-2 py-1 rounded text-xs',
-                                              isDark ? 'bg-gray-800' : 'bg-gray-200'
-                                            )}
-                                          >
-                                            {syn}
-                                          </span>
+                                    {isDeCS && term.definitions ? (
+                                      <div className="space-y-2">
+                                        {Object.entries(term.definitions).map(([lang, def]) => (
+                                          def && (
+                                            <div key={lang} className="text-sm opacity-80">
+                                              <span className="font-medium">{getFlagEmoji(lang)} {getLanguageName(lang)}:</span>
+                                              <p className="mt-1">{def}</p>
+                                            </div>
+                                          )
                                         ))}
                                       </div>
+                                    ) : (
+                                      term.definition && (
+                                        <p className="text-sm opacity-80 leading-relaxed">
+                                          {term.definition}
+                                        </p>
+                                      )
                                     )}
 
                                     <div className="flex items-center gap-4 mt-3 text-xs opacity-60">
-                                      {term.meshId && (
-                                        <span className="flex items-center gap-1">
-                                          <Shield className="w-3 h-3" />
-                                          <strong>MeSH ID: {term.meshId}</strong>
-                                        </span>
-                                      )}
-                                      {term.meshUI && (
-                                        <span className="flex items-center gap-1">
-                                          <Tag className="w-3 h-3" />
-                                          <strong>UI: {term.meshUI}</strong>
-                                        </span>
+                                      {isDeCS ? (
+                                        <>
+                                          {term.decsId && (
+                                            <span className="flex items-center gap-1">
+                                              <Shield className="w-3 h-3" />
+                                              <strong>DeCS ID: {term.decsId}</strong>
+                                            </span>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          {term.meshId && (
+                                            <span className="flex items-center gap-1">
+                                              <Shield className="w-3 h-3" />
+                                              <strong>MeSH ID: {term.meshId}</strong>
+                                            </span>
+                                          )}
+                                          {term.meshUI && (
+                                            <span className="flex items-center gap-1">
+                                              <Tag className="w-3 h-3" />
+                                              <strong>UI: {term.meshUI}</strong>
+                                            </span>
+                                          )}
+                                        </>
                                       )}
                                       {term.treeNumbers && term.treeNumbers.length > 0 && (
                                         <span className="flex items-center gap-1">
@@ -521,12 +648,12 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                                     )}
 
                                     <button
-                                      onClick={() =>
-                                        copyToClipboard(
-                                          term.term,
-                                          `element-${idx}-collapsed-term-${termIdx}`
-                                        )
-                                      }
+                                      onClick={() => {
+                                        const textToCopy = isDeCS && term.terms ? 
+                                          Object.values(term.terms).filter(t => t).join(' | ') : 
+                                          term.term;
+                                        copyToClipboard(textToCopy, `element-${idx}-collapsed-term-${termIdx}`);
+                                      }}
                                       className={cn(
                                         'p-1.5 rounded transition-all copy-button',
                                         isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
@@ -548,7 +675,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                       )}
                     </>
                   ) : (
-                    // Mensagem quando não há termos MeSH
+                    // Mensagem quando não há termos encontrados
                     <div
                       className={cn(
                         'p-6 text-center rounded-lg',
@@ -557,7 +684,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                     >
                       <Info className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p className="text-sm opacity-70">
-                        Nenhum termo MeSH encontrado para este elemento
+                        Nenhum termo {isDeCS ? 'DeCS' : 'MeSH'} encontrado para este elemento
                       </p>
                     </div>
                   )}
@@ -570,11 +697,15 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
     );
   };
 
-  // Nova função para renderizar o resumo final dos termos MeSH
-  const renderFinalSummary = () => {
-    if (!allMeshTerms || allMeshTerms.length === 0 || !meshResults) return null;
-
-    const meshContent = generateDatabaseContent();
+  /**
+   * Renderiza o resumo final com todos os termos únicos encontrados
+   * @param {boolean} isDeCS - Indica se são resultados DeCS ou MeSH
+   */
+  const renderFinalSummary = (isDeCS = false) => {
+    const terms = isDeCS ? allDecsTerms : allMeshTerms;
+    const results = isDeCS ? decsResults : meshResults;
+    
+    if (!terms || terms.length === 0 || !results) return null;
 
     return (
       <div
@@ -584,16 +715,21 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
           'shadow-lg'
         )}
       >
-        {/* Header - Clicável para expandir/colapsar */}
+        {/* Cabeçalho do resumo (clicável para expandir/colapsar) */}
         <div
-          className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white cursor-pointer hover:opacity-90 transition-opacity"
+          className={cn(
+            'px-6 py-4 text-white cursor-pointer hover:opacity-90 transition-opacity',
+            isDeCS 
+              ? 'bg-gradient-to-r from-green-500 to-green-600' 
+              : 'bg-gradient-to-r from-blue-500 to-blue-600'
+          )}
           onClick={() => setSummaryCollapsed(!summaryCollapsed)}
         >
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <BookOpen className="w-6 h-6" />
-                Resumo Final - Termos MeSH Identificados
+                Resumo Final - Termos {isDeCS ? 'DeCS' : 'MeSH'} Identificados
               </h3>
               <p className="text-sm opacity-90 mt-1">
                 Todos os descritores controlados encontrados para sua pesquisa
@@ -607,10 +743,11 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
           </div>
         </div>
 
+        {/* Conteúdo do resumo */}
         {!summaryCollapsed && (
           <div className="p-6 space-y-6">
-            {/* Lista consolidada de todos os termos únicos - Colapsável */}
             <div>
+              {/* Lista de termos únicos (colapsável) */}
               <div
                 className={cn(
                   'flex items-center justify-between mb-4 cursor-pointer p-3 -m-3 rounded-lg transition-colors',
@@ -620,12 +757,12 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
               >
                 <h4 className="font-semibold text-lg flex items-center gap-2">
                   <List className="w-5 h-5" />
-                  Todos os Termos MeSH Únicos ({allMeshTerms.length})
+                  Todos os Termos {isDeCS ? 'DeCS' : 'MeSH'} Únicos ({terms.length})
                 </h4>
                 <div className="flex items-center gap-2">
                   <span className="text-sm opacity-70">
                     {uniqueTermsCollapsed
-                      ? `Clique para visualizar os ${allMeshTerms.length} termos únicos`
+                      ? `Clique para visualizar os ${terms.length} termos únicos`
                       : 'Clique para ocultar'}
                   </span>
                   {uniqueTermsCollapsed ? (
@@ -636,17 +773,16 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                 </div>
               </div>
 
+              {/* Grid de termos únicos */}
               {!uniqueTermsCollapsed && (
                 <div className="grid md:grid-cols-2 gap-3">
-                  {allMeshTerms.map((term, idx) => {
-                    // Busca a pontuação do termo nos resultados
-                    let score = 0;
-                    meshResults.forEach((result) => {
-                      const foundTerm = result.terms.find((t) => t.meshId === term.meshId);
-                      if (foundTerm && foundTerm.relevanceScore) {
-                        score = foundTerm.relevanceScore;
-                      }
-                    });
+                  {terms.map((term, idx) => {
+                    let score = term.relevanceScore || 0;
+                    
+                    // Para DeCS, pegar o termo principal (português por padrão)
+                    const displayTerm = isDeCS && term.terms ? 
+                      term.terms.pt || term.terms.en || Object.values(term.terms)[0] : 
+                      term.term;
 
                     return (
                       <div
@@ -669,10 +805,10 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
                           >
                             {score}%
                           </div>
-                          <span className="font-medium">{term.term}</span>
+                          <span className="font-medium">{displayTerm}</span>
                         </div>
                         <button
-                          onClick={() => copyToClipboard(term.term, `unique-term-${idx}`)}
+                          onClick={() => copyToClipboard(displayTerm, `unique-term-${idx}`)}
                           className={cn(
                             'p-1.5 rounded transition-all copy-button',
                             isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
@@ -698,7 +834,7 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
 
   return (
     <div className="space-y-8">
-      {/* Search Button Section */}
+      {/* Seção de busca principal */}
       <Card className={cn('overflow-hidden', isDark ? 'bg-gray-800 border-gray-700' : 'bg-white')}>
         <div
           className={cn(
@@ -710,50 +846,130 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
         >
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Search className="w-6 h-6" />
-            Buscar Descritores MeSH
+            Buscar Descritores Controlados
           </h3>
           <p className="text-sm opacity-70 mt-1">
-            Encontre sugestões termos MeSH para sua estratégia de busca
+            Encontre sugestões de termos MeSH e DeCS para sua estratégia de busca
           </p>
         </div>
 
         <CardContent className="p-8">
-          <div className="flex justify-center">
-            {/* MeSH Button */}
-            <button
-              onClick={searchMeSH}
-              disabled={meshLoading}
-              className={cn(
-                'search-button group relative p-6 rounded-xl transition-all',
-                'hover:shadow-xl transform hover:scale-105',
-                'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
-                'min-w-[280px]',
-                meshLoading && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <div className="relative z-10 space-y-3">
-                <div className="flex items-center justify-center gap-3">
-                  {meshLoading ? (
-                    <Loader2 className="w-8 h-8 animate-spin" />
-                  ) : (
-                    <Globe className="w-8 h-8" />
+          {/* Navegação entre visualizações */}
+          {(meshResults || decsResults) && (
+            <div className="flex justify-center gap-4 mb-6">
+              <button
+                onClick={() => setActiveView('selection')}
+                className={cn(
+                  'px-4 py-2 rounded-lg transition-all',
+                  activeView === 'selection'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                )}
+              >
+                Voltar à Seleção
+              </button>
+              {meshResults && (
+                <button
+                  onClick={() => setActiveView('mesh')}
+                  className={cn(
+                    'px-4 py-2 rounded-lg transition-all',
+                    activeView === 'mesh'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
                   )}
-                </div>
-                <div>
-                  <h4 className="font-bold text-lg">
-                    {meshLoading ? 'Buscando...' : 'Buscar no MeSH'}
-                  </h4>
+                >
+                  Ver Resultados MeSH
+                </button>
+              )}
+              {decsResults && (
+                <button
+                  onClick={() => setActiveView('decs')}
+                  className={cn(
+                    'px-4 py-2 rounded-lg transition-all',
+                    activeView === 'decs'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  )}
+                >
+                  Ver Resultados DeCS
+                </button>
+              )}
+            </div>
+          )}
 
-                  <p className="text-sm opacity-90 mt-1">Medical Subject Headings</p>
+          {/* Área de seleção de busca */}
+          {activeView === 'selection' && (
+            <div className="flex justify-center gap-6">
+              {/* Botão MeSH */}
+              <button
+                onClick={searchMeSH}
+                disabled={meshLoading}
+                className={cn(
+                  'search-button group relative p-6 rounded-xl transition-all',
+                  'hover:shadow-xl transform hover:scale-105',
+                  'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
+                  'min-w-[280px]',
+                  meshLoading && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-center gap-3">
+                    {meshLoading ? (
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    ) : (
+                      <Globe className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">
+                      {meshLoading ? 'Buscando...' : meshResults ? 'Buscar Novamente no MeSH' : 'Buscar no MeSH'}
+                    </h4>
+                    <p className="text-sm opacity-90 mt-1">Medical Subject Headings</p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          </div>
+              </button>
+
+              {/* Botão DeCS */}
+              <button
+                onClick={searchDeCS}
+                disabled={decsLoading}
+                className={cn(
+                  'search-button group relative p-6 rounded-xl transition-all',
+                  'hover:shadow-xl transform hover:scale-105',
+                  'bg-gradient-to-br from-green-500 to-green-600 text-white',
+                  'min-w-[280px]',
+                  decsLoading && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-center gap-3">
+                    {decsLoading ? (
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    ) : (
+                      <Languages className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">
+                      {decsLoading ? 'Buscando...' : decsResults ? 'Buscar Novamente no DeCS' : 'Buscar no DeCS'}
+                    </h4>
+                    <p className="text-sm opacity-90 mt-1">Descritores em Ciências da Saúde</p>
+                    <div className="flex justify-center gap-2 mt-2">
+                      <span title="Português">🇧🇷</span>
+                      <span title="Español">🇪🇸</span>
+                      <span title="English">🇺🇸</span>
+                      <span title="Français">🇫🇷</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* MeSH Results */}
-      {(meshResults || meshDebug) && (
+      {/* Resultados MeSH */}
+      {activeView === 'mesh' && meshResults && (
         <div className="space-y-6">
           <div className="section-divider">
             <span
@@ -779,10 +995,9 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
               </p>
             </div>
 
-            <CardContent className="p-6">{renderResults(meshResults)}</CardContent>
+            <CardContent className="p-6">{renderResults(meshResults, false)}</CardContent>
           </Card>
 
-          {/* PRIMEIRO FloatingActionButtons - Entre os resultados MeSH e o resumo final */}
           <div className="flex justify-center my-8">
             <FloatingActionButtons
               variant="final"
@@ -792,10 +1007,8 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
             />
           </div>
 
-          {/* Resumo Final */}
-          {renderFinalSummary()}
+          {renderFinalSummary(false)}
 
-          {/* SEGUNDO FloatingActionButtons - Depois do resumo final */}
           <div className="flex justify-center mt-8">
             <FloatingActionButtons
               variant="final"
@@ -807,8 +1020,60 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
         </div>
       )}
 
+      {/* Resultados DeCS */}
+      {activeView === 'decs' && decsResults && (
+        <div className="space-y-6">
+          <div className="section-divider">
+            <span
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-medium',
+                isDark ? 'bg-gray-800' : 'bg-white'
+              )}
+            >
+              Resultados DeCS
+            </span>
+          </div>
+
+          <Card
+            className={cn('overflow-hidden', isDark ? 'bg-gray-800 border-gray-700' : 'bg-white')}
+          >
+            <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Languages className="w-6 h-6" />
+                Descritores em Ciências da Saúde (DeCS)
+              </h3>
+              <p className="text-sm opacity-90 mt-1">
+                Vocabulário estruturado e trilíngue criado pela BIREME
+              </p>
+            </div>
+
+            <CardContent className="p-6">{renderResults(decsResults, true)}</CardContent>
+          </Card>
+
+          <div className="flex justify-center my-8">
+            <FloatingActionButtons
+              variant="final"
+              isDark={isDark}
+              conversations={conversations}
+              finalResult={finalResult}
+            />
+          </div>
+
+          {renderFinalSummary(true)}
+
+          <div className="flex justify-center mt-8">
+            <FloatingActionButtons
+              variant="final"
+              isDark={isDark}
+              conversations={conversations}
+              finalResult={finalResult}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Estilos CSS para animações e efeitos visuais */}
       <style jsx>{`
-        /* CSS adicional para syntax highlighting e animações */
         .term-highlight {
           background: linear-gradient(to right, transparent 0%, yellow 50%, transparent 100%);
           background-size: 200% 100%;
@@ -900,7 +1165,6 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
           background: inherit;
         }
 
-        /* Ajuste para element-display-item dentro do MeshSearch */
         .mesh-result-card .element-display-item {
           background-color: transparent;
           padding: 0;
@@ -916,7 +1180,8 @@ const MeshSearch = ({ researchData, isDark, conversations, finalResult }) => {
   );
 };
 
-MeshSearch.propTypes = {
+// Definição dos PropTypes para validação de tipos
+MeshDecsSearch.propTypes = {
   researchData: PropTypes.shape({
     format: PropTypes.string.isRequired,
     question: PropTypes.string.isRequired,
@@ -929,4 +1194,4 @@ MeshSearch.propTypes = {
   finalResult: PropTypes.object,
 };
 
-export default MeshSearch;
+export default MeshDecsSearch;
