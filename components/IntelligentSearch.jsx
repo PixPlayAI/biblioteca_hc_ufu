@@ -1,7 +1,7 @@
 // components/IntelligentSearch.jsx
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from './ui/card';
 import { 
   Search, 
   Sparkles, 
@@ -17,8 +17,8 @@ import {
   Target,
   Lightbulb
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import MeshDecsSearch from '../MeshDecsSearch';
+import { cn } from '../lib/utils';
+import MeshDecsSearch from './MeshDecsSearch';
 
 const IntelligentSearch = ({ isDark }) => {
   const [userInput, setUserInput] = useState('');

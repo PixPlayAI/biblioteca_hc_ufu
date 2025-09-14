@@ -7,7 +7,7 @@ git reset --hard <commit-hash>
 git reset --hard 7165649c8658e5717f3401029d3b7705c0c4f228
 
 git add .
-git commit -m "Inserindo termos DeCS V2 - OK RECUPERADO"
+git commit -m "Adicionando botão de busca inteligente v1"
 git push origin main
 
 
