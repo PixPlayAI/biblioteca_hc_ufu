@@ -52,26 +52,47 @@ const IntelligentSearch = ({ isDark }) => {
     setCurrentSearchStep('Analisando sua pesquisa...');
 
     try {
-      // Passo 1: Análise inteligente
+      // Criar timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 58000); // 58 segundos
+      
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userInput: userInput.trim()
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao processar busca');
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get("content-type");
+      let data;
+      
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        // Se não for JSON, tentar ler como texto
+        const text = await response.text();
+        console.error('Resposta não-JSON recebida:', text);
+        
+        // Se for erro de timeout da Vercel
+        if (response.status === 504 || text.includes('error') || text.includes('timeout')) {
+          throw new Error('A análise demorou muito. Tente com uma pergunta mais simples.');
+        }
+        
+        throw new Error('Resposta inválida do servidor');
       }
 
-      const data = await response.json();
-      console.log('📥 Resposta da análise:', data);
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao processar busca');
+      }
       
       // Validar resposta
       if (!data.analysis || !data.descriptorData) {
-        throw new Error('Resposta inválida do servidor');
+        console.warn('Resposta incompleta, usando dados parciais');
       }
       
       setAnalysis(data.analysis);
@@ -80,7 +101,7 @@ const IntelligentSearch = ({ isDark }) => {
       setIsLoading(false);
       setCurrentSearchStep('');
 
-      // Passo 2: Buscar descritores automaticamente após um pequeno delay
+      // Buscar descritores automaticamente se disponível
       if (data.descriptorData && data.descriptorData.frameworkElements) {
         setTimeout(() => {
           searchDescriptors(data.descriptorData, searchType);
@@ -89,7 +110,19 @@ const IntelligentSearch = ({ isDark }) => {
 
     } catch (err) {
       console.error('❌ Erro na busca:', err);
-      setError(err.message || 'Erro ao processar busca');
+      
+      // Tratamento específico de erros
+      let errorMessage = 'Erro ao processar busca';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'A requisição excedeu o tempo limite. Tente novamente.';
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Tempo limite excedido. Tente com uma pergunta mais curta.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setIsLoading(false);
       setCurrentSearchStep('');
     }
@@ -105,53 +138,67 @@ const IntelligentSearch = ({ isDark }) => {
     console.log('🔍 Iniciando busca de descritores:', { data, type });
 
     try {
-      // Buscar MeSH se necessário
+      // Criar timeout controller para cada busca
+      const createTimeoutFetch = async (url, body, timeout = 58000) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
+        }
+      };
+
+      // Buscar MeSH
       if (type === 'mesh' || type === 'both') {
         setCurrentSearchStep('Buscando descritores MeSH...');
         try {
-          console.log('📤 Enviando para /api/search-mesh:', data);
+          const meshResponse = await createTimeoutFetch('/api/search-mesh', data);
           
-          const meshResponse = await fetch('/api/search-mesh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-
           if (meshResponse.ok) {
-            const meshData = await meshResponse.json();
-            console.log('✅ Resultados MeSH recebidos:', meshData);
-            setMeshResults(meshData);
-          } else {
-            const errorText = await meshResponse.text();
-            console.error('❌ Erro na resposta MeSH:', errorText);
+            const contentType = meshResponse.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+              const meshData = await meshResponse.json();
+              console.log('✅ Resultados MeSH recebidos');
+              setMeshResults(meshData);
+            }
           }
         } catch (meshError) {
-          console.error('❌ Erro ao buscar MeSH:', meshError);
+          console.error('❌ Erro ao buscar MeSH:', meshError.message);
+          if (meshError.name !== 'AbortError') {
+            // Continuar mesmo com erro
+          }
         }
       }
 
-      // Buscar DeCS se necessário
+      // Buscar DeCS
       if (type === 'decs' || type === 'both') {
         setCurrentSearchStep('Buscando descritores DeCS...');
         try {
-          console.log('📤 Enviando para /api/search-decs:', data);
+          const decsResponse = await createTimeoutFetch('/api/search-decs', data);
           
-          const decsResponse = await fetch('/api/search-decs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-
           if (decsResponse.ok) {
-            const decsData = await decsResponse.json();
-            console.log('✅ Resultados DeCS recebidos:', decsData);
-            setDecsResults(decsData);
-          } else {
-            const errorText = await decsResponse.text();
-            console.error('❌ Erro na resposta DeCS:', errorText);
+            const contentType = decsResponse.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+              const decsData = await decsResponse.json();
+              console.log('✅ Resultados DeCS recebidos');
+              setDecsResults(decsData);
+            }
           }
         } catch (decsError) {
-          console.error('❌ Erro ao buscar DeCS:', decsError);
+          console.error('❌ Erro ao buscar DeCS:', decsError.message);
+          if (decsError.name !== 'AbortError') {
+            // Continuar mesmo com erro
+          }
         }
       }
     } finally {
@@ -197,7 +244,7 @@ const IntelligentSearch = ({ isDark }) => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Framework Detectado</p>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {analysis.detectedFramework}
+                {analysis.detectedFramework || 'PICO'}
               </p>
             </div>
             <div className="text-right">
@@ -209,7 +256,7 @@ const IntelligentSearch = ({ isDark }) => {
           </div>
 
           {/* Elementos identificados */}
-          {analysis.elements && (
+          {analysis.elements && Object.keys(analysis.elements).length > 0 && (
             <div>
               <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Target className="w-5 h-5" />
@@ -229,10 +276,12 @@ const IntelligentSearch = ({ isDark }) => {
                         {key}
                       </span>
                       <div className="flex-1">
-                        <p className="font-medium mb-1">{element.description}</p>
+                        <p className="font-medium mb-1">
+                          {element.description || element.concepts?.[0] || 'Não especificado'}
+                        </p>
                         {element.concepts && element.concepts.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {element.concepts.map((concept, idx) => (
+                            {element.concepts.slice(0, 5).map((concept, idx) => (
                               <span key={idx} className={cn(
                                 'px-2 py-1 rounded-full text-xs',
                                 isDark ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-700'
@@ -258,7 +307,7 @@ const IntelligentSearch = ({ isDark }) => {
             </div>
           )}
 
-          {/* Botão para retentar busca de descritores se falhou */}
+          {/* Botão para retentar busca de descritores */}
           {!isSearchingDescriptors && descriptorData && !meshResults && !decsResults && (
             <div className="text-center">
               <button
@@ -433,6 +482,12 @@ const IntelligentSearch = ({ isDark }) => {
                     <p className="text-sm text-red-700 dark:text-red-300 mt-1">
                       {error}
                     </p>
+                    <button
+                      onClick={handleSearch}
+                      className="mt-2 text-sm underline text-red-700 dark:text-red-300 hover:text-red-800"
+                    >
+                      Tentar novamente
+                    </button>
                   </div>
                 </div>
               </div>
