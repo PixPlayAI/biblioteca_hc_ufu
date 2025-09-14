@@ -12,35 +12,45 @@ export const config = {
     responseLimit: false,
     externalResolver: true,
   },
-  maxDuration: 60, // Máximo permitido pela Vercel no plano Pro
+  maxDuration: 60,
 };
 
 // Função simplificada para gerar o prompt
-function generateIntelligentSearchPrompt(userInput) {
-  return `Analise este texto de pesquisa e extraia elementos para busca MeSH/DeCS.
+function generateSimplePrompt(userInput) {
+  return `Analise este texto de pesquisa em saúde e extraia os conceitos principais para busca em bases de dados médicas.
 
 TEXTO: "${userInput}"
 
-Identifique o framework (PICO, PEO, etc.) e retorne um JSON simples:
+TAREFA:
+1. Identifique os conceitos médicos e científicos principais
+2. Traduza cada conceito para inglês científico apropriado
+3. Para cada conceito, forneça sinônimos e termos relacionados em inglês
+
+REGRAS:
+- Extraia entre 3 a 8 conceitos principais
+- Use terminologia médica padrão em inglês
+- Inclua variações e sinônimos quando relevante
+- Separe conceitos compostos quando apropriado
+- Foque em termos que provavelmente existem em vocabulários controlados médicos
+
+Retorne um JSON simples no formato:
 {
-  "detectedFramework": "PICO",
-  "confidence": 0.8,
-  "elements": {
-    "P": {
-      "description": "população/pacientes",
-      "concepts": ["termo1", "termo2"]
+  "concepts": [
+    {
+      "original": "termo original em português",
+      "english": "termo em inglês",
+      "synonyms": ["sinônimo1", "sinônimo2"],
+      "related": ["termo relacionado1", "termo relacionado2"]
     }
-  },
-  "analysis": "resumo da análise"
+  ],
+  "summary": "breve resumo do que o pesquisador está buscando"
+}`;
 }
 
-Use APENAS as siglas corretas de cada framework. Seja BREVE e DIRETO.`;
-}
-
-// Função otimizada para processar a busca
+// Função para processar a busca inteligente
 async function processIntelligentSearch(userInput) {
   try {
-    console.log('🤖 Iniciando análise rápida...');
+    console.log('🤖 Iniciando análise e tradução de conceitos...');
     
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
@@ -49,15 +59,15 @@ async function processIntelligentSearch(userInput) {
         messages: [
           {
             role: 'system',
-            content: 'Responda APENAS com JSON válido. Seja extremamente conciso.'
+            content: 'Você é um especialista em terminologia médica e científica. Extraia e traduza conceitos de forma precisa e objetiva. Responda APENAS com JSON válido.'
           },
           {
             role: 'user',
-            content: generateIntelligentSearchPrompt(userInput)
+            content: generateSimplePrompt(userInput)
           }
         ],
         temperature: 0.1,
-        max_tokens: 1000, // Reduzido para resposta mais rápida
+        max_tokens: 1500,
         response_format: { type: "json_object" }
       },
       {
@@ -65,7 +75,7 @@ async function processIntelligentSearch(userInput) {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 25000 // 25 segundos para deixar margem
+        timeout: 25000
       }
     );
 
@@ -73,16 +83,17 @@ async function processIntelligentSearch(userInput) {
     let analysisResult = JSON.parse(content);
     
     // Garantir estrutura mínima
-    if (!analysisResult.detectedFramework) {
-      analysisResult.detectedFramework = 'PICO';
+    if (!analysisResult.concepts || analysisResult.concepts.length === 0) {
+      analysisResult.concepts = [{
+        original: userInput,
+        english: userInput,
+        synonyms: [],
+        related: []
+      }];
     }
-    if (!analysisResult.elements || Object.keys(analysisResult.elements).length === 0) {
-      analysisResult.elements = {
-        P: {
-          description: userInput,
-          concepts: [userInput]
-        }
-      };
+    
+    if (!analysisResult.summary) {
+      analysisResult.summary = userInput;
     }
     
     return analysisResult;
@@ -91,27 +102,24 @@ async function processIntelligentSearch(userInput) {
     console.error('❌ Erro na análise:', error.message);
     // Retorno mínimo em caso de erro
     return {
-      detectedFramework: 'PICO',
-      confidence: 0.5,
-      elements: {
-        P: {
-          description: userInput,
-          concepts: [userInput]
-        }
-      },
-      analysis: userInput
+      concepts: [{
+        original: userInput,
+        english: userInput,
+        synonyms: [],
+        related: []
+      }],
+      summary: userInput
     };
   }
 }
 
-// Handler principal otimizado
+// Handler principal
 export default async function handler(req, res) {
   // Configurar timeout da response
   if (res.socket) {
-    res.socket.setTimeout(59000); // 59 segundos
+    res.socket.setTimeout(59000);
   }
   
-  // Configurar headers
   res.setHeader('Content-Type', 'application/json');
   
   if (req.method !== 'POST') {
@@ -129,43 +137,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 Processamento rápido iniciado');
+    console.log('🚀 Processamento iniciado');
     
     // Processar com timeout controlado
     const analysisPromise = processIntelligentSearch(userInput);
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 50000) // 50 segundos
+      setTimeout(() => reject(new Error('Timeout')), 50000)
     );
     
     const analysisResult = await Promise.race([analysisPromise, timeoutPromise]);
     
-    // Preparar dados mínimos
-    const descriptorData = {
-      frameworkElements: {},
-      fullQuestion: analysisResult.analysis || userInput,
-      frameworkType: analysisResult.detectedFramework || 'PICO'
-    };
+    // Preparar dados para busca nas APIs
+    const searchTerms = [];
     
-    // Converter elementos
-    if (analysisResult.elements) {
-      Object.entries(analysisResult.elements).forEach(([key, value]) => {
-        descriptorData.frameworkElements[key] = value.description || value.concepts?.[0] || '';
-      });
-    }
+    // Adicionar todos os termos em inglês e sinônimos
+    analysisResult.concepts.forEach(concept => {
+      searchTerms.push(concept.english);
+      if (concept.synonyms && concept.synonyms.length > 0) {
+        searchTerms.push(...concept.synonyms.slice(0, 2)); // Limitar sinônimos
+      }
+      if (concept.related && concept.related.length > 0) {
+        searchTerms.push(...concept.related.slice(0, 1)); // Limitar relacionados
+      }
+    });
     
-    // Garantir pelo menos um elemento
-    if (Object.keys(descriptorData.frameworkElements).length === 0) {
-      descriptorData.frameworkElements.P = userInput;
-    }
+    // Remover duplicatas
+    const uniqueSearchTerms = [...new Set(searchTerms)];
     
     const response = {
       success: true,
       analysis: analysisResult,
-      descriptorData: descriptorData,
+      searchTerms: uniqueSearchTerms,
+      originalText: userInput,
       timestamp: new Date().toISOString()
     };
     
-    console.log('✅ Resposta enviada');
+    console.log('✅ Resposta preparada com', uniqueSearchTerms.length, 'termos de busca');
     return res.status(200).json(response);
     
   } catch (error) {
@@ -175,21 +182,16 @@ export default async function handler(req, res) {
     const fallbackResponse = {
       success: true,
       analysis: {
-        detectedFramework: 'PICO',
-        confidence: 0.5,
-        elements: {
-          P: {
-            description: userInput,
-            concepts: [userInput]
-          }
-        },
-        analysis: userInput
+        concepts: [{
+          original: userInput,
+          english: userInput,
+          synonyms: [],
+          related: []
+        }],
+        summary: userInput
       },
-      descriptorData: {
-        frameworkElements: { P: userInput },
-        fullQuestion: userInput,
-        frameworkType: 'PICO'
-      },
+      searchTerms: [userInput],
+      originalText: userInput,
       timestamp: new Date().toISOString()
     };
     

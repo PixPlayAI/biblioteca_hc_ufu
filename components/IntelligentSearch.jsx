@@ -15,25 +15,26 @@ import {
   Languages,
   BookOpen,
   Target,
-  Lightbulb
+  Lightbulb,
+  Copy,
+  CheckCheck,
+  Info
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import MeshDecsSearch from './MeshDecsSearch';
 
 const IntelligentSearch = ({ isDark }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSearchingDescriptors, setIsSearchingDescriptors] = useState(false);
+  const [isSearchingMesh, setIsSearchingMesh] = useState(false);
+  const [isSearchingDecs, setIsSearchingDecs] = useState(false);
   const [analysis, setAnalysis] = useState(null);
-  const [descriptorData, setDescriptorData] = useState(null);
   const [meshResults, setMeshResults] = useState(null);
   const [decsResults, setDecsResults] = useState(null);
   const [error, setError] = useState(null);
   const [searchType, setSearchType] = useState('both');
-  const [showResults, setShowResults] = useState(false);
-  const [currentSearchStep, setCurrentSearchStep] = useState('');
+  const [copiedString, setCopiedString] = useState(null);
 
-  // Exemplos de entrada para ajudar o usuário
+  // Exemplos de entrada
   const examples = [
     "Quero estudar o efeito da acupuntura na dor lombar crônica em idosos",
     "Eficácia do uso de aplicativos móveis para controle glicêmico em diabéticos tipo 2",
@@ -46,289 +47,97 @@ const IntelligentSearch = ({ isDark }) => {
 
     setIsLoading(true);
     setError(null);
-    setShowResults(false);
+    setAnalysis(null);
     setMeshResults(null);
     setDecsResults(null);
-    setCurrentSearchStep('Analisando sua pesquisa...');
 
     try {
-      // Criar timeout controller
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 58000); // 58 segundos
-      
+      // Análise e tradução dos conceitos
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userInput: userInput.trim()
-        }),
-        signal: controller.signal
+        body: JSON.stringify({ userInput: userInput.trim() })
       });
       
-      clearTimeout(timeoutId);
-
-      // Verificar se a resposta é JSON válido
-      const contentType = response.headers.get("content-type");
-      let data;
-      
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        // Se não for JSON, tentar ler como texto
-        const text = await response.text();
-        console.error('Resposta não-JSON recebida:', text);
-        
-        // Se for erro de timeout da Vercel
-        if (response.status === 504 || text.includes('error') || text.includes('timeout')) {
-          throw new Error('A análise demorou muito. Tente com uma pergunta mais simples.');
-        }
-        
-        throw new Error('Resposta inválida do servidor');
-      }
-
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao processar busca');
+        throw new Error('Erro ao processar busca');
       }
       
-      // Validar resposta
-      if (!data.analysis || !data.descriptorData) {
-        console.warn('Resposta incompleta, usando dados parciais');
+      const data = await response.json();
+      setAnalysis(data);
+      
+      // Buscar descritores automaticamente
+      if (data.searchTerms && data.searchTerms.length > 0) {
+        searchDescriptors(data.searchTerms, searchType);
       }
       
-      setAnalysis(data.analysis);
-      setDescriptorData(data.descriptorData);
-      setShowResults(true);
-      setIsLoading(false);
-      setCurrentSearchStep('');
-
-      // Buscar descritores automaticamente se disponível
-      if (data.descriptorData && data.descriptorData.frameworkElements) {
-        setTimeout(() => {
-          searchDescriptors(data.descriptorData, searchType);
-        }, 500);
-      }
-
     } catch (err) {
       console.error('❌ Erro na busca:', err);
-      
-      // Tratamento específico de erros
-      let errorMessage = 'Erro ao processar busca';
-      
-      if (err.name === 'AbortError') {
-        errorMessage = 'A requisição excedeu o tempo limite. Tente novamente.';
-      } else if (err.message.includes('timeout')) {
-        errorMessage = 'Tempo limite excedido. Tente com uma pergunta mais curta.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      setIsLoading(false);
-      setCurrentSearchStep('');
-    }
-  };
-
-  const searchDescriptors = async (data, type) => {
-    if (!data || !data.frameworkElements) {
-      console.error('❌ Dados inválidos para busca de descritores');
-      return;
-    }
-
-    setIsSearchingDescriptors(true);
-    console.log('🔍 Iniciando busca de descritores:', { data, type });
-
-    try {
-      // Criar timeout controller para cada busca
-      const createTimeoutFetch = async (url, body, timeout = 58000) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-          return response;
-        } catch (err) {
-          clearTimeout(timeoutId);
-          throw err;
-        }
-      };
-
-      // Buscar MeSH
-      if (type === 'mesh' || type === 'both') {
-        setCurrentSearchStep('Buscando descritores MeSH...');
-        try {
-          const meshResponse = await createTimeoutFetch('/api/search-mesh', data);
-          
-          if (meshResponse.ok) {
-            const contentType = meshResponse.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-              const meshData = await meshResponse.json();
-              console.log('✅ Resultados MeSH recebidos');
-              setMeshResults(meshData);
-            }
-          }
-        } catch (meshError) {
-          console.error('❌ Erro ao buscar MeSH:', meshError.message);
-          if (meshError.name !== 'AbortError') {
-            // Continuar mesmo com erro
-          }
-        }
-      }
-
-      // Buscar DeCS
-      if (type === 'decs' || type === 'both') {
-        setCurrentSearchStep('Buscando descritores DeCS...');
-        try {
-          const decsResponse = await createTimeoutFetch('/api/search-decs', data);
-          
-          if (decsResponse.ok) {
-            const contentType = decsResponse.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-              const decsData = await decsResponse.json();
-              console.log('✅ Resultados DeCS recebidos');
-              setDecsResults(decsData);
-            }
-          }
-        } catch (decsError) {
-          console.error('❌ Erro ao buscar DeCS:', decsError.message);
-          if (decsError.name !== 'AbortError') {
-            // Continuar mesmo com erro
-          }
-        }
-      }
+      setError(err.message || 'Erro ao processar busca');
     } finally {
-      setIsSearchingDescriptors(false);
-      setCurrentSearchStep('');
+      setIsLoading(false);
     }
   };
 
-  // Função para retentar busca de descritores
-  const retryDescriptorSearch = () => {
-    if (descriptorData) {
-      searchDescriptors(descriptorData, searchType);
+  const searchDescriptors = async (searchTerms, type) => {
+    if (!searchTerms || searchTerms.length === 0) return;
+
+    // Buscar MeSH
+    if (type === 'mesh' || type === 'both') {
+      setIsSearchingMesh(true);
+      try {
+        const meshResponse = await fetch('/api/search-mesh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ searchTerms })
+        });
+        
+        if (meshResponse.ok) {
+          const meshData = await meshResponse.json();
+          setMeshResults(meshData);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar MeSH:', error);
+      } finally {
+        setIsSearchingMesh(false);
+      }
     }
+
+    // Buscar DeCS
+    if (type === 'decs' || type === 'both') {
+      setIsSearchingDecs(true);
+      try {
+        const decsResponse = await fetch('/api/search-decs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ searchTerms })
+        });
+        
+        if (decsResponse.ok) {
+          const decsData = await decsResponse.json();
+          setDecsResults(decsData);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar DeCS:', error);
+      } finally {
+        setIsSearchingDecs(false);
+      }
+    }
+  };
+
+  const copyToClipboard = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedString(id);
+    setTimeout(() => setCopiedString(null), 2000);
   };
 
   const handleExampleClick = (example) => {
     setUserInput(example);
   };
 
-  const renderAnalysisResults = () => {
-    if (!analysis) return null;
-
-    return (
-      <Card className={cn(
-        'mt-6 overflow-hidden',
-        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
-      )}>
-        <div className={cn(
-          'px-6 py-4',
-          isDark 
-            ? 'bg-gradient-to-r from-purple-900 to-blue-900'
-            : 'bg-gradient-to-r from-purple-500 to-blue-500'
-        )}>
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Brain className="w-6 h-6" />
-            Análise Inteligente
-          </h3>
-        </div>
-
-        <CardContent className="p-6 space-y-6">
-          {/* Framework detectado */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Framework Detectado</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {analysis.detectedFramework || 'PICO'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Confiança</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {Math.round((analysis.confidence || 0.8) * 100)}%
-              </p>
-            </div>
-          </div>
-
-          {/* Elementos identificados */}
-          {analysis.elements && Object.keys(analysis.elements).length > 0 && (
-            <div>
-              <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Elementos Identificados
-              </h4>
-              <div className="space-y-3">
-                {Object.entries(analysis.elements).map(([key, element]) => (
-                  <div key={key} className={cn(
-                    'p-4 rounded-lg border',
-                    isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-                  )}>
-                    <div className="flex items-start gap-3">
-                      <span className={cn(
-                        'inline-flex items-center justify-center w-10 h-10 rounded-lg font-bold text-white',
-                        'bg-gradient-to-br from-blue-500 to-purple-500'
-                      )}>
-                        {key}
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium mb-1">
-                          {element.description || element.concepts?.[0] || 'Não especificado'}
-                        </p>
-                        {element.concepts && element.concepts.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {element.concepts.slice(0, 5).map((concept, idx) => (
-                              <span key={idx} className={cn(
-                                'px-2 py-1 rounded-full text-xs',
-                                isDark ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-700'
-                              )}>
-                                {concept}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Status da busca de descritores */}
-          {isSearchingDescriptors && (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="w-6 h-6 animate-spin mr-2" />
-              <span>{currentSearchStep || 'Buscando descritores...'}</span>
-            </div>
-          )}
-
-          {/* Botão para retentar busca de descritores */}
-          {!isSearchingDescriptors && descriptorData && !meshResults && !decsResults && (
-            <div className="text-center">
-              <button
-                onClick={retryDescriptorSearch}
-                className={cn(
-                  'px-4 py-2 rounded-lg font-medium transition-colors',
-                  'bg-blue-600 hover:bg-blue-700 text-white'
-                )}
-              >
-                Buscar Descritores
-              </button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
     <div className="max-w-[1200px] mx-auto p-2 sm:p-4">
-      {/* Header da funcionalidade */}
+      {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl mb-4">
           <Sparkles className="w-8 h-8 text-white" />
@@ -337,18 +146,18 @@ const IntelligentSearch = ({ isDark }) => {
           Busca Inteligente com IA
         </h2>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Digite sua ideia de pesquisa em português comum e nossa IA transformará em descritores científicos padronizados MeSH e DeCS
+          Digite sua ideia de pesquisa em português e nossa IA extrairá conceitos, traduzirá para inglês científico e buscará descritores MeSH e DeCS
         </p>
       </div>
 
-      {/* Card principal de entrada */}
+      {/* Card principal */}
       <Card className={cn(
         'overflow-hidden',
         isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
       )}>
         <CardContent className="p-6">
-          {/* Área de entrada */}
           <div className="space-y-4">
+            {/* Área de entrada */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 Descreva sua pesquisa
@@ -368,7 +177,7 @@ const IntelligentSearch = ({ isDark }) => {
               />
             </div>
 
-            {/* Exemplos rápidos */}
+            {/* Exemplos */}
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 Exemplos rápidos:
@@ -459,7 +268,7 @@ const IntelligentSearch = ({ isDark }) => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {currentSearchStep || 'Processando com IA...'}
+                  Processando com IA...
                 </>
               ) : (
                 <>
@@ -470,7 +279,7 @@ const IntelligentSearch = ({ isDark }) => {
               )}
             </button>
 
-            {/* Mensagem de erro */}
+            {/* Erro */}
             {error && (
               <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                 <div className="flex items-start gap-3">
@@ -482,12 +291,6 @@ const IntelligentSearch = ({ isDark }) => {
                     <p className="text-sm text-red-700 dark:text-red-300 mt-1">
                       {error}
                     </p>
-                    <button
-                      onClick={handleSearch}
-                      className="mt-2 text-sm underline text-red-700 dark:text-red-300 hover:text-red-800"
-                    >
-                      Tentar novamente
-                    </button>
                   </div>
                 </div>
               </div>
@@ -497,27 +300,264 @@ const IntelligentSearch = ({ isDark }) => {
       </Card>
 
       {/* Resultados da análise */}
-      {showResults && analysis && renderAnalysisResults()}
+      {analysis && (
+        <Card className={cn(
+          'mt-6 overflow-hidden',
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        )}>
+          <div className={cn(
+            'px-6 py-4',
+            isDark 
+              ? 'bg-gradient-to-r from-purple-900 to-blue-900'
+              : 'bg-gradient-to-r from-purple-500 to-blue-500'
+          )}>
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Brain className="w-6 h-6" />
+              Conceitos Extraídos e Traduzidos
+            </h3>
+          </div>
 
-      {/* Resultados dos descritores MeSH/DeCS */}
-      {showResults && descriptorData && (meshResults || decsResults) && (
-        <div className="mt-8">
-          <MeshDecsSearch
-            researchData={{
-              format: analysis.detectedFramework || 'PICO',
-              question: analysis.analysis || userInput,
-              elements: {
-                explicit: descriptorData.frameworkElements || {}
-              }
-            }}
-            isDark={isDark}
-            preloadedResults={{
-              mesh: meshResults,
-              decs: decsResults
-            }}
-            hideSearchButtons={true}
-          />
-        </div>
+          <CardContent className="p-6">
+            {/* Lista de conceitos */}
+            {analysis.analysis && analysis.analysis.concepts && (
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold mb-3">Conceitos Identificados:</h4>
+                {analysis.analysis.concepts.map((concept, idx) => (
+                  <div key={idx} className={cn(
+                    'p-4 rounded-lg border',
+                    isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+                  )}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Original:</span>
+                          <p className="font-medium">{concept.original}</p>
+                        </div>
+                        <div className="mb-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Inglês científico:</span>
+                          <p className="font-medium text-blue-600 dark:text-blue-400">{concept.english}</p>
+                        </div>
+                        {concept.synonyms && concept.synonyms.length > 0 && (
+                          <div>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Sinônimos:</span>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {concept.synonyms.map((syn, i) => (
+                                <span key={i} className={cn(
+                                  'px-2 py-1 rounded-full text-xs',
+                                  isDark ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-700'
+                                )}>
+                                  {syn}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(concept.english, `concept-${idx}`)}
+                        className={cn(
+                          'p-2 rounded transition-all',
+                          isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                        )}
+                        title="Copiar termo em inglês"
+                      >
+                        {copiedString === `concept-${idx}` ? (
+                          <CheckCheck className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 opacity-50" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Resumo */}
+            {analysis.analysis && analysis.analysis.summary && (
+              <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <h4 className="font-medium mb-2">Resumo da Pesquisa:</h4>
+                <p className="text-sm">{analysis.analysis.summary}</p>
+              </div>
+            )}
+
+            {/* Status das buscas */}
+            <div className="mt-6 flex items-center justify-center gap-4">
+              {isSearchingMesh && (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  <span>Buscando MeSH...</span>
+                </div>
+              )}
+              {isSearchingDecs && (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-green-500" />
+                  <span>Buscando DeCS...</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resultados MeSH */}
+      {meshResults && meshResults.allMeshTerms && meshResults.allMeshTerms.length > 0 && (
+        <Card className={cn(
+          'mt-6 overflow-hidden',
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        )}>
+          <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Globe className="w-6 h-6" />
+              Descritores MeSH Encontrados ({meshResults.totalTerms})
+            </h3>
+          </div>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {meshResults.allMeshTerms.slice(0, 10).map((term, idx) => (
+                <div key={idx} className={cn(
+                  'p-4 rounded-lg border',
+                  isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+                )}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h5 className="font-semibold text-lg">{term.term}</h5>
+                      {term.definition && (
+                        <p className="text-sm opacity-80 mt-2">{term.definition}</p>
+                      )}
+                      {term.synonyms && term.synonyms.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs text-gray-600 dark:text-gray-400">Sinônimos:</span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {term.synonyms.slice(0, 3).map((syn, i) => (
+                              <span key={i} className="text-xs opacity-70">{syn}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="mt-2 text-xs opacity-60">
+                        MeSH ID: {term.meshId}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className={cn(
+                        'px-3 py-1 rounded-lg font-bold text-sm',
+                        term.relevanceScore >= 90
+                          ? 'bg-green-500 text-white'
+                          : term.relevanceScore >= 80
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-500 text-white'
+                      )}>
+                        {term.relevanceScore}%
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(term.term, `mesh-${idx}`)}
+                        className={cn(
+                          'p-1.5 rounded transition-all',
+                          isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                        )}
+                        title="Copiar termo"
+                      >
+                        {copiedString === `mesh-${idx}` ? (
+                          <CheckCheck className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 opacity-50" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resultados DeCS */}
+      {decsResults && decsResults.allDecsTerms && decsResults.allDecsTerms.length > 0 && (
+        <Card className={cn(
+          'mt-6 overflow-hidden',
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        )}>
+          <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Languages className="w-6 h-6" />
+              Descritores DeCS Encontrados ({decsResults.totalTerms})
+            </h3>
+          </div>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {decsResults.allDecsTerms.slice(0, 10).map((term, idx) => (
+                <div key={idx} className={cn(
+                  'p-4 rounded-lg border',
+                  isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+                )}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      {term.terms && (
+                        <div className="space-y-1">
+                          {term.terms.pt && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">🇧🇷</span>
+                              <span className="font-semibold">{term.terms.pt}</span>
+                            </div>
+                          )}
+                          {term.terms.en && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">🇺🇸</span>
+                              <span>{term.terms.en}</span>
+                            </div>
+                          )}
+                          {term.terms.es && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">🇪🇸</span>
+                              <span>{term.terms.es}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {term.definitions && term.definitions.pt && (
+                        <p className="text-sm opacity-80 mt-2">{term.definitions.pt}</p>
+                      )}
+                      <div className="mt-2 text-xs opacity-60">
+                        DeCS ID: {term.decsId}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className={cn(
+                        'px-3 py-1 rounded-lg font-bold text-sm',
+                        term.relevanceScore >= 90
+                          ? 'bg-green-500 text-white'
+                          : term.relevanceScore >= 80
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-500 text-white'
+                      )}>
+                        {term.relevanceScore}%
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(
+                          term.terms?.pt || term.terms?.en || '',
+                          `decs-${idx}`
+                        )}
+                        className={cn(
+                          'p-1.5 rounded transition-all',
+                          isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                        )}
+                        title="Copiar termo"
+                      >
+                        {copiedString === `decs-${idx}` ? (
+                          <CheckCheck className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 opacity-50" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
