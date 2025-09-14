@@ -44,10 +44,9 @@ Retorne APENAS um objeto JSON no seguinte formato:
 }`;
 }
 
-// Função para processar a busca inteligente
+// Função para processar a busca inteligente (simplificada)
 async function processIntelligentSearch(userInput) {
   try {
-    // Passo 1: Analisar o texto com IA
     console.log('🤖 Analisando texto com IA...');
     
     const response = await axios.post(
@@ -73,7 +72,7 @@ async function processIntelligentSearch(userInput) {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000
+        timeout: 8000 // 8 segundos apenas para análise
       }
     );
 
@@ -87,72 +86,29 @@ async function processIntelligentSearch(userInput) {
   }
 }
 
-// Função para buscar descritores automaticamente
-async function searchDescriptors(analysisResult, searchType) {
-  const results = {
-    mesh: null,
-    decs: null
+// Função para preparar dados para busca de descritores
+function prepareDescriptorData(analysisResult) {
+  const frameworkElements = {};
+  
+  // Converter elementos para formato esperado pelos endpoints de busca
+  Object.entries(analysisResult.elements).forEach(([key, value]) => {
+    frameworkElements[key] = value.description;
+  });
+  
+  return {
+    frameworkElements,
+    fullQuestion: analysisResult.analysis,
+    frameworkType: analysisResult.detectedFramework
   };
-
-  try {
-    // Preparar elementos para busca
-    const frameworkElements = {};
-    Object.entries(analysisResult.elements).forEach(([key, value]) => {
-      frameworkElements[key] = value.description;
-    });
-
-    // Buscar MeSH se solicitado
-    if (searchType === 'mesh' || searchType === 'both') {
-      console.log('🔍 Buscando descritores MeSH...');
-      
-      const meshResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/search-mesh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          frameworkElements,
-          fullQuestion: analysisResult.analysis,
-          frameworkType: analysisResult.detectedFramework
-        })
-      });
-      
-      if (meshResponse.ok) {
-        results.mesh = await meshResponse.json();
-      }
-    }
-
-    // Buscar DeCS se solicitado
-    if (searchType === 'decs' || searchType === 'both') {
-      console.log('🔍 Buscando descritores DeCS...');
-      
-      const decsResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/search-decs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          frameworkElements,
-          fullQuestion: analysisResult.analysis,
-          frameworkType: analysisResult.detectedFramework
-        })
-      });
-      
-      if (decsResponse.ok) {
-        results.decs = await decsResponse.json();
-      }
-    }
-
-    return results;
-  } catch (error) {
-    console.error('❌ Erro ao buscar descritores:', error);
-    return results;
-  }
 }
 
-// Handler principal da API
+// Handler principal da API (simplificado)
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userInput, searchType = 'both', autoSearch = true } = req.body;
+  const { userInput } = req.body;
 
   if (!userInput) {
     return res.status(400).json({ error: 'userInput é obrigatório' });
@@ -165,26 +121,22 @@ export default async function handler(req, res) {
   try {
     console.log('\n🚀 BUSCA INTELIGENTE - INÍCIO');
     console.log('📝 Input do usuário:', userInput);
-    console.log('🔍 Tipo de busca:', searchType);
     
-    // Passo 1: Processar análise inteligente
+    // Fazer APENAS a análise inteligente (não buscar descritores aqui)
     const analysisResult = await processIntelligentSearch(userInput);
     
-    // Passo 2: Buscar descritores automaticamente (se habilitado)
-    let descriptors = null;
-    if (autoSearch) {
-      descriptors = await searchDescriptors(analysisResult, searchType);
-    }
+    // Preparar dados para busca de descritores (será usado no frontend)
+    const descriptorData = prepareDescriptorData(analysisResult);
     
-    // Preparar resposta completa
+    // Retornar resposta rápida com análise e dados preparados
     const response = {
       success: true,
       analysis: analysisResult,
-      descriptors: descriptors,
+      descriptorData: descriptorData,
       timestamp: new Date().toISOString()
     };
     
-    console.log('✅ BUSCA INTELIGENTE - CONCLUÍDA');
+    console.log('✅ BUSCA INTELIGENTE - ANÁLISE CONCLUÍDA');
     
     res.status(200).json(response);
   } catch (error) {

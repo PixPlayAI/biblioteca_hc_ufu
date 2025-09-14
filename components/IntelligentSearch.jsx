@@ -31,6 +31,7 @@ const IntelligentSearch = ({ isDark }) => {
   const [error, setError] = useState(null);
   const [searchType, setSearchType] = useState('both');
   const [showResults, setShowResults] = useState(false);
+  const [currentSearchStep, setCurrentSearchStep] = useState('');
 
   // Exemplos de entrada para ajudar o usuário
   const examples = [
@@ -48,15 +49,15 @@ const IntelligentSearch = ({ isDark }) => {
     setShowResults(false);
     setMeshResults(null);
     setDecsResults(null);
+    setCurrentSearchStep('Analisando sua pesquisa...');
 
     try {
-      // Passo 1: Análise inteligente
+      // Passo 1: Análise inteligente (RÁPIDA - apenas análise de texto)
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userInput: userInput.trim(),
-          searchType
+          userInput: userInput.trim()
         })
       });
 
@@ -69,15 +70,19 @@ const IntelligentSearch = ({ isDark }) => {
       setDescriptorData(data.descriptorData);
       setShowResults(true);
       setIsLoading(false);
+      setCurrentSearchStep('');
 
-      // Passo 2: Buscar descritores após mostrar análise
+      // Passo 2: Buscar descritores de forma separada (evita timeout)
       if (data.descriptorData) {
-        await searchDescriptors(data.descriptorData, searchType);
+        setTimeout(() => {
+          searchDescriptors(data.descriptorData, searchType);
+        }, 500);
       }
 
     } catch (err) {
       setError(err.message);
       setIsLoading(false);
+      setCurrentSearchStep('');
     }
   };
 
@@ -87,6 +92,7 @@ const IntelligentSearch = ({ isDark }) => {
     try {
       // Buscar MeSH se necessário
       if (type === 'mesh' || type === 'both') {
+        setCurrentSearchStep('Buscando descritores MeSH...');
         try {
           const meshResponse = await fetch('/api/search-mesh', {
             method: 'POST',
@@ -105,6 +111,7 @@ const IntelligentSearch = ({ isDark }) => {
 
       // Buscar DeCS se necessário
       if (type === 'decs' || type === 'both') {
+        setCurrentSearchStep('Buscando descritores DeCS...');
         try {
           const decsResponse = await fetch('/api/search-decs', {
             method: 'POST',
@@ -122,6 +129,14 @@ const IntelligentSearch = ({ isDark }) => {
       }
     } finally {
       setIsSearchingDescriptors(false);
+      setCurrentSearchStep('');
+    }
+  };
+
+  // Função para retentar busca de descritores
+  const retryDescriptorSearch = () => {
+    if (descriptorData) {
+      searchDescriptors(descriptorData, searchType);
     }
   };
 
@@ -161,7 +176,7 @@ const IntelligentSearch = ({ isDark }) => {
             <div className="text-right">
               <p className="text-sm text-gray-600 dark:text-gray-400">Confiança</p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {Math.round((analysis.confidence || 0.5) * 100)}%
+                {Math.round((analysis.confidence || 0.8) * 100)}%
               </p>
             </div>
           </div>
@@ -212,7 +227,22 @@ const IntelligentSearch = ({ isDark }) => {
           {isSearchingDescriptors && (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="w-6 h-6 animate-spin mr-2" />
-              <span>Buscando descritores...</span>
+              <span>{currentSearchStep || 'Buscando descritores...'}</span>
+            </div>
+          )}
+
+          {/* Botão para retentar busca de descritores se falhou */}
+          {!isSearchingDescriptors && descriptorData && !meshResults && !decsResults && (
+            <div className="text-center">
+              <button
+                onClick={retryDescriptorSearch}
+                className={cn(
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  'bg-blue-600 hover:bg-blue-700 text-white'
+                )}
+              >
+                Buscar Descritores
+              </button>
             </div>
           )}
         </CardContent>
@@ -353,7 +383,7 @@ const IntelligentSearch = ({ isDark }) => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Processando com IA...
+                  {currentSearchStep || 'Processando com IA...'}
                 </>
               ) : (
                 <>

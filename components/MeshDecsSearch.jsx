@@ -221,24 +221,35 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
   const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(false);
   const [error, setError] = useState(null);
 
-
-  // Adicione este useEffect logo após os estados
+  // UseEffect para carregar resultados pré-carregados
   useEffect(() => {
     if (preloadedResults) {
       if (preloadedResults.mesh) {
-        setMeshResults(preloadedResults.mesh.results);
-        setAllMeshTerms(preloadedResults.mesh.allMeshTerms);
-        setActiveView('mesh');
+        setMeshResults(preloadedResults.mesh.results || preloadedResults.mesh);
+        setAllMeshTerms(preloadedResults.mesh.allMeshTerms || preloadedResults.mesh);
+        if (!hideSearchButtons) {
+          setActiveView('mesh');
+        }
       }
       if (preloadedResults.decs) {
-        setDecsResults(preloadedResults.decs.results);
-        setAllDecsTerms(preloadedResults.decs.allDecsTerms);
-        if (!preloadedResults.mesh) {
+        setDecsResults(preloadedResults.decs.results || preloadedResults.decs);
+        setAllDecsTerms(preloadedResults.decs.allDecsTerms || preloadedResults.decs);
+        if (!preloadedResults.mesh && !hideSearchButtons) {
           setActiveView('decs');
         }
       }
+      // Se temos resultados pré-carregados e hideSearchButtons está true, 
+      // mostrar automaticamente os resultados
+      if (hideSearchButtons && (preloadedResults.mesh || preloadedResults.decs)) {
+        setActiveView(preloadedResults.mesh ? 'mesh' : 'decs');
+      }
     }
-  }, [preloadedResults]);
+  }, [preloadedResults, hideSearchButtons]);
+
+  // Se hideSearchButtons está true e não temos resultados ainda, não mostrar nada
+  if (hideSearchButtons && !meshResults && !decsResults && !meshLoading && !decsLoading) {
+    return null;
+  }
 
   /**
    * Função para buscar termos MeSH
@@ -726,7 +737,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
 
         <CardContent className="p-8">
           {/* Navegação entre visualizações */}
-          {(meshResults || decsResults) && (
+          {(meshResults || decsResults) && !hideSearchButtons && (
             <div className="flex justify-center gap-4 mb-6">
               <button
                 onClick={() => setActiveView('selection')}
@@ -771,7 +782,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
           )}
 
           {/* Área de seleção de busca com novo design */}
-          {activeView === 'selection' && (
+          {activeView === 'selection' && !hideSearchButtons && (
             <div className="flex flex-col md:flex-row justify-center gap-6">
               {/* Card MeSH */}
               <button
@@ -1117,4 +1128,5 @@ MeshDecsSearch.propTypes = {
   preloadedResults: PropTypes.object,
   hideSearchButtons: PropTypes.bool
 };
+
 export default MeshDecsSearch;
