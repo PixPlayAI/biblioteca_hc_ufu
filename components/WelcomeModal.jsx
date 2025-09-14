@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Play, Info, Brain, CheckCircle2, Target, Globe, Languages, Sparkles, Zap, Search } from 'lucide-react';
+import { Play, Info, Brain, CheckCircle2, Target, Globe, Languages, Sparkles, Search } from 'lucide-react';
 
 const WelcomeModal = ({ isOpen, onStart, isDark }) => {
   if (!isOpen) return null;
@@ -41,72 +41,6 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
               </p>
             </div>
 
-            {/* NEW FEATURE HIGHLIGHT - Busca Inteligente com IA */}
-            <div
-              className={`rounded-lg border-2 p-4 md:p-6 relative overflow-hidden ${
-                isDark 
-                  ? 'bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-600' 
-                  : 'bg-gradient-to-br from-purple-50 to-blue-50 border-purple-300'
-              }`}
-            >
-              {/* Badge "NOVO" */}
-              <div className="absolute top-2 right-2">
-                <span className="px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white animate-pulse">
-                  NOVO
-                </span>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${isDark ? 'bg-purple-800/50' : 'bg-gradient-to-r from-purple-100 to-blue-100'}`}>
-                  <Sparkles className={`w-6 h-6 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
-                </div>
-                <div className="space-y-3 flex-1">
-                  <h3 className="font-bold text-lg flex items-center gap-2">
-                    <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                      Busca Inteligente com IA
-                    </span>
-                    <Zap className="w-4 h-4 text-yellow-500" />
-                  </h3>
-                  <p className="text-sm">
-                    <strong>Revolucionário:</strong> Digite sua ideia de pesquisa em português comum e nossa IA transforma instantaneamente em descritores científicos!
-                  </p>
-                  
-                  <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700/50' : 'bg-white/70'}`}>
-                    <p className="text-xs font-medium mb-2">Como funciona:</p>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex items-start gap-2">
-                        <span className="text-purple-500">1.</span>
-                        <span>Você digita: <em>"pressão alta em idoso"</em></span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-blue-500">2.</span>
-                        <span>IA processa: Traduz para inglês científico e extrai conceitos</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-green-500">3.</span>
-                        <span>Você recebe: "Hypertension" [MeSH] + "Aged" [MeSH] + "Hipertensão" [DeCS] + "Idoso" [DeCS]</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
-                      <Search className="w-3 h-3 inline mr-1" />
-                      Busca Direta
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                      <Brain className="w-3 h-3 inline mr-1" />
-                      IA Avançada
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
-                      <Globe className="w-3 h-3 inline mr-1" />
-                      MeSH + DeCS
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Introduction Card */}
             <div
               className={`rounded-lg border p-6 ${
@@ -119,51 +53,63 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                   <h3 className="font-semibold text-lg">Como podemos ajudar você 🤔</h3>
                   <p className="text-sm">
                     Se você está planejando uma pesquisa e precisa de ajuda para definir e estruturar
-                    sua pergunta, você está no lugar certo! Nossa plataforma oferece:
+                    sua pergunta, você está no lugar certo! Nossa plataforma foi desenvolvida para
+                    auxiliar pesquisadores como você a:
                   </p>
                   <ul className="space-y-2 text-sm list-none">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <strong>Estruturar suas perguntas de pesquisa</strong> de forma clara, utilizando formatos
+                      reconhecidos internacionalmente (PICO, PICOT, PICOS, PEO, PECO, PCC, SPIDER, PIRD, CoCoPop, SPICE, ECLIPSE, BeHEMoTh)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <strong>Interagir com IA especializada</strong> que faz perguntas personalizadas para refletir sobre o escopo da
+                      sua pesquisa e desenvolver uma pergunta final adequada
+                    </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
                       <div>
-                        <strong className="text-purple-600 dark:text-purple-400">Busca Inteligente com IA:</strong> Digite suas ideias em português e receba instantaneamente descritores MeSH e DeCS relevantes
+                        <div className="flex items-center gap-2">
+                          <strong>Busca Inteligente com IA</strong>
+                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                            NOVO
+                          </span>
+                        </div>
+                        <p className="mt-1">
+                          Digite sua ideia em português e receba instantaneamente descritores científicos internacionais
+                        </p>
                       </div>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      Estruturar suas perguntas de pesquisa de forma clara, utilizando formatos
-                      reconhecidos (PICO, PICOT, PICOS, PEO, PECO, PCC, SPIDER, PIRD, CoCoPop, SPICE, ECLIPSE, BeHEMoTh)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      Interagir com perguntas personalizadas que ajudam a refletir sobre o escopo da
-                      sua pesquisa
-                    </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
                       <div>
-                        <span>Buscar descritores controlados automaticamente após estruturar sua pergunta:</span>
+                        <strong>Buscar descritores controlados</strong> em bases internacionais:
                         <div className="mt-2 space-y-2 ml-2">
                           <div className="flex items-center gap-2">
                             <Globe className="w-4 h-4 text-blue-500" />
-                            <span className="font-medium">MeSH</span> - 30.000+ descritores médicos
+                            <span className="font-medium">MeSH</span> (Medical Subject Headings) 
                             <span className="text-xs">🇺🇸</span>
+                            <span className="text-xs opacity-75">- 30.000+ descritores médicos</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Languages className="w-4 h-4 text-green-500" />
-                            <span className="font-medium">DeCS</span> - Multilíngue
+                            <span className="font-medium">DeCS</span> (Descritores em Ciências da Saúde)
                             <div className="flex items-center gap-1 ml-1">
                               <span className="text-xs" title="Português">🇧🇷</span>
                               <span className="text-xs" title="Español">🇪🇸</span>
                               <span className="text-xs" title="English">🇺🇸</span>
                               <span className="text-xs" title="Français">🇫🇷</span>
                             </div>
+                            <span className="text-xs opacity-75">- Multilíngue</span>
                           </div>
                         </div>
                       </div>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      Conectar-se com a equipe da biblioteca para suporte especializado
+                      <strong>Conectar-se com a equipe da biblioteca</strong> para esclarecer dúvidas e obter apoio
+                      especializado para conduzir sua pesquisa
                     </li>
                   </ul>
                 </div>
@@ -181,30 +127,33 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg">Como vamos trabalhar juntos 🛠️</h3>
                   <div className="space-y-4">
-                    <div className="text-sm">
-                      <p className="font-medium mb-2">Você tem duas opções:</p>
-                      
-                      <div className={`p-3 rounded-lg mb-3 ${isDark ? 'bg-purple-900/20' : 'bg-purple-50'}`}>
-                        <p className="font-medium text-purple-600 dark:text-purple-400 mb-1">
-                          🚀 Opção 1: Busca Inteligente Rápida
-                        </p>
-                        <p className="text-xs">
-                          Use a <strong>Busca Inteligente com IA</strong> para encontrar descritores instantaneamente digitando em português
-                        </p>
-                      </div>
-                      
-                      <div className={`p-3 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                        <p className="font-medium text-blue-600 dark:text-blue-400 mb-1">
-                          📝 Opção 2: Assistente Completo
-                        </p>
-                        <ol className="list-decimal list-inside space-y-1 text-xs ml-2">
-                          <li>Compartilhe sua ideia inicial de pesquisa</li>
-                          <li>Responda perguntas guiadas pela IA</li>
-                          <li>Refine sua pergunta passo a passo</li>
-                          <li>Receba uma pergunta estruturada (PICO, etc.)</li>
-                          <li>Busque descritores MeSH/DeCS automaticamente</li>
-                        </ol>
-                      </div>
+                    <p className="text-sm font-medium">Processo de Estruturação da Pergunta de Pesquisa:</p>
+                    <ol className="list-decimal list-inside space-y-2 text-sm">
+                      <li>Compartilhe conosco sua ideia inicial de pesquisa 💭</li>
+                      <li>
+                        Nossa IA irá guiá-lo através de perguntas para compreender melhor suas necessidades
+                        🤖
+                      </li>
+                      <li>Juntos, refinaremos sua pergunta de pesquisa passo a passo ✨</li>
+                      <li>Você receberá uma versão estruturada e bem definida da sua pergunta 🎯</li>
+                      <li>
+                        Automaticamente, buscaremos descritores <strong>MeSH</strong> e <strong>DeCS</strong> relacionados à sua pergunta estruturada 📖
+                      </li>
+                      <li>
+                        Se desejar, podemos conectar você com a equipe da biblioteca para suporte
+                        extra 📚
+                      </li>
+                    </ol>
+                    
+                    <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-gray-600/50' : 'bg-blue-50'}`}>
+                      <p className="font-medium flex items-center gap-2 mb-1">
+                        <Sparkles className="w-4 h-4 text-purple-500" />
+                        Funcionalidade Adicional - Busca Inteligente:
+                      </p>
+                      <p className="text-xs">
+                        Precisa de descritores rapidamente? Use nossa <strong>Busca Inteligente com IA</strong> para 
+                        encontrar termos MeSH e DeCS instantaneamente, digitando suas ideias em português comum!
+                      </p>
                     </div>
                     
                     <div
@@ -212,7 +161,9 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     >
                       <p className="font-medium">✨ Estamos aqui para você:</p>
                       <p>
-                        Nosso objetivo é tornar sua pesquisa bibliográfica mais eficiente e precisa!
+                        Nosso objetivo é ajudá-lo a estruturar seus pensamentos e avançar com
+                        confiança em sua pesquisa. Conte conosco para tornar esse processo mais
+                        simples e eficiente!
                       </p>
                     </div>
                   </div>
@@ -227,8 +178,17 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
               }`}
             >
               <div className="text-center space-y-2">
-                <h4 className="font-semibold text-sm">🌐 Recursos de Busca Internacional</h4>
+                <h4 className="font-semibold text-sm">🌐 Recursos Disponíveis</h4>
                 <div className="flex justify-center items-center gap-4 md:gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg ${isDark ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
+                      <Brain className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-medium">IA Assistente</p>
+                      <p className="text-xs opacity-75">12 frameworks</p>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className={`p-2 rounded-lg ${isDark ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
                       <Globe className="w-5 h-5 text-blue-500" />
@@ -244,16 +204,12 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-medium">DeCS</p>
-                      <p className="text-xs opacity-75">4 idiomas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg ${isDark ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-                      <Sparkles className="w-5 h-5 text-purple-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium">IA</p>
-                      <p className="text-xs opacity-75">Tradução automática</p>
+                      <div className="flex gap-1">
+                        <span className="text-xs" title="Português">🇧🇷</span>
+                        <span className="text-xs" title="Español">🇪🇸</span>
+                        <span className="text-xs" title="English">🇺🇸</span>
+                        <span className="text-xs" title="Français">🇫🇷</span>
+                      </div>
                     </div>
                   </div>
                 </div>
