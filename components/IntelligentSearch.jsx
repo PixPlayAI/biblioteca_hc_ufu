@@ -52,7 +52,7 @@ const IntelligentSearch = ({ isDark }) => {
     setCurrentSearchStep('Analisando sua pesquisa...');
 
     try {
-      // Passo 1: Análise inteligente (RÁPIDA - apenas análise de texto)
+      // Passo 1: Análise inteligente
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,38 +62,55 @@ const IntelligentSearch = ({ isDark }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao processar busca');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao processar busca');
       }
 
       const data = await response.json();
+      console.log('📥 Resposta da análise:', data);
+      
+      // Validar resposta
+      if (!data.analysis || !data.descriptorData) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       setAnalysis(data.analysis);
       setDescriptorData(data.descriptorData);
       setShowResults(true);
       setIsLoading(false);
       setCurrentSearchStep('');
 
-      // Passo 2: Buscar descritores de forma separada (evita timeout)
-      if (data.descriptorData) {
+      // Passo 2: Buscar descritores automaticamente após um pequeno delay
+      if (data.descriptorData && data.descriptorData.frameworkElements) {
         setTimeout(() => {
           searchDescriptors(data.descriptorData, searchType);
         }, 500);
       }
 
     } catch (err) {
-      setError(err.message);
+      console.error('❌ Erro na busca:', err);
+      setError(err.message || 'Erro ao processar busca');
       setIsLoading(false);
       setCurrentSearchStep('');
     }
   };
 
   const searchDescriptors = async (data, type) => {
+    if (!data || !data.frameworkElements) {
+      console.error('❌ Dados inválidos para busca de descritores');
+      return;
+    }
+
     setIsSearchingDescriptors(true);
+    console.log('🔍 Iniciando busca de descritores:', { data, type });
 
     try {
       // Buscar MeSH se necessário
       if (type === 'mesh' || type === 'both') {
         setCurrentSearchStep('Buscando descritores MeSH...');
         try {
+          console.log('📤 Enviando para /api/search-mesh:', data);
+          
           const meshResponse = await fetch('/api/search-mesh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -102,10 +119,14 @@ const IntelligentSearch = ({ isDark }) => {
 
           if (meshResponse.ok) {
             const meshData = await meshResponse.json();
+            console.log('✅ Resultados MeSH recebidos:', meshData);
             setMeshResults(meshData);
+          } else {
+            const errorText = await meshResponse.text();
+            console.error('❌ Erro na resposta MeSH:', errorText);
           }
         } catch (meshError) {
-          console.error('Erro ao buscar MeSH:', meshError);
+          console.error('❌ Erro ao buscar MeSH:', meshError);
         }
       }
 
@@ -113,6 +134,8 @@ const IntelligentSearch = ({ isDark }) => {
       if (type === 'decs' || type === 'both') {
         setCurrentSearchStep('Buscando descritores DeCS...');
         try {
+          console.log('📤 Enviando para /api/search-decs:', data);
+          
           const decsResponse = await fetch('/api/search-decs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -121,10 +144,14 @@ const IntelligentSearch = ({ isDark }) => {
 
           if (decsResponse.ok) {
             const decsData = await decsResponse.json();
+            console.log('✅ Resultados DeCS recebidos:', decsData);
             setDecsResults(decsData);
+          } else {
+            const errorText = await decsResponse.text();
+            console.error('❌ Erro na resposta DeCS:', errorText);
           }
         } catch (decsError) {
-          console.error('Erro ao buscar DeCS:', decsError);
+          console.error('❌ Erro ao buscar DeCS:', decsError);
         }
       }
     } finally {

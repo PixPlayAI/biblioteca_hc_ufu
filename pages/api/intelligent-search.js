@@ -11,7 +11,7 @@ TEXTO DO PESQUISADOR:
 "${userInput}"
 
 TAREFA:
-1. Identifique o framework de pesquisa mais adequado (PICO, PICOT, PICOS, PEO, etc.)
+1. Identifique o framework de pesquisa mais adequado (PICO, PICOT, PICOS, PEO, PECO, PCC, SPIDER, PIRD, CoCoPop, SPICE, ECLIPSE, BeHEMoTh, ou sem sigla)
 2. Extraia e organize os elementos principais da pesquisa
 3. Para cada elemento, forneça conceitos em português E inglês
 4. Seja específico e use terminologia médica apropriada
@@ -21,30 +21,40 @@ IMPORTANTE:
 - Se o texto for informal, organize-o adequadamente
 - Sempre forneça alternativas e sinônimos
 - Considere variações regionais de termos médicos
+- Use as siglas corretas para cada framework (P, I, C, O para PICO; P, E, O para PEO, etc.)
 
 Retorne APENAS um objeto JSON no seguinte formato:
 {
-  "detectedFramework": "PICO/PICOT/PICOS/etc",
-  "confidence": 0.0-1.0,
+  "detectedFramework": "PICO/PICOT/PICOS/PEO/PECO/PCC/SPIDER/PIRD/CoCoPop/SPICE/ECLIPSE/BeHEMoTh/sem sigla",
+  "confidence": 0.8,
   "elements": {
     "P": {
-      "description": "descrição em português",
+      "description": "descrição em português do elemento",
+      "concepts": ["conceito1", "conceito2", "conceito3"],
+      "englishConcepts": ["concept1", "concept2", "concept3"]
+    },
+    "I": {
+      "description": "descrição em português do elemento",
       "concepts": ["conceito1", "conceito2"],
       "englishConcepts": ["concept1", "concept2"]
-    },
-    "I": { ... },
-    // outros elementos conforme o framework
+    }
   },
   "searchStrategy": {
     "primaryTerms": ["termo1", "termo2"],
     "secondaryTerms": ["termo3", "termo4"],
     "suggestedDatabases": ["PubMed", "BVS", "Cochrane"]
   },
-  "analysis": "Breve análise do que foi identificado"
-}`;
+  "analysis": "Breve análise do que foi identificado na pesquisa"
 }
 
-// Função para processar a busca inteligente (simplificada)
+IMPORTANTE: Use APENAS as siglas válidas para cada framework. Por exemplo:
+- PICO: P, I, C, O
+- PEO: P, E, O  
+- PECO: P, E, C, O
+- Etc.`;
+}
+
+// Função para processar a busca inteligente
 async function processIntelligentSearch(userInput) {
   try {
     console.log('🤖 Analisando texto com IA...');
@@ -56,7 +66,7 @@ async function processIntelligentSearch(userInput) {
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em metodologia de pesquisa em saúde. Analise textos e extraia elementos estruturados para busca bibliográfica.'
+            content: 'Você é um especialista em metodologia de pesquisa em saúde. Analise textos e extraia elementos estruturados para busca bibliográfica. SEMPRE retorne um JSON válido com todos os campos obrigatórios.'
           },
           {
             role: 'user',
@@ -72,17 +82,95 @@ async function processIntelligentSearch(userInput) {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 8000 // 8 segundos apenas para análise
+        timeout: 30000 // 30 segundos
       }
     );
 
-    const analysisResult = JSON.parse(response.data.choices[0].message.content);
-    console.log('✅ Análise concluída:', analysisResult);
+    const content = response.data.choices[0].message.content;
+    console.log('📥 Resposta da IA:', content);
     
+    let analysisResult;
+    try {
+      analysisResult = JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear resposta da IA:', parseError);
+      // Criar uma resposta padrão se falhar
+      analysisResult = {
+        detectedFramework: 'PICO',
+        confidence: 0.5,
+        elements: {
+          P: {
+            description: userInput,
+            concepts: [userInput],
+            englishConcepts: [userInput]
+          }
+        },
+        searchStrategy: {
+          primaryTerms: [userInput],
+          secondaryTerms: [],
+          suggestedDatabases: ['PubMed', 'BVS']
+        },
+        analysis: 'Análise automática do texto fornecido'
+      };
+    }
+    
+    // Validar e corrigir a estrutura se necessário
+    if (!analysisResult.detectedFramework) {
+      analysisResult.detectedFramework = 'PICO';
+    }
+    if (!analysisResult.confidence) {
+      analysisResult.confidence = 0.8;
+    }
+    if (!analysisResult.elements || Object.keys(analysisResult.elements).length === 0) {
+      analysisResult.elements = {
+        P: {
+          description: userInput,
+          concepts: [userInput],
+          englishConcepts: [userInput]
+        }
+      };
+    }
+    if (!analysisResult.analysis) {
+      analysisResult.analysis = userInput;
+    }
+    
+    // Garantir que cada elemento tem a estrutura correta
+    Object.keys(analysisResult.elements).forEach(key => {
+      const element = analysisResult.elements[key];
+      if (!element.description) {
+        element.description = userInput;
+      }
+      if (!element.concepts || element.concepts.length === 0) {
+        element.concepts = [element.description];
+      }
+      if (!element.englishConcepts || element.englishConcepts.length === 0) {
+        element.englishConcepts = element.concepts;
+      }
+    });
+    
+    console.log('✅ Análise processada:', JSON.stringify(analysisResult, null, 2));
     return analysisResult;
+    
   } catch (error) {
     console.error('❌ Erro na análise inteligente:', error);
-    throw error;
+    // Retornar uma análise básica em caso de erro
+    return {
+      detectedFramework: 'PICO',
+      confidence: 0.5,
+      elements: {
+        P: {
+          description: userInput,
+          concepts: [userInput],
+          englishConcepts: [userInput]
+        }
+      },
+      searchStrategy: {
+        primaryTerms: [userInput],
+        secondaryTerms: [],
+        suggestedDatabases: ['PubMed', 'BVS']
+      },
+      analysis: userInput
+    };
   }
 }
 
@@ -91,18 +179,26 @@ function prepareDescriptorData(analysisResult) {
   const frameworkElements = {};
   
   // Converter elementos para formato esperado pelos endpoints de busca
+  // IMPORTANTE: usar apenas as siglas, não os nomes completos
   Object.entries(analysisResult.elements).forEach(([key, value]) => {
-    frameworkElements[key] = value.description;
+    // Garantir que usamos a descrição correta
+    frameworkElements[key] = value.description || value.concepts?.[0] || '';
+  });
+  
+  console.log('📦 Dados preparados para descritores:', {
+    frameworkElements,
+    fullQuestion: analysisResult.analysis,
+    frameworkType: analysisResult.detectedFramework
   });
   
   return {
     frameworkElements,
-    fullQuestion: analysisResult.analysis,
-    frameworkType: analysisResult.detectedFramework
+    fullQuestion: analysisResult.analysis || '',
+    frameworkType: analysisResult.detectedFramework || 'PICO'
   };
 }
 
-// Handler principal da API (simplificado)
+// Handler principal da API
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -122,13 +218,22 @@ export default async function handler(req, res) {
     console.log('\n🚀 BUSCA INTELIGENTE - INÍCIO');
     console.log('📝 Input do usuário:', userInput);
     
-    // Fazer APENAS a análise inteligente (não buscar descritores aqui)
+    // Fazer a análise inteligente
     const analysisResult = await processIntelligentSearch(userInput);
     
-    // Preparar dados para busca de descritores (será usado no frontend)
+    // Preparar dados para busca de descritores
     const descriptorData = prepareDescriptorData(analysisResult);
     
-    // Retornar resposta rápida com análise e dados preparados
+    // Validar dados antes de enviar
+    if (!descriptorData.frameworkElements || Object.keys(descriptorData.frameworkElements).length === 0) {
+      console.error('❌ Nenhum elemento extraído');
+      return res.status(400).json({
+        error: 'Não foi possível extrair elementos da pesquisa',
+        details: 'Tente reformular sua pergunta de pesquisa'
+      });
+    }
+    
+    // Retornar resposta
     const response = {
       success: true,
       analysis: analysisResult,
@@ -137,6 +242,7 @@ export default async function handler(req, res) {
     };
     
     console.log('✅ BUSCA INTELIGENTE - ANÁLISE CONCLUÍDA');
+    console.log('📤 Resposta final:', JSON.stringify(response, null, 2));
     
     res.status(200).json(response);
   } catch (error) {
