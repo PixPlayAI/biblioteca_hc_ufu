@@ -49,9 +49,7 @@ import {
   Heart,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import SearchStringGenerator from './SearchStringGenerator';
 import { getElementLabel, getElementColor, getElementSigla } from '../lib/frameworkMappings';
-import FloatingActionButtons from './FloatingActionButtons';
 
 // Componente de Loading com animação
 const LoadingAnimation = ({ isLoading, type = 'mesh' }) => {
