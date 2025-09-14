@@ -97,25 +97,44 @@ async function searchDeCSTerms(searchTerm, language = 'pt') {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+  // Configurar timeout
   if (res.socket) {
     res.socket.setTimeout(59000);
   }
-
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-
-  console.log('\n🚀 API DeCS Inteligente - INÍCIO');
   
-  const { searchTerms } = req.body;
-
-  if (!searchTerms || !Array.isArray(searchTerms)) {
-    return res.status(400).json({ error: 'searchTerms deve ser um array' });
+  // Configurar CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  if (req.method !== 'POST') {
+    console.log('❌ Método não permitido:', req.method);
+    return res.status(405).json({ 
+      error: 'Method not allowed',
+      message: 'Esta API aceita apenas requisições POST',
+      receivedMethod: req.method
+    });
   }
 
   try {
+    console.log('\n🚀 API DeCS Inteligente - INÍCIO');
+    
+    const { searchTerms } = req.body;
+
+    if (!searchTerms || !Array.isArray(searchTerms)) {
+      return res.status(400).json({ 
+        error: 'Bad Request',
+        message: 'searchTerms deve ser um array de strings'
+      });
+    }
+
     const processStartTime = Date.now();
     const allResults = [];
     const languages = ['pt', 'en'];
@@ -123,16 +142,18 @@ export default async function handler(req, res) {
     console.log(`📋 Processando ${searchTerms.length} termos de busca`);
     
     for (const term of searchTerms) {
-      for (const lang of languages) {
-        try {
-          const results = await searchDeCSTerms(term, lang);
-          allResults.push({
-            searchTerm: term,
-            language: lang,
-            results: results
-          });
-        } catch (error) {
-          console.error(`❌ Erro ao buscar "${term}" em ${lang}:`, error.message);
+      if (term && typeof term === 'string' && term.trim()) {
+        for (const lang of languages) {
+          try {
+            const results = await searchDeCSTerms(term.trim(), lang);
+            allResults.push({
+              searchTerm: term,
+              language: lang,
+              results: results
+            });
+          } catch (error) {
+            console.error(`❌ Erro ao buscar "${term}" em ${lang}:`, error.message);
+          }
         }
       }
     }
@@ -157,6 +178,7 @@ export default async function handler(req, res) {
     console.log(`📊 Total de termos DeCS únicos: ${allDecsTerms.length}`);
     
     res.status(200).json({
+      success: true,
       searchResults: allResults,
       allDecsTerms: allDecsTerms,
       totalTerms: allDecsTerms.length,
@@ -166,7 +188,8 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ ERRO GERAL:', error);
     res.status(500).json({ 
-      error: 'Erro ao buscar termos DeCS',
+      error: 'Internal Server Error',
+      message: 'Erro ao buscar termos DeCS',
       details: error.message
     });
   }

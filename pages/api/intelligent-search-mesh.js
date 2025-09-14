@@ -35,9 +35,9 @@ async function searchMeSHTerm(term) {
       timeout: 30000
     });
     
-    const ids = searchResponse.data.esearchresult.idlist;
+    const ids = searchResponse.data.esearchresult?.idlist;
     if (!ids || ids.length === 0) {
-      console.log(`⚠️ Nenhum resultado encontrado`);
+      console.log(`⚠️ Nenhum resultado encontrado para "${term}"`);
       return [];
     }
 
@@ -55,7 +55,7 @@ async function searchMeSHTerm(term) {
     });
     
     const results = [];
-    const uids = summaryResponse.data.result.uids || [];
+    const uids = summaryResponse.data.result?.uids || [];
     
     for (const uid of uids.slice(0, 5)) {
       const meshData = summaryResponse.data.result[uid];
@@ -80,49 +80,70 @@ async function searchMeSHTerm(term) {
       });
     }
 
-    console.log(`✅ ${results.length} termos MeSH encontrados`);
+    console.log(`✅ ${results.length} termos MeSH encontrados para "${term}"`);
     return results;
     
   } catch (error) {
-    console.error(`❌ Erro ao buscar MeSH:`, error.message);
+    console.error(`❌ Erro ao buscar MeSH para "${term}":`, error.message);
     return [];
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+  // Configurar timeout
   if (res.socket) {
     res.socket.setTimeout(59000);
   }
-
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-
-  console.log('\n🚀 API MeSH Inteligente - INÍCIO');
   
-  const { searchTerms } = req.body;
-
-  if (!searchTerms || !Array.isArray(searchTerms)) {
-    return res.status(400).json({ error: 'searchTerms deve ser um array' });
+  // Configurar CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  if (req.method !== 'POST') {
+    console.log('❌ Método não permitido:', req.method);
+    return res.status(405).json({ 
+      error: 'Method not allowed',
+      message: 'Esta API aceita apenas requisições POST',
+      receivedMethod: req.method
+    });
   }
 
-  try { 
+  try {
+    console.log('\n🚀 API MeSH Inteligente - INÍCIO');
+    
+    const { searchTerms } = req.body;
+
+    if (!searchTerms || !Array.isArray(searchTerms)) {
+      return res.status(400).json({ 
+        error: 'Bad Request',
+        message: 'searchTerms deve ser um array de strings' 
+      });
+    }
+
     const processStartTime = Date.now();
     const allResults = [];
     
     console.log(`📋 Processando ${searchTerms.length} termos de busca`);
     
     for (const term of searchTerms) {
-      try {
-        const results = await searchMeSHTerm(term);
-        allResults.push({
-          searchTerm: term,
-          results: results
-        });
-      } catch (error) {
-        console.error(`❌ Erro ao buscar "${term}":`, error.message);
+      if (term && typeof term === 'string' && term.trim()) {
+        try {
+          const results = await searchMeSHTerm(term.trim());
+          allResults.push({
+            searchTerm: term,
+            results: results
+          });
+        } catch (error) {
+          console.error(`❌ Erro ao buscar "${term}":`, error.message);
+        }
       }
     }
     
@@ -146,6 +167,7 @@ export default async function handler(req, res) {
     console.log(`📊 Total de termos MeSH únicos: ${allMeshTerms.length}`);
     
     res.status(200).json({
+      success: true,
       searchResults: allResults,
       allMeshTerms: allMeshTerms,
       totalTerms: allMeshTerms.length,
@@ -155,7 +177,8 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ ERRO GERAL:', error);
     res.status(500).json({ 
-      error: 'Erro ao buscar termos MeSH',
+      error: 'Internal Server Error',
+      message: 'Erro ao buscar termos MeSH',
       details: error.message
     });
   }
