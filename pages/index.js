@@ -2,15 +2,17 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import ResearchAssistant from '../components/scenarios/ResearchAssistant';
+import IntelligentSearch from '../components/IntelligentSearch';
+import TabNavigation from '../components/TabNavigation';
 import WelcomeModal from '../components/WelcomeModal';
 import Footer from '../components/Footer';
 import { Moon, Sun } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [activeTab, setActiveTab] = useState('structured');
 
   useEffect(() => {
     if (isDark) {
@@ -28,6 +30,12 @@ export default function HomePage() {
 
   const toggleTheme = () => {
     setIsDark(!isDark);
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    // Scroll suave para o topo ao mudar de aba
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -49,7 +57,7 @@ export default function HomePage() {
                     isDark ? 'text-foreground' : 'text-foreground'
                   }`}
                 >
-                  Assistente de Estruturação de Perguntas de Pesquisa.
+                  Assistente de Estruturação de Perguntas de Pesquisa
                 </h1>
                 <img
                   src="/logo_biblioteca.svg"
@@ -69,8 +77,23 @@ export default function HomePage() {
                   {isDark ? <Sun size={24} /> : <Moon size={24} />}
                 </button>
               </div>
-              <div className="container mx-auto px-4">
-                <ResearchAssistant isDark={isDark} />
+              
+              <div className="container mx-auto px-4 mt-8">
+                {/* Sistema de navegação por abas */}
+                <TabNavigation
+                  activeTab={activeTab}
+                  onTabChange={handleTabChange}
+                  isDark={isDark}
+                />
+                
+                {/* Conteúdo baseado na aba ativa */}
+                <div className="transition-all duration-300">
+                  {activeTab === 'structured' ? (
+                    <ResearchAssistant isDark={isDark} />
+                  ) : (
+                    <IntelligentSearch isDark={isDark} />
+                  )}
+                </div>
               </div>
             </div>
             <Footer isDark={isDark} />

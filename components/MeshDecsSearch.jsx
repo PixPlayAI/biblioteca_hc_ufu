@@ -203,7 +203,7 @@ const LoadingAnimation = ({ isLoading, type = 'mesh' }) => {
   );
 };
 
-const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) => {
+const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, preloadedResults, hideSearchButtons }) => {
   // ========== Estados para MeSH ==========
   const [meshResults, setMeshResults] = useState(null);
   const [allMeshTerms, setAllMeshTerms] = useState(null);
@@ -222,6 +222,25 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult }) =>
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [uniqueTermsCollapsed, setUniqueTermsCollapsed] = useState(false);
   const [error, setError] = useState(null);
+
+
+  // Adicione este useEffect logo após os estados
+  useEffect(() => {
+    if (preloadedResults) {
+      if (preloadedResults.mesh) {
+        setMeshResults(preloadedResults.mesh.results);
+        setAllMeshTerms(preloadedResults.mesh.allMeshTerms);
+        setActiveView('mesh');
+      }
+      if (preloadedResults.decs) {
+        setDecsResults(preloadedResults.decs.results);
+        setAllDecsTerms(preloadedResults.decs.allDecsTerms);
+        if (!preloadedResults.mesh) {
+          setActiveView('decs');
+        }
+      }
+    }
+  }, [preloadedResults]);
 
   /**
    * Função para buscar termos MeSH
@@ -1097,6 +1116,7 @@ MeshDecsSearch.propTypes = {
   isDark: PropTypes.bool.isRequired,
   conversations: PropTypes.array,
   finalResult: PropTypes.object,
+  preloadedResults: PropTypes.object,
+  hideSearchButtons: PropTypes.bool
 };
-
 export default MeshDecsSearch;
