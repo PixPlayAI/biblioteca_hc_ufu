@@ -34,7 +34,6 @@ const IntelligentSearch = ({ isDark }) => {
   const [searchType, setSearchType] = useState('both');
   const [copiedString, setCopiedString] = useState(null);
 
-  // Exemplos de entrada
   const examples = [
     "Quero estudar o efeito da acupuntura na dor lombar crônica em idosos",
     "Eficácia do uso de aplicativos móveis para controle glicêmico em diabéticos tipo 2",
@@ -52,7 +51,6 @@ const IntelligentSearch = ({ isDark }) => {
     setDecsResults(null);
 
     try {
-      // Análise e tradução dos conceitos
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +64,6 @@ const IntelligentSearch = ({ isDark }) => {
       const data = await response.json();
       setAnalysis(data);
       
-      // Buscar descritores automaticamente
       if (data.searchTerms && data.searchTerms.length > 0) {
         searchDescriptors(data.searchTerms, searchType);
       }
@@ -82,11 +79,11 @@ const IntelligentSearch = ({ isDark }) => {
   const searchDescriptors = async (searchTerms, type) => {
     if (!searchTerms || searchTerms.length === 0) return;
 
-    // Buscar MeSH
+    // Buscar MeSH usando a nova API
     if (type === 'mesh' || type === 'both') {
       setIsSearchingMesh(true);
       try {
-        const meshResponse = await fetch('/api/search-mesh', {
+        const meshResponse = await fetch('/api/intelligent-search-mesh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ searchTerms })
@@ -103,11 +100,11 @@ const IntelligentSearch = ({ isDark }) => {
       }
     }
 
-    // Buscar DeCS
+    // Buscar DeCS usando a nova API
     if (type === 'decs' || type === 'both') {
       setIsSearchingDecs(true);
       try {
-        const decsResponse = await fetch('/api/search-decs', {
+        const decsResponse = await fetch('/api/intelligent-search-decs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ searchTerms })
