@@ -1,5 +1,5 @@
 // components/IntelligentSearch.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardContent } from './ui/card';
 import { 
@@ -23,8 +23,11 @@ import MeshDecsSearch from './MeshDecsSearch';
 const IntelligentSearch = ({ isDark }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchingDescriptors, setIsSearchingDescriptors] = useState(false);
   const [analysis, setAnalysis] = useState(null);
-  const [descriptors, setDescriptors] = useState(null);
+  const [descriptorData, setDescriptorData] = useState(null);
+  const [meshResults, setMeshResults] = useState(null);
+  const [decsResults, setDecsResults] = useState(null);
   const [error, setError] = useState(null);
   const [searchType, setSearchType] = useState('both');
   const [showResults, setShowResults] = useState(false);
@@ -43,15 +46,17 @@ const IntelligentSearch = ({ isDark }) => {
     setIsLoading(true);
     setError(null);
     setShowResults(false);
+    setMeshResults(null);
+    setDecsResults(null);
 
     try {
+      // Passo 1: Análise inteligente
       const response = await fetch('/api/intelligent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userInput: userInput.trim(),
-          searchType,
-          autoSearch: true
+          searchType
         })
       });
 
@@ -61,12 +66,62 @@ const IntelligentSearch = ({ isDark }) => {
 
       const data = await response.json();
       setAnalysis(data.analysis);
-      setDescriptors(data.descriptors);
+      setDescriptorData(data.descriptorData);
       setShowResults(true);
+      setIsLoading(false);
+
+      // Passo 2: Buscar descritores após mostrar análise
+      if (data.descriptorData) {
+        await searchDescriptors(data.descriptorData, searchType);
+      }
+
     } catch (err) {
       setError(err.message);
-    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const searchDescriptors = async (data, type) => {
+    setIsSearchingDescriptors(true);
+
+    try {
+      // Buscar MeSH se necessário
+      if (type === 'mesh' || type === 'both') {
+        try {
+          const meshResponse = await fetch('/api/search-mesh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (meshResponse.ok) {
+            const meshData = await meshResponse.json();
+            setMeshResults(meshData);
+          }
+        } catch (meshError) {
+          console.error('Erro ao buscar MeSH:', meshError);
+        }
+      }
+
+      // Buscar DeCS se necessário
+      if (type === 'decs' || type === 'both') {
+        try {
+          const decsResponse = await fetch('/api/search-decs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (decsResponse.ok) {
+            const decsData = await decsResponse.json();
+            setDecsResults(decsData);
+          }
+        } catch (decsError) {
+          console.error('Erro ao buscar DeCS:', decsError);
+        }
+      }
+    } finally {
+      setIsSearchingDescriptors(false);
     }
   };
 
@@ -106,92 +161,58 @@ const IntelligentSearch = ({ isDark }) => {
             <div className="text-right">
               <p className="text-sm text-gray-600 dark:text-gray-400">Confiança</p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {Math.round(analysis.confidence * 100)}%
+                {Math.round((analysis.confidence || 0.5) * 100)}%
               </p>
             </div>
           </div>
 
           {/* Elementos identificados */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Elementos Identificados
-            </h4>
-            <div className="space-y-3">
-              {Object.entries(analysis.elements).map(([key, element]) => (
-                <div key={key} className={cn(
-                  'p-4 rounded-lg border',
-                  isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-                )}>
-                  <div className="flex items-start gap-3">
-                    <span className={cn(
-                      'inline-flex items-center justify-center w-10 h-10 rounded-lg font-bold text-white',
-                      'bg-gradient-to-br from-blue-500 to-purple-500'
-                    )}>
-                      {key}
-                    </span>
-                    <div className="flex-1">
-                      <p className="font-medium mb-1">{element.description}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {element.concepts.map((concept, idx) => (
-                          <span key={idx} className={cn(
-                            'px-2 py-1 rounded-full text-xs',
-                            isDark ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-700'
-                          )}>
-                            {concept}
-                          </span>
-                        ))}
+          {analysis.elements && (
+            <div>
+              <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Elementos Identificados
+              </h4>
+              <div className="space-y-3">
+                {Object.entries(analysis.elements).map(([key, element]) => (
+                  <div key={key} className={cn(
+                    'p-4 rounded-lg border',
+                    isDark ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+                  )}>
+                    <div className="flex items-start gap-3">
+                      <span className={cn(
+                        'inline-flex items-center justify-center w-10 h-10 rounded-lg font-bold text-white',
+                        'bg-gradient-to-br from-blue-500 to-purple-500'
+                      )}>
+                        {key}
+                      </span>
+                      <div className="flex-1">
+                        <p className="font-medium mb-1">{element.description}</p>
+                        {element.concepts && element.concepts.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {element.concepts.map((concept, idx) => (
+                              <span key={idx} className={cn(
+                                'px-2 py-1 rounded-full text-xs',
+                                isDark ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-700'
+                              )}>
+                                {concept}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Estratégia de busca */}
-          {analysis.searchStrategy && (
-            <div>
-              <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5" />
-                Estratégia de Busca Sugerida
-              </h4>
-              <div className={cn(
-                'p-4 rounded-lg',
-                isDark ? 'bg-gray-900' : 'bg-blue-50'
-              )}>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Termos Principais:
-                    </p>
-                    <p className="text-sm">{analysis.searchStrategy.primaryTerms.join(' AND ')}</p>
-                  </div>
-                  {analysis.searchStrategy.secondaryTerms.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Termos Secundários:
-                      </p>
-                      <p className="text-sm">{analysis.searchStrategy.secondaryTerms.join(' OR ')}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Bases Recomendadas:
-                    </p>
-                    <div className="flex gap-2 mt-1">
-                      {analysis.searchStrategy.suggestedDatabases.map((db, idx) => (
-                        <span key={idx} className={cn(
-                          'px-3 py-1 rounded-lg text-xs font-medium',
-                          isDark ? 'bg-gray-700 text-gray-300' : 'bg-white text-gray-700'
-                        )}>
-                          {db}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
+            </div>
+          )}
+
+          {/* Status da busca de descritores */}
+          {isSearchingDescriptors && (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="w-6 h-6 animate-spin mr-2" />
+              <span>Buscando descritores...</span>
             </div>
           )}
         </CardContent>
@@ -366,22 +387,22 @@ const IntelligentSearch = ({ isDark }) => {
       {/* Resultados da análise */}
       {showResults && analysis && renderAnalysisResults()}
 
-      {/* Resultados dos descritores */}
-      {showResults && descriptors && (
+      {/* Resultados dos descritores MeSH/DeCS */}
+      {showResults && descriptorData && (meshResults || decsResults) && (
         <div className="mt-8">
           <MeshDecsSearch
             researchData={{
-              format: analysis.detectedFramework,
-              question: analysis.analysis,
+              format: analysis.detectedFramework || 'PICO',
+              question: analysis.analysis || userInput,
               elements: {
-                explicit: Object.keys(analysis.elements).reduce((acc, key) => {
-                  acc[key] = analysis.elements[key].description;
-                  return acc;
-                }, {})
+                explicit: descriptorData.frameworkElements || {}
               }
             }}
             isDark={isDark}
-            preloadedResults={descriptors}
+            preloadedResults={{
+              mesh: meshResults,
+              decs: decsResults
+            }}
             hideSearchButtons={true}
           />
         </div>
