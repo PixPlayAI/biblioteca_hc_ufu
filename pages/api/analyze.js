@@ -2,6 +2,116 @@
 import SYSTEM_PROMPT from '../../lib/systemPrompt';
 import axios from 'axios';
 
+// Função para extrair elementos da resposta do usuário
+function extractElementsFromResponse(response) {
+  const elements = {
+    population: null,
+    intervention: null,
+    comparison: null,
+    outcome: null,
+    timeframe: null,
+    studyDesign: null,
+    exposure: null,
+    location: null,
+    condition: null
+  };
+
+  const text = response.toLowerCase();
+  
+  // População
+  if (text.includes('pacientes pediátricos') || text.includes('crianças') || text.includes('pediatr')) {
+    elements.population = 'pacientes pediátricos';
+  }
+  
+  // Intervenção
+  if (text.includes('musicoterapia')) {
+    elements.intervention = 'musicoterapia';
+  }
+  
+  // Local
+  if (text.includes('hc-ufu') || text.includes('hc ufu') || text.includes('ebserh')) {
+    elements.location = 'HC-UFU/EBSERH';
+  }
+  
+  // Desfecho
+  if (text.includes('tempo de internação') || text.includes('reduz') || text.includes('reduzir')) {
+    elements.outcome = 'redução do tempo de internação';
+  }
+  
+  // Comparação
+  if (text.includes('não recebem') || text.includes('comparação') || text.includes('versus') || text.includes('comparado')) {
+    elements.comparison = 'pacientes que não recebem a intervenção';
+  }
+  
+  // Condição/Comorbidade
+  if (text.includes('comorbidade')) {
+    elements.condition = 'comorbidade específica (a definir)';
+  }
+  
+  return elements;
+}
+
+// Função para determinar próxima pergunta baseada nos elementos já identificados
+function determineNextQuestion(identifiedElements, history) {
+  const questions = {
+    condition: {
+      text: "Você mencionou 'comorbidade específica'. Qual condição clínica você pretende focar?",
+      context: "Por exemplo: pneumonia, cirurgias pediátricas, doenças respiratórias, oncologia pediátrica, ou outra condição específica que seja comum no HC-UFU?"
+    },
+    interventionDetails: {
+      text: "Como será aplicada a musicoterapia no seu estudo?",
+      context: "Considere detalhes como: sessões individuais ou em grupo, frequência (diária, 3x por semana), duração das sessões (30 min, 1 hora), tipo de atividades musicais (audição passiva, participação ativa, instrumentos)?"
+    },
+    comparisonDetails: {
+      text: "Como será o grupo de comparação no seu estudo?",
+      context: "Será um grupo controle sem nenhuma intervenção adicional? Ou receberão atividades recreativas tradicionais? Talvez cuidado padrão apenas?"
+    },
+    outcomeDetails: {
+      text: "Além do tempo de internação, você pretende avaliar outros desfechos?",
+      context: "Por exemplo: níveis de ansiedade (usando escalas específicas), satisfação dos pais/pacientes, uso de medicação para dor/ansiedade, parâmetros fisiológicos (frequência cardíaca, pressão), adesão ao tratamento?"
+    },
+    timeframe: {
+      text: "Por quanto tempo você planeja acompanhar cada paciente?",
+      context: "Durante toda a internação? Um período fixo (ex: primeiros 7 dias)? Ou há seguimento após alta hospitalar?"
+    },
+    studyDesign: {
+      text: "Que tipo de desenho de estudo você pretende usar?",
+      context: "Estudo randomizado controlado? Estudo observacional comparativo? Estudo antes e depois? Série de casos?"
+    }
+  };
+  
+  // Priorizar perguntas baseadas no que falta
+  if (identifiedElements.condition === 'comorbidade específica (a definir)') {
+    return questions.condition;
+  }
+  
+  if (identifiedElements.intervention && !identifiedElements.interventionDetails) {
+    return questions.interventionDetails;
+  }
+  
+  if (identifiedElements.comparison && !identifiedElements.comparisonDetails) {
+    return questions.comparisonDetails;
+  }
+  
+  if (!identifiedElements.timeframe) {
+    return questions.timeframe;
+  }
+  
+  if (!identifiedElements.studyDesign) {
+    return questions.studyDesign;
+  }
+  
+  if (identifiedElements.outcome === 'redução do tempo de internação') {
+    return questions.outcomeDetails;
+  }
+  
+  // Se já tem elementos suficientes, sugerir finalização
+  return {
+    text: "Com base no que discutimos, já temos os elementos principais da sua pesquisa. Há algo mais que você gostaria de especificar?",
+    context: "Se não, posso estruturar sua pergunta de pesquisa no formato mais adequado (provavelmente PICO ou PICOT)."
+  };
+}
+
 // Função para normalizar elementos do BeHEMoTh e outros frameworks
 function normalizeFrameworkElements(result) {
   if (!result?.finalResult) return result;
@@ -133,85 +243,6 @@ function normalizeFrameworkElements(result) {
   return result;
 }
 
-// Função para garantir que não haja repetição de perguntas
-function ensureUniqueQuestion(response, history) {
-  // Extrai todas as perguntas já feitas
-  const previousQuestions = history.map(h => h.question?.toLowerCase().trim());
-  const currentQuestionLower = response.nextQuestion?.text?.toLowerCase().trim();
-  
-  // Verifica se a pergunta atual já foi feita
-  if (previousQuestions.includes(currentQuestionLower)) {
-    console.error('🔴 ERRO CRÍTICO: Pergunta repetida detectada!');
-    console.error('Pergunta repetida:', response.nextQuestion?.text);
-    console.error('Elementos já identificados:', response.analysis?.identifiedElements);
-    
-    // Força uma nova pergunta baseada nos elementos identificados
-    const identified = response.analysis?.identifiedElements || {};
-    const missing = response.analysis?.missingElements || [];
-    
-    // Mapa de perguntas para elementos faltantes
-    const questionMap = {
-      comparison: {
-        text: "Você pretende comparar a musicoterapia com outro tipo de intervenção ou com um grupo controle sem intervenção?",
-        context: "Por exemplo: comparar com atividades recreativas tradicionais, ou com pacientes que recebem apenas o cuidado padrão?"
-      },
-      outcome: {
-        text: "Além do tempo de internação, há outros resultados que você gostaria de medir?",
-        context: "Como satisfação do paciente, níveis de ansiedade, adesão ao tratamento, ou indicadores clínicos específicos?"
-      },
-      timeframe: {
-        text: "Por quanto tempo você planeja acompanhar esses pacientes?",
-        context: "Seria durante toda a internação? Ou há um período específico de seguimento?"
-      },
-      studyDesign: {
-        text: "Que tipo de estudo você pretende realizar?",
-        context: "Será um estudo experimental randomizado, observacional, ou outro tipo de desenho?"
-      },
-      comorbidity: {
-        text: "Você mencionou 'comorbidade específica'. Já definiu qual condição clínica será o foco?",
-        context: "Por exemplo: pneumonia, pós-operatório, doenças crônicas, ou outra condição?"
-      }
-    };
-    
-    // Tenta encontrar o próximo elemento faltante para perguntar
-    for (const element of missing) {
-      if (questionMap[element]) {
-        response.nextQuestion = questionMap[element];
-        response.nextQuestion.isRequired = true;
-        console.log('✅ Nova pergunta gerada:', response.nextQuestion.text);
-        return response;
-      }
-    }
-    
-    // Se já identificou população e intervenção mas não outros elementos
-    if (identified.population && identified.intervention) {
-      if (!identified.comparison) {
-        response.nextQuestion = questionMap.comparison;
-      } else if (!identified.outcome || identified.outcome === 'tempo de internação') {
-        response.nextQuestion = questionMap.outcome;
-      } else if (!identified.timeframe) {
-        response.nextQuestion = questionMap.timeframe;
-      } else {
-        // Se tem elementos suficientes, sugere finalizar
-        response.nextQuestion = {
-          text: "Com base no que você descreveu, já temos os elementos principais. Gostaria de adicionar mais algum detalhe antes de estruturarmos sua pergunta?",
-          context: "Se não houver mais nada, posso formatar sua pergunta de pesquisa agora.",
-          isRequired: false
-        };
-        response.canGenerateFinal = true;
-      }
-    } else if (!identified.intervention) {
-      response.nextQuestion = {
-        text: "Como exatamente a musicoterapia seria aplicada no seu estudo?",
-        context: "Por exemplo: sessões individuais ou em grupo? Frequência e duração das sessões? Tipo de atividades musicais?",
-        isRequired: true
-      };
-    }
-  }
-  
-  return response;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
@@ -230,59 +261,71 @@ export default async function handler(req, res) {
     suggestedElement = null,
   } = req.body.content || {};
 
-  // Se é a primeira interação após a pergunta inicial
-  const isSecondInteraction = history.length === 1;
-  const hasDetailedFirstResponse = currentInput && currentInput.length > 50 && 
-    (currentInput.toLowerCase().includes('musicoterapia') || 
-     currentInput.toLowerCase().includes('jogos') || 
-     currentInput.toLowerCase().includes('internação'));
+  // Análise inteligente do contexto
+  console.log('📝 Processando interação', currentStep + 1);
+  console.log('📊 Histórico de perguntas:', history.map(h => h.question));
+  console.log('💬 Resposta atual:', currentInput);
+  
+  // Extrair todos os elementos já identificados de todo o histórico
+  let allIdentifiedElements = {};
+  
+  // Extrair do histórico
+  history.forEach(h => {
+    const extractedFromAnswer = extractElementsFromResponse(h.answer);
+    allIdentifiedElements = { ...allIdentifiedElements, ...extractedFromAnswer };
+  });
+  
+  // Extrair da resposta atual
+  const currentExtracted = extractElementsFromResponse(currentInput);
+  allIdentifiedElements = { ...allIdentifiedElements, ...currentExtracted };
+  
+  console.log('🔍 Elementos já identificados:', allIdentifiedElements);
+  
+  // Verificar se está repetindo perguntas
+  const lastQuestion = history.length > 0 ? history[history.length - 1].question : null;
+  const isRepeatingQuestion = history.some(h => 
+    h.question.toLowerCase().includes('principal problema') || 
+    h.question.toLowerCase().includes('população que você pretende')
+  );
+  
+  // Determinar próxima pergunta baseada no contexto
+  const contextualNextQuestion = determineNextQuestion(allIdentifiedElements, history);
+  
+  // Criar prompt mais inteligente
+  const enhancedPrompt = `
+CONTEXTO CRÍTICO DA CONVERSA:
+- Interação número: ${currentStep + 1}
+- Elementos JÁ IDENTIFICADOS: ${JSON.stringify(allIdentifiedElements, null, 2)}
 
-  // Força progressão se detectar resposta detalhada na segunda interação
-  let forceProgression = '';
-  if (isSecondInteraction && hasDetailedFirstResponse) {
-    forceProgression = `
-ATENÇÃO CRÍTICA: O usuário já forneceu uma resposta DETALHADA sobre população e intervenção. 
-NÃO pergunte novamente sobre o problema ou população.
-Elementos já identificados na resposta:
-- População: pacientes pediátricos
-- Intervenção: musicoterapia
-- Local: HC-UFU/EBSERH
-- Desfecho parcial: tempo de internação
+HISTÓRICO DETALHADO:
+${history.map((h, i) => `
+INTERAÇÃO ${i + 1}:
+Pergunta: "${h.question}"
+Resposta: "${h.answer}"
+Elementos extraídos: ${JSON.stringify(extractElementsFromResponse(h.answer))}
+`).join('\n')}
 
-PRÓXIMA PERGUNTA DEVE SER SOBRE: comparação, detalhes da comorbidade, ou outros desfechos.
-NÃO REPITA A PERGUNTA INICIAL!`;
-  }
+RESPOSTA ATUAL:
+"${currentInput}"
+Elementos extraídos desta resposta: ${JSON.stringify(currentExtracted)}
 
-  const promptMessage = `HISTÓRICO DA CONVERSA:
-${history
-  .map((h, i) => `ETAPA ${i + 1}: 
-  Pergunta: "${h.question}"
-  Resposta do usuário: "${h.answer}"`)
-  .join('\n')}
+REGRAS ABSOLUTAS PARA ESTA INTERAÇÃO:
+1. NUNCA repita perguntas sobre elementos já identificados
+2. População já foi identificada como: ${allIdentifiedElements.population || 'não identificada'}
+3. Intervenção já foi identificada como: ${allIdentifiedElements.intervention || 'não identificada'}
+4. Se população e intervenção já foram identificadas, PROSSIGA para outros elementos
+5. Próxima pergunta sugerida baseada no contexto: "${contextualNextQuestion.text}"
+6. Contexto da pergunta sugerida: "${contextualNextQuestion.context}"
 
-RESPOSTA ATUAL (Etapa ${currentStep + 1}): "${currentInput}"
+INSTRUÇÕES ESPECÍFICAS:
+- Se o usuário já forneceu informações sobre musicoterapia e pacientes pediátricos, NÃO pergunte sobre isso novamente
+- Foque em elementos faltantes como: especificação da comorbidade, detalhes da intervenção, desenho do estudo, período de seguimento
+- Se já tem elementos suficientes (>70%), considere finalizar com canGenerateFinal: true
+- Use as perguntas contextualizadas fornecidas acima como base
 
-${forceProgression}
-
-ANÁLISE CRÍTICA DO CONTEXTO:
-- Número de interações já realizadas: ${history.length}
-- Usuário já forneceu informação detalhada: ${hasDetailedFirstResponse ? 'SIM' : 'NÃO'}
-- Comprimento da resposta atual: ${currentInput.length} caracteres
-
-REGRAS ABSOLUTAS:
-1. SE o usuário já forneceu informações sobre população/problema, NUNCA pergunte isso novamente
-2. SE a resposta menciona intervenção (musicoterapia, jogos, etc.), pergunte sobre OUTROS elementos
-3. Perguntas já feitas: ${history.map(h => h.question).join('; ')}
-4. NÃO REPITA nenhuma dessas perguntas
-5. Use o contexto específico fornecido pelo usuário em suas perguntas
-
-Responda APENAS em JSON válido.`;
+Responda APENAS em JSON válido seguindo a estrutura especificada.`;
 
   try {
-    console.log('📝 Processando interação', currentStep + 1);
-    console.log('📊 Resposta do usuário tem', currentInput.length, 'caracteres');
-    console.log('🔍 Detectada resposta detalhada?', hasDetailedFirstResponse);
-
     const deepseekResponse = await axios.post(
       'https://api.deepseek.com/chat/completions',
       {
@@ -291,14 +334,17 @@ Responda APENAS em JSON válido.`;
           {
             role: 'system',
             content: SYSTEM_PROMPT + `
-
-REGRA MÁXIMA: Após receber a primeira resposta do usuário, NUNCA repita a pergunta inicial sobre população/problema.
-Se o usuário já mencionou população, intervenção ou qualquer elemento, avance para os próximos elementos.
-Seja inteligente e adaptativo - não siga um script fixo.`,
+            
+IMPORTANTE: Você deve ser INTELIGENTE e ADAPTATIVO:
+- Analise SEMPRE o que já foi respondido antes de fazer nova pergunta
+- NUNCA repita perguntas já feitas
+- Se o usuário já deu informação detalhada, AVANCE para próximos elementos
+- Contextualize SEMPRE as perguntas com base no que já foi discutido
+- Finalize quando tiver ~70% dos elementos identificados`,
           },
           { 
             role: 'user', 
-            content: promptMessage 
+            content: enhancedPrompt 
           },
         ],
         temperature: 0,
@@ -324,23 +370,50 @@ Seja inteligente e adaptativo - não siga um script fixo.`,
     try {
       let parsedContent = JSON.parse(deepseekContent);
       
+      // Validação adicional para prevenir loops
+      if (parsedContent.nextQuestion) {
+        const nextQuestionLower = parsedContent.nextQuestion.text.toLowerCase();
+        
+        // Verificar se está tentando repetir pergunta sobre população/problema
+        if (isRepeatingQuestion && 
+            (nextQuestionLower.includes('principal problema') || 
+             nextQuestionLower.includes('população que você pretende'))) {
+          
+          console.warn('⚠️ Detectada tentativa de repetir pergunta inicial. Forçando progressão...');
+          
+          // Forçar pergunta contextualizada
+          parsedContent.nextQuestion = contextualNextQuestion;
+          parsedContent.nextQuestion.isRequired = true;
+        }
+        
+        // Verificar se está repetindo última pergunta
+        if (lastQuestion && lastQuestion.toLowerCase() === nextQuestionLower) {
+          console.warn('⚠️ Detectada repetição da última pergunta. Avançando...');
+          parsedContent.nextQuestion = contextualNextQuestion;
+        }
+      }
+      
+      // Se tem muitos elementos identificados, considerar finalização
+      const identifiedCount = Object.values(allIdentifiedElements).filter(v => v !== null).length;
+      if (identifiedCount >= 5 && !parsedContent.canGenerateFinal) {
+        console.log('✅ Elementos suficientes identificados. Sugerindo finalização...');
+        parsedContent.canGenerateFinal = true;
+      }
+      
       // Normalizar elementos do framework
       parsedContent = normalizeFrameworkElements(parsedContent);
       
-      // VALIDAÇÃO CRÍTICA: Garantir que não há repetição de perguntas
-      parsedContent = ensureUniqueQuestion(parsedContent, history);
-      
       // Log final
-      console.log('✅ Próxima pergunta gerada:', parsedContent.nextQuestion?.text?.substring(0, 100));
-      console.log('📊 Pode gerar resultado final?', parsedContent.canGenerateFinal);
+      console.log('✅ Próxima pergunta:', parsedContent.nextQuestion?.text);
+      console.log('📊 Pode finalizar?', parsedContent.canGenerateFinal);
       
       return res.json(parsedContent);
     } catch (e) {
-      console.error('❌ Erro ao parsear resposta do DeepSeek:', e);
+      console.error('❌ Erro ao parsear resposta:', e);
       return res.status(500).json({ error: 'Error parsing DeepSeek response.' });
     }
   } catch (e) {
-    console.error('❌ Erro ao solicitar DeepSeek:', e.response?.data || e.message);
+    console.error('❌ Erro na requisição:', e.response?.data || e.message);
     return res.status(500).json({ error: 'Error requesting DeepSeek.' });
   }
 }
