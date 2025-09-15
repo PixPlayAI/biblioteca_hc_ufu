@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { Play, Brain, CheckCircle2, Globe, Languages, Sparkles, Search, BookOpen, Users, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 
 const WelcomeModal = ({ isOpen, onStart, isDark }) => {
   if (!isOpen) return null;
@@ -110,7 +111,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 </div>
               </div>
 
-              {/* Funcionalidade 3 - SIMPLIFICADA */}
+              {/* Funcionalidade 3 - COM IMAGENS DE BANDEIRAS */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -120,18 +121,39 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     <h3 className="font-semibold text-sm mb-1">
                       Busca em Bases Internacionais
                     </h3>
-                    <p className="text-xs opacity-80">
-                      Acesso integrado aos vocabulários controlados MeSH (30.000+ termos médicos) 
-                      e DeCS (multilíngue), garantindo precisão nas buscas bibliográficas em bases 
-                      de dados nacionais e internacionais.
-                    </p>
+                    <div className="grid grid-cols-2 gap-3 mt-2 text-xs">
+                      {/* MeSH */}
+                      <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
+                        <div className="font-medium text-blue-600 dark:text-blue-400 mb-1">MeSH</div>
+                        <div className="opacity-80">
+                          <div className="flex items-center gap-1">
+                            <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                            <span>Inglês</span>
+                          </div>
+                          <div className="text-xs mt-1">30.000+ termos</div>
+                        </div>
+                      </div>
+                      {/* DeCS */}
+                      <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-green-50'}`}>
+                        <div className="font-medium text-green-600 dark:text-green-400 mb-1">DeCS</div>
+                        <div className="opacity-80">
+                          <div className="flex items-center gap-1">
+                            <Image src="/flags/br.svg" alt="Português" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/es.svg" alt="Español" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/fr.svg" alt="Français" width={16} height={12} className="inline-block" />
+                          </div>
+                          <div className="text-xs mt-1">4 idiomas</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Como funciona - COM BANDEIRAS */}
+          {/* Como funciona */}
           <div className={`rounded-lg p-5 mb-6 ${isDark ? 'bg-gray-700/50' : 'bg-orange-50'}`}>
             <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
               <ArrowRight className="w-5 h-5" />
@@ -142,7 +164,10 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <p>Você compartilha sua ideia de pesquisa em português 🇧🇷</p>
+                <p className="flex items-center gap-1">
+                  Você compartilha sua ideia de pesquisa em português 
+                  <Image src="/flags/br.svg" alt="Brasil" width={16} height={12} className="inline-block" />
+                </p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
@@ -160,8 +185,15 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   4
                 </span>
-                <p>
-                  Descritores MeSH 🇺🇸 e DeCS 🇧🇷 🇪🇸 🇺🇸 🇫🇷 são sugeridos automaticamente
+                <p className="flex items-center gap-1 flex-wrap">
+                  Descritores MeSH 
+                  <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                  e DeCS 
+                  <Image src="/flags/br.svg" alt="Português" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/es.svg" alt="Español" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/fr.svg" alt="Français" width={16} height={12} className="inline-block" />
+                  são sugeridos automaticamente
                 </p>
               </div>
               <div className="flex items-start gap-3">
