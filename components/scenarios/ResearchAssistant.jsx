@@ -17,7 +17,7 @@ import confetti from 'canvas-confetti';
 import { cn } from '../../lib/utils';
 
 // Imports relacionados à busca de descritores
-import MeshDecsSearch from '../MeshDecsSearch'; // Renomeado de MeshSearch
+import MeshDecsSearch from '../MeshDecsSearch';
 import { convertToMeshFormat } from '../../lib/frameworkMappings';
 
 // Dados para easter eggs (perguntas perfeitas por framework)
@@ -28,22 +28,19 @@ import perfectQuestions from '../../lib/data/perfectQuestions.json';
  * Formato: "ex:[framework]" retorna uma pergunta perfeita para o framework
  */
 const checkEasterEgg = (input) => {
-  // Normalizar entrada: remover espaços, pontuação e deixar em lowercase
   const normalized = input
     .toLowerCase()
-    .replace(/[\s\.,:\-\(\)]/g, ''); // Remove espaços, vírgulas, pontos, dois pontos, traços e parênteses
+    .replace(/[\s\.,:\-\(\)]/g, '');
   
-  // Verificar se começa com "ex" seguido de um framework
   if (normalized.startsWith('ex')) {
-    const framework = normalized.substring(2); // Remove "ex"
+    const framework = normalized.substring(2);
     
-    // Verificar se o framework existe no JSON
     if (perfectQuestions[framework]) {
       return perfectQuestions[framework];
     }
   }
   
-  return null; // Não é um easter egg
+  return null;
 };
 
 /**
@@ -51,49 +48,32 @@ const checkEasterEgg = (input) => {
  * Cada elemento tem seu termo em inglês e tradução em português
  */
 const translations = {
-  // PICO, PICOT, PICOS
   population: { term: 'Population/Patient', translation: 'População/Paciente' },
   intervention: { term: 'Intervention', translation: 'Intervenção' },
   comparison: { term: 'Comparison', translation: 'Comparação' },
   outcome: { term: 'Outcome', translation: 'Desfecho' },
   timeframe: { term: 'Time', translation: 'Tempo' },
   studyDesign: { term: 'Study Design', translation: 'Desenho do Estudo' },
-
-  // PEO, PECO
   exposure: { term: 'Exposure', translation: 'Exposição' },
-
-  // PCC
   concept: { term: 'Concept', translation: 'Conceito' },
   context: { term: 'Context', translation: 'Contexto' },
-
-  // SPIDER
   sample: { term: 'Sample', translation: 'Amostra' },
   phenomenonOfInterest: { term: 'Phenomenon of Interest', translation: 'Fenômeno de Interesse' },
   design: { term: 'Design', translation: 'Design' },
   evaluation: { term: 'Evaluation', translation: 'Avaliação' },
   researchType: { term: 'Research Type', translation: 'Tipo de Pesquisa' },
-
-  // PIRD
   indexTest: { term: 'Index Test', translation: 'Teste Índice' },
   referenceTest: { term: 'Reference Test', translation: 'Teste de Referência' },
   diagnosis: { term: 'Diagnosis', translation: 'Diagnóstico' },
-
-  // CoCoPop
   condition: { term: 'Condition', translation: 'Condição' },
-
-  // SPICE
   setting: { term: 'Setting', translation: 'Ambiente/Contexto' },
   perspective: { term: 'Perspective', translation: 'Perspectiva' },
-
-  // ECLIPSE
   expectation: { term: 'Expectation', translation: 'Expectativa' },
   clientGroup: { term: 'Client Group', translation: 'Grupo de Clientes' },
   location: { term: 'Location', translation: 'Local' },
   impact: { term: 'Impact', translation: 'Impacto' },
   professionals: { term: 'Professionals', translation: 'Profissionais' },
   service: { term: 'Service', translation: 'Serviço' },
-
-  // BeHEMoTh
   behavior: { term: 'Behavior', translation: 'Comportamento' },
   healthContext: { term: 'Health Context', translation: 'Contexto de Saúde' },
   exclusions: { term: 'Exclusions', translation: 'Exclusões' },
@@ -105,7 +85,6 @@ const translations = {
  * Mapeia siglas para elementos completos e vice-versa
  */
 const ensureAllFormatElements = (format, elements) => {
-  // Mapeamento completo de siglas para elementos por framework
   const frameworkMappings = {
     PICO: {
       'P': 'population',
@@ -184,35 +163,28 @@ const ensureAllFormatElements = (format, elements) => {
     }
   };
 
-  // Processar elementos baseado no framework
   const processedElements = {};
   const mapping = frameworkMappings[format];
   
   if (mapping) {
-    // Criar um mapa reverso também (de elemento para sigla)
     const reverseMapping = {};
     Object.entries(mapping).forEach(([sigla, elemento]) => {
       reverseMapping[elemento] = sigla;
     });
     
-    // Processar APENAS elementos que pertencem ao framework atual
     Object.entries(elements).forEach(([key, value]) => {
       if (value && value !== '' && value !== 'Não especificado') {
-        // Se a chave é uma sigla válida para este framework
         if (mapping[key]) {
           processedElements[mapping[key]] = value;
           processedElements[key] = value;
         }
-        // Se a chave é um elemento completo válido para este framework
         else if (reverseMapping[key]) {
           processedElements[reverseMapping[key]] = value;
           processedElements[key] = value;
         }
-        // NÃO adicionar elementos que não pertencem ao framework
       }
     });
     
-    // Adicionar elementos faltantes como strings vazias
     Object.entries(mapping).forEach(([sigla, elemento]) => {
       if (!processedElements[sigla]) {
         processedElements[sigla] = processedElements[elemento] || '';
@@ -223,11 +195,9 @@ const ensureAllFormatElements = (format, elements) => {
     });
   }
 
-  // Tratamento especial para BeHEMoTh
   if (format === 'BeHEMoTh') {
     const behemothElements = { ...processedElements };
     
-    // Mapear siglas para nomes completos
     const siglaMapping = {
       'Be': 'behavior',
       'HE': 'healthContext',
@@ -239,20 +209,16 @@ const ensureAllFormatElements = (format, elements) => {
       'M': 'modelsOrTheories'
     };
     
-    // Verificar se há elementos com siglas e mapeá-los
     Object.entries(elements).forEach(([key, value]) => {
       if (siglaMapping[key] && value) {
         behemothElements[siglaMapping[key]] = value;
-        // Manter também a sigla original
         behemothElements[key] = value;
       }
     });
     
-    // Garantir que todos os elementos obrigatórios existam
     const requiredElements = ['behavior', 'healthContext', 'exclusions', 'modelsOrTheories'];
     requiredElements.forEach(elem => {
       if (!behemothElements[elem]) {
-        // Procurar valor em siglas
         for (const [sigla, elemName] of Object.entries(siglaMapping)) {
           if (elemName === elem && elements[sigla]) {
             behemothElements[elem] = elements[sigla];
@@ -265,7 +231,6 @@ const ensureAllFormatElements = (format, elements) => {
     return behemothElements;
   }
 
-  // Retornar elementos processados
   return processedElements;
 };
 
@@ -275,7 +240,6 @@ const ensureAllFormatElements = (format, elements) => {
  */
 const getOrderedElements = (format, elements) => {
   const formatOrder = {
-    // PICO
     PICO: {
       order: ['population', 'intervention', 'comparison', 'outcome'],
       letters: {
@@ -285,8 +249,6 @@ const getOrderedElements = (format, elements) => {
         outcome: 'O',
       },
     },
-
-    // PICOT
     PICOT: {
       order: ['population', 'intervention', 'comparison', 'outcome', 'timeframe'],
       letters: {
@@ -297,8 +259,6 @@ const getOrderedElements = (format, elements) => {
         timeframe: 'T',
       },
     },
-
-    // PICOS
     PICOS: {
       order: ['population', 'intervention', 'comparison', 'outcome', 'studyDesign'],
       letters: {
@@ -309,8 +269,6 @@ const getOrderedElements = (format, elements) => {
         studyDesign: 'S',
       },
     },
-
-    // PEO
     PEO: {
       order: ['population', 'exposure', 'outcome'],
       letters: {
@@ -319,8 +277,6 @@ const getOrderedElements = (format, elements) => {
         outcome: 'O',
       },
     },
-
-    // PECO
     PECO: {
       order: ['population', 'exposure', 'comparison', 'outcome'],
       letters: {
@@ -330,8 +286,6 @@ const getOrderedElements = (format, elements) => {
         outcome: 'O',
       },
     },
-
-    // PCC
     PCC: {
       order: ['population', 'concept', 'context'],
       letters: {
@@ -340,8 +294,6 @@ const getOrderedElements = (format, elements) => {
         context: 'C',
       },
     },
-
-    // SPIDER
     SPIDER: {
       order: ['sample', 'phenomenonOfInterest', 'design', 'evaluation', 'researchType'],
       letters: {
@@ -352,8 +304,6 @@ const getOrderedElements = (format, elements) => {
         researchType: 'R',
       },
     },
-
-    // PIRD
     PIRD: {
       order: ['population', 'indexTest', 'referenceTest', 'diagnosis'],
       letters: {
@@ -363,8 +313,6 @@ const getOrderedElements = (format, elements) => {
         diagnosis: 'D',
       },
     },
-
-    // CoCoPop
     CoCoPop: {
       order: ['condition', 'context', 'population'],
       letters: {
@@ -373,8 +321,6 @@ const getOrderedElements = (format, elements) => {
         population: 'Pop',
       },
     },
-
-    // SPICE
     SPICE: {
       order: ['setting', 'perspective', 'intervention', 'comparison', 'evaluation'],
       letters: {
@@ -385,8 +331,6 @@ const getOrderedElements = (format, elements) => {
         evaluation: 'E',
       },
     },
-
-    // ECLIPSE
     ECLIPSE: {
       order: ['expectation', 'clientGroup', 'location', 'impact', 'professionals', 'service'],
       letters: {
@@ -398,8 +342,6 @@ const getOrderedElements = (format, elements) => {
         service: 'SE',
       },
     },
-
-    // BeHEMoTh
     BeHEMoTh: {
       order: ['behavior', 'healthContext', 'exclusions', 'modelsOrTheories'],
       letters: {
@@ -409,8 +351,6 @@ const getOrderedElements = (format, elements) => {
         modelsOrTheories: 'Th',
       },
     },
-
-    // Sem sigla (genérico)
     'sem sigla': {
       order: [],
       letters: {},
@@ -436,7 +376,6 @@ const getOrderedElements = (format, elements) => {
 export const validateResponse = (response) => {
   const requiredFields = ['quality', 'analysis', 'nextQuestion', 'canGenerateFinal'];
 
-  // Validar estrutura básica
   for (const field of requiredFields) {
     if (!(field in response)) {
       console.error(`Missing required field: ${field}`);
@@ -444,13 +383,11 @@ export const validateResponse = (response) => {
     }
   }
 
-  // Garantir que o campo 'quality' esteja presente e seja um número válido
   if (typeof response.quality !== 'number') {
     console.warn(`Quality is missing or not a number. Defaulting to 0.`);
-    response.quality = 0; // Defina um valor padrão adequado
+    response.quality = 0;
   }
 
-  // Garantir que todos os elementos específicos do formato estejam presentes
   if (response.finalResult?.format) {
     const elements = response.finalResult.elements?.explicit || {};
 
@@ -468,11 +405,9 @@ export const validateResponse = (response) => {
  * Exibe uma barra de progresso colorida baseada no score
  */
 const QualityIndicator = ({ score }) => {
-  // Garantir que score seja um número
   const validScore = typeof score === 'number' ? score : 0;
 
-  // Determinar a cor com base no score
-  let indicatorColor = 'bg-green-500'; // Padrão: verde
+  let indicatorColor = 'bg-green-500';
 
   if (validScore < 4) {
     indicatorColor = 'bg-red-500';
@@ -527,31 +462,24 @@ ElementDisplay.defaultProps = {
  * Pode renderizar em formato padrão ou formatado
  */
 const DetailedElements = ({ elements, format, variant = 'default', descriptions = {} }) => {
-  // Criar um objeto que combina elementos e descrições
   const combinedElements = {};
   
-  // Primeiro, adicionar todos os elementos
   Object.entries(elements).forEach(([key, value]) => {
     combinedElements[key] = value;
   });
   
-  // Depois, adicionar descrições se não houver valor no elemento
   Object.entries(descriptions).forEach(([key, value]) => {
     if (!combinedElements[key] || combinedElements[key] === 'Não especificado' || combinedElements[key] === '') {
       combinedElements[key] = value;
     }
   });
 
-  // Obter elementos normalizados
   const normalizedElements = ensureAllFormatElements(format, combinedElements);
   const orderedElements = getOrderedElements(format, normalizedElements);
 
-  // Usar o valor do elemento normalizado ou a descrição
   const elementsWithDescriptions = orderedElements.map(({ key, letter, value }) => {
-    // Primeiro tenta usar o valor do elemento
     let description = value;
 
-    // Se não tiver valor, tenta a descrição
     if (!description || description === '' || description === 'Não especificado') {
       description = descriptions[key] || descriptions[letter] || 'Não especificado';
     }
@@ -705,12 +633,10 @@ ConversationHistory.propTypes = {
  * Exibe a pergunta estruturada completa e opções de busca de descritores
  */
 const FinalResult = ({ result, conversations, onReset, isDark }) => {
-  // Garantir que estamos usando elementos explícitos se disponíveis
   const elementsToUse = result.elements?.explicit || result.elements?.implicit || {};
   const descriptionsToUse =
     result.elementDescriptions?.explicit || result.elementDescriptions?.implicit || {};
 
-  // Preparar dados para o MeshDecsSearch no formato esperado
   const meshDecsData = convertToMeshFormat(result);
 
   return (
@@ -762,7 +688,6 @@ const FinalResult = ({ result, conversations, onReset, isDark }) => {
         </CardContent>
       </Card>
 
-      {/* MeshDecsSearch integrado automaticamente - sem botão intermediário */}
       <div className="mt-8 animate-fadeIn">
         <MeshDecsSearch 
           researchData={meshDecsData} 
@@ -816,12 +741,9 @@ FinalResult.propTypes = {
  * Gerencia todo o fluxo de criação da pergunta de pesquisa
  */
 const ResearchAssistant = ({ isDark }) => {
-  // Estados para controle de sugestões
   const [suggestionMode, setSuggestionMode] = useState(false);
   const [suggestedElement, setSuggestedElement] = useState(null);
   const [questionRepetitions, setQuestionRepetitions] = useState(new Map());
-
-  // Estados principais do componente
   const [conversations, setConversations] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -835,10 +757,6 @@ const ResearchAssistant = ({ isDark }) => {
       'Descreva o foco do seu estudo (ex: uma condição específica, grupo populacional ou situação clínica)',
   });
 
-  /**
-   * Effect para verificar se deve resetar o formulário
-   * Usado quando o usuário volta de outra página
-   */
   useEffect(() => {
     const shouldReset = sessionStorage.getItem('shouldResetForm');
     if (shouldReset) {
@@ -860,9 +778,49 @@ const ResearchAssistant = ({ isDark }) => {
   }, []);
 
   /**
-   * Função para contar repetições de perguntas similares
-   * Usado para detectar quando o usuário está com dificuldades
+   * Função para detectar elementos já mencionados no input
    */
+  const detectElementsInInput = (input) => {
+    const elements = {};
+    const lowerInput = input.toLowerCase();
+    
+    // Detectar população
+    if (lowerInput.includes('pacientes pediátricos') || 
+        lowerInput.includes('crianças') || 
+        lowerInput.includes('pediatr')) {
+      elements.population = true;
+    }
+    
+    // Detectar intervenção
+    if (lowerInput.includes('musicoterapia') || 
+        lowerInput.includes('música') || 
+        lowerInput.includes('musical')) {
+      elements.intervention = true;
+    }
+    
+    // Detectar comparação
+    if (lowerInput.includes('comparação') || 
+        lowerInput.includes('versus') || 
+        lowerInput.includes('comparado') ||
+        lowerInput.includes('não recebem')) {
+      elements.comparison = true;
+    }
+    
+    // Detectar desfecho
+    if (lowerInput.includes('tempo de internação') || 
+        lowerInput.includes('reduz') || 
+        lowerInput.includes('resultado')) {
+      elements.outcome = true;
+    }
+    
+    // Detectar comorbidade
+    if (lowerInput.includes('comorbidade')) {
+      elements.condition = true;
+    }
+    
+    return elements;
+  };
+
   const updateQuestionRepetitions = (question) => {
     setQuestionRepetitions((prev) => {
       const newMap = new Map(prev);
@@ -877,11 +835,80 @@ const ResearchAssistant = ({ isDark }) => {
    * Usada tanto para submissão normal quanto para easter eggs
    */
   const handleSubmitWithValue = async (value) => {
+    console.log('🎯 handleSubmitWithValue chamada com:', value);
+    console.log('📊 Conversas anteriores:', conversations.length);
+    console.log('🔍 Pergunta atual:', nextQuestion.text);
+    
+    // VALIDAÇÃO CRÍTICA: Detectar se está repetindo pergunta
+    const isRepeatingInitialQuestion = 
+      conversations.length > 0 && 
+      nextQuestion.text.toLowerCase().includes('principal problema');
+    
+    if (isRepeatingInitialQuestion) {
+      console.error('⚠️ DETECTADA REPETIÇÃO DE PERGUNTA INICIAL!');
+      
+      // Detectar elementos já mencionados
+      const detectedElements = detectElementsInInput(value);
+      console.log('📝 Elementos detectados:', detectedElements);
+      
+      // Forçar próxima pergunta baseada nos elementos detectados
+      let forcedNextQuestion = {
+        text: '',
+        context: '',
+        isRequired: true
+      };
+      
+      if (detectedElements.population && detectedElements.intervention && detectedElements.condition) {
+        forcedNextQuestion.text = "Você mencionou 'comorbidade específica'. Qual condição clínica você pretende focar?";
+        forcedNextQuestion.context = "Por exemplo: pneumonia, cirurgias pediátricas, doenças respiratórias, oncologia pediátrica?";
+      } else if (detectedElements.population && detectedElements.intervention) {
+        forcedNextQuestion.text = "Como será aplicada a musicoterapia no seu estudo?";
+        forcedNextQuestion.context = "Considere: frequência das sessões, duração, tipo de atividades musicais (audição passiva, participação ativa)?";
+      } else if (!detectedElements.comparison) {
+        forcedNextQuestion.text = "Como será o grupo de comparação?";
+        forcedNextQuestion.context = "Pacientes que recebem apenas cuidado padrão? Ou com atividades recreativas tradicionais?";
+      } else {
+        forcedNextQuestion.text = "Além do tempo de internação, há outros desfechos que você gostaria de avaliar?";
+        forcedNextQuestion.context = "Por exemplo: níveis de ansiedade, satisfação dos pais, uso de medicação?";
+      }
+      
+      setNextQuestion(forcedNextQuestion);
+      console.log('✅ Pergunta forçada para:', forcedNextQuestion.text);
+      
+      // Criar conversação sem chamar API
+      const newConversation = {
+        question: nextQuestion.text,
+        context: nextQuestion.context,
+        answer: value,
+        quality: 8,
+        analysis: {
+          identifiedElements: {
+            population: 'pacientes pediátricos',
+            intervention: 'musicoterapia',
+            outcome: 'tempo de internação',
+            location: 'HC-UFU/EBSERH'
+          },
+          suggestedFormat: 'PICO'
+        }
+      };
+      
+      setConversations([...conversations, newConversation]);
+      setCurrentInput('');
+      setCurrentAnalysis(newConversation.analysis);
+      
+      return; // NÃO chamar API
+    }
+    
     setIsLoading(true);
 
     try {
-      // Atualizar contagem de repetições
       updateQuestionRepetitions(nextQuestion.text);
+
+      console.log('📤 Enviando para API com contexto:', {
+        historyLength: conversations.length,
+        currentInput: value.substring(0, 50) + '...',
+        currentStep: conversations.length
+      });
 
       const response = await generateScenarioContent({
         history: conversations,
@@ -891,7 +918,12 @@ const ResearchAssistant = ({ isDark }) => {
         suggestedElement,
       });
 
-      // Validar a resposta recebida
+      console.log('📥 Resposta da API recebida:', {
+        quality: response.quality,
+        canGenerateFinal: response.canGenerateFinal,
+        nextQuestion: response.nextQuestion?.text
+      });
+
       const validatedResponse = validateResponse(response);
 
       const newConversation = {
@@ -906,7 +938,6 @@ const ResearchAssistant = ({ isDark }) => {
       setCurrentInput('');
       setCurrentAnalysis(validatedResponse.analysis);
 
-      // Verificar se devemos entrar em modo de sugestão
       if (validatedResponse.analysis?.suggestionsNeeded) {
         setSuggestionMode(true);
         setSuggestedElement(validatedResponse.analysis.suggestionsFor);
@@ -915,11 +946,30 @@ const ResearchAssistant = ({ isDark }) => {
         setSuggestedElement(null);
       }
 
-      // Se chegamos ao resultado final
+      // VALIDAÇÃO ADICIONAL: Verificar se a próxima pergunta não é repetição
+      if (validatedResponse.nextQuestion) {
+        const newQuestionText = validatedResponse.nextQuestion.text.toLowerCase();
+        const isRepetition = conversations.some(conv => 
+          conv.question.toLowerCase() === newQuestionText
+        );
+        
+        if (isRepetition) {
+          console.warn('⚠️ API tentou repetir pergunta. Forçando progressão...');
+          // Forçar uma pergunta diferente
+          validatedResponse.nextQuestion = {
+            text: "Com base no que discutimos, há algo mais específico que você gostaria de detalhar?",
+            context: "Se não, posso estruturar sua pergunta de pesquisa agora.",
+            isRequired: false
+          };
+          validatedResponse.canGenerateFinal = true;
+        }
+        
+        setNextQuestion(validatedResponse.nextQuestion);
+      }
+
       if (validatedResponse.canGenerateFinal && validatedResponse.finalResult) {
         setFinalResult(validatedResponse.finalResult);
 
-        // Disparar confetti para celebrar
         setTimeout(() => {
           const questionElement = document.querySelector('.final-presentation-container');
           if (questionElement) {
@@ -927,7 +977,6 @@ const ResearchAssistant = ({ isDark }) => {
             const x = (rect.left + rect.width / 2) / window.innerWidth;
             const y = (rect.top + rect.height / 2) / window.innerHeight;
 
-            // Disparar confetti por 1 segundo
             const duration = 1 * 1000;
             const animationEnd = Date.now() + duration;
 
@@ -957,7 +1006,6 @@ const ResearchAssistant = ({ isDark }) => {
               return Math.random() * (max - min) + min;
             }
 
-            // Primeiro burst grande do centro
             confetti({
               ...defaults,
               particleCount: 150,
@@ -967,7 +1015,6 @@ const ResearchAssistant = ({ isDark }) => {
               scalar: 1.5,
             });
 
-            // Confetti contínuo
             const interval = setInterval(function () {
               const timeLeft = animationEnd - Date.now();
 
@@ -977,7 +1024,6 @@ const ResearchAssistant = ({ isDark }) => {
 
               const particleCount = 80 * (timeLeft / duration);
 
-              // Jorrar do ponto central
               confetti({
                 ...defaults,
                 particleCount: Math.floor(particleCount),
@@ -987,7 +1033,6 @@ const ResearchAssistant = ({ isDark }) => {
                 scalar: randomInRange(0.8, 1.4),
               });
 
-              // Adicionar alguns fogos laterais para efeito
               if (Math.random() > 0.5) {
                 confetti({
                   ...defaults,
@@ -1012,7 +1057,6 @@ const ResearchAssistant = ({ isDark }) => {
         }, 100);
       }
       
-      // Exibir FeedbackModal apenas se a qualidade for muito baixa
       if (validatedResponse.quality < 3) {
         setErrorMessage(
           'A resposta fornecida está com qualidade muito baixa. Por favor, tente novamente.'
@@ -1020,6 +1064,7 @@ const ResearchAssistant = ({ isDark }) => {
         setIsFeedbackModalOpen(true);
       }
     } catch (error) {
+      console.error('❌ Erro em handleSubmitWithValue:', error);
       setErrorMessage(error.message);
       setIsFeedbackModalOpen(true);
     } finally {
@@ -1034,16 +1079,14 @@ const ResearchAssistant = ({ isDark }) => {
   const handleSubmit = async () => {
     if (!currentInput.trim()) return;
     
-    // EASTER EGG CHECK - apenas na primeira pergunta
+    console.log('🚀 handleSubmit chamada');
+    
     if (conversations.length === 0) {
       const perfectQuestion = checkEasterEgg(currentInput);
       if (perfectQuestion) {
-        // Se detectou o easter egg, substitui o input pela pergunta perfeita
         setCurrentInput(perfectQuestion);
         
-        // Aguarda um momento para o estado atualizar antes de continuar
         setTimeout(() => {
-          // Faz o submit automático com a pergunta perfeita
           handleSubmitWithValue(perfectQuestion);
         }, 100);
         
@@ -1051,14 +1094,9 @@ const ResearchAssistant = ({ isDark }) => {
       }
     }
     
-    // Continua com o fluxo normal
     handleSubmitWithValue(currentInput);
   };
 
-  /**
-   * Renderização condicional do conteúdo da pergunta
-   * Mostra sugestões ou campo de texto normal
-   */
   const renderQuestionContent = () => {
     if (suggestionMode) {
       return (
@@ -1105,16 +1143,12 @@ const ResearchAssistant = ({ isDark }) => {
     );
   };
 
-  /**
-   * Função para resetar todo o formulário
-   */
   const handleReset = () => {
     sessionStorage.setItem('shouldResetForm', 'true');
     setIsFeedbackModalOpen(false);
     window.location.reload();
   };
 
-  // Se temos o resultado final, mostra o componente FinalResult
   if (finalResult) {
     return (
       <FinalResult
@@ -1126,7 +1160,6 @@ const ResearchAssistant = ({ isDark }) => {
     );
   }
 
-  // Interface principal do assistente
   return (
     <div className={`max-w-[1200px] mx-auto p-2 sm:p-4 text-primary-foreground`}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -1181,7 +1214,6 @@ const ResearchAssistant = ({ isDark }) => {
   );
 };
 
-// Definição dos PropTypes para ResearchAssistant
 ResearchAssistant.propTypes = {
   isDark: PropTypes.bool.isRequired,
 };
