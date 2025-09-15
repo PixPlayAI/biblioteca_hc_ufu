@@ -104,13 +104,13 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     </h3>
                     <p className="text-xs opacity-80">
                       Digite sua ideia em português comum e receba instantaneamente descritores 
-                      científicos traduzidos e validados.
+                      científicos traduzidos e validados em múltiplos idiomas.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Funcionalidade 3 */}
+              {/* Funcionalidade 3 - ATUALIZADA COM BANDEIRAS */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -120,19 +120,36 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     <h3 className="font-semibold text-sm mb-1">
                       Busca em Bases Internacionais
                     </h3>
-                    <div className="text-xs opacity-80 space-y-1">
+                    <div className="text-xs opacity-80 space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">MeSH:</span>
-                        <span>30.000+ descritores médicos em inglês</span>
+                        <span className="font-medium text-blue-600 dark:text-blue-400">MeSH:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-lg" title="English">🇺🇸</span>
+                          <span>30.000+ descritores médicos em inglês</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">DeCS:</span>
-                        <span>Multilíngue</span>
-                        <div className="flex gap-0.5">
-                          <span title="Português">🇧🇷</span>
-                          <span title="Español">🇪🇸</span>
-                          <span title="English">🇺🇸</span>
-                          <span title="Français">🇫🇷</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-green-600 dark:text-green-400">DeCS:</span>
+                        <div className="flex items-center gap-2 ml-4">
+                          <span>Disponível em 4 idiomas:</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 ml-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg" title="Português">🇧🇷</span>
+                            <span className="text-xs">Português</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg" title="Español">🇪🇸</span>
+                            <span className="text-xs">Español</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg" title="English">🇺🇸</span>
+                            <span className="text-xs">English</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg" title="Français">🇫🇷</span>
+                            <span className="text-xs">Français</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -142,7 +159,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
             </div>
           </div>
 
-          {/* Como funciona */}
+          {/* Como funciona - ATUALIZADO COM BANDEIRAS */}
           <div className={`rounded-lg p-5 mb-6 ${isDark ? 'bg-gray-700/50' : 'bg-orange-50'}`}>
             <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
               <ArrowRight className="w-5 h-5" />
@@ -153,7 +170,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <p>Você compartilha sua ideia de pesquisa</p>
+                <p>Você compartilha sua ideia de pesquisa em português 🇧🇷</p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
@@ -171,7 +188,12 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   4
                 </span>
-                <p>Descritores MeSH e DeCS são sugeridos automaticamente</p>
+                <p>
+                  Descritores MeSH <span title="English">🇺🇸</span> e DeCS <span title="Português">🇧🇷</span>
+                  <span title="Español">🇪🇸</span>
+                  <span title="English">🇺🇸</span>
+                  <span title="Français">🇫🇷</span> são sugeridos automaticamente
+                </p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
