@@ -110,7 +110,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 </div>
               </div>
 
-              {/* Funcionalidade 3 - ATUALIZADA COM BANDEIRAS */}
+              {/* Funcionalidade 3 - SIMPLIFICADA COM BANDEIRAS LADO A LADO */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -120,36 +120,21 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                     <h3 className="font-semibold text-sm mb-1">
                       Busca em Bases Internacionais
                     </h3>
-                    <div className="text-xs opacity-80 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-blue-600 dark:text-blue-400">MeSH:</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-lg" title="English">🇺🇸</span>
-                          <span>30.000+ descritores médicos em inglês</span>
+                    <div className="grid grid-cols-2 gap-3 mt-2 text-xs">
+                      {/* MeSH */}
+                      <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
+                        <div className="font-medium text-blue-600 dark:text-blue-400 mb-1">MeSH</div>
+                        <div className="opacity-80">
+                          <span role="img" aria-label="USA">🇺🇸</span> Inglês
+                          <div className="text-xs mt-1">30.000+ termos</div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-medium text-green-600 dark:text-green-400">DeCS:</span>
-                        <div className="flex items-center gap-2 ml-4">
-                          <span>Disponível em 4 idiomas:</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 ml-4">
-                          <div className="flex items-center gap-1">
-                            <span className="text-lg" title="Português">🇧🇷</span>
-                            <span className="text-xs">Português</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-lg" title="Español">🇪🇸</span>
-                            <span className="text-xs">Español</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-lg" title="English">🇺🇸</span>
-                            <span className="text-xs">English</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-lg" title="Français">🇫🇷</span>
-                            <span className="text-xs">Français</span>
-                          </div>
+                      {/* DeCS */}
+                      <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-green-50'}`}>
+                        <div className="font-medium text-green-600 dark:text-green-400 mb-1">DeCS</div>
+                        <div className="opacity-80">
+                          <div><span role="img" aria-label="Brasil">🇧🇷</span> <span role="img" aria-label="Spain">🇪🇸</span> <span role="img" aria-label="USA">🇺🇸</span> <span role="img" aria-label="France">🇫🇷</span></div>
+                          <div className="text-xs mt-1">4 idiomas</div>
                         </div>
                       </div>
                     </div>
@@ -159,7 +144,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
             </div>
           </div>
 
-          {/* Como funciona - ATUALIZADO COM BANDEIRAS */}
+          {/* Como funciona */}
           <div className={`rounded-lg p-5 mb-6 ${isDark ? 'bg-gray-700/50' : 'bg-orange-50'}`}>
             <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
               <ArrowRight className="w-5 h-5" />
@@ -170,7 +155,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <p>Você compartilha sua ideia de pesquisa em português 🇧🇷</p>
+                <p>Você compartilha sua ideia de pesquisa em português <span role="img" aria-label="Brasil">🇧🇷</span></p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
@@ -189,10 +174,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                   4
                 </span>
                 <p>
-                  Descritores MeSH <span title="English">🇺🇸</span> e DeCS <span title="Português">🇧🇷</span>
-                  <span title="Español">🇪🇸</span>
-                  <span title="English">🇺🇸</span>
-                  <span title="Français">🇫🇷</span> são sugeridos automaticamente
+                  Descritores MeSH <span role="img" aria-label="USA">🇺🇸</span> e DeCS <span role="img" aria-label="Brasil">🇧🇷</span> <span role="img" aria-label="Spain">🇪🇸</span> <span role="img" aria-label="USA">🇺🇸</span> <span role="img" aria-label="France">🇫🇷</span> são sugeridos automaticamente
                 </p>
               </div>
               <div className="flex items-start gap-3">
