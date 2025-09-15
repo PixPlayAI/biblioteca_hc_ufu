@@ -7,7 +7,7 @@ git reset --hard <commit-hash>
 git reset --hard 7165649c8658e5717f3401029d3b7705c0c4f228
 
 git add .
-git commit -m "bandeiras e informação de api não disponivel v1"
+git commit -m "Mexendo no nosso analyze"
 git push origin main
 
 
