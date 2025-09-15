@@ -4,6 +4,14 @@ import { Play, Brain, CheckCircle2, Globe, Languages, Sparkles, Search, BookOpen
 const WelcomeModal = ({ isOpen, onStart, isDark }) => {
   if (!isOpen) return null;
 
+  // Bandeiras usando Unicode direto
+  const flags = {
+    brazil: '\u{1F1E7}\u{1F1F7}', // 🇧🇷
+    spain: '\u{1F1EA}\u{1F1F8}',  // 🇪🇸
+    usa: '\u{1F1FA}\u{1F1F8}',    // 🇺🇸
+    france: '\u{1F1EB}\u{1F1F7}'  // 🇫🇷
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
       <div className="min-h-full flex items-center justify-center p-4">
@@ -110,7 +118,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 </div>
               </div>
 
-              {/* Funcionalidade 3 - SIMPLIFICADA COM BANDEIRAS LADO A LADO */}
+              {/* Funcionalidade 3 - Com bandeiras alternativas */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -125,7 +133,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
                         <div className="font-medium text-blue-600 dark:text-blue-400 mb-1">MeSH</div>
                         <div className="opacity-80">
-                          <span role="img" aria-label="USA">🇺🇸</span> Inglês
+                          <span className="text-base">{flags.usa}</span> Inglês
                           <div className="text-xs mt-1">30.000+ termos</div>
                         </div>
                       </div>
@@ -133,7 +141,12 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-green-50'}`}>
                         <div className="font-medium text-green-600 dark:text-green-400 mb-1">DeCS</div>
                         <div className="opacity-80">
-                          <div><span role="img" aria-label="Brasil">🇧🇷</span> <span role="img" aria-label="Spain">🇪🇸</span> <span role="img" aria-label="USA">🇺🇸</span> <span role="img" aria-label="France">🇫🇷</span></div>
+                          <div className="text-base">
+                            <span>{flags.brazil}</span>{' '}
+                            <span>{flags.spain}</span>{' '}
+                            <span>{flags.usa}</span>{' '}
+                            <span>{flags.france}</span>
+                          </div>
                           <div className="text-xs mt-1">4 idiomas</div>
                         </div>
                       </div>
@@ -155,7 +168,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <p>Você compartilha sua ideia de pesquisa em português <span role="img" aria-label="Brasil">🇧🇷</span></p>
+                <p>Você compartilha sua ideia de pesquisa em português <span className="text-base">{flags.brazil}</span></p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
@@ -174,7 +187,8 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                   4
                 </span>
                 <p>
-                  Descritores MeSH <span role="img" aria-label="USA">🇺🇸</span> e DeCS <span role="img" aria-label="Brasil">🇧🇷</span> <span role="img" aria-label="Spain">🇪🇸</span> <span role="img" aria-label="USA">🇺🇸</span> <span role="img" aria-label="France">🇫🇷</span> são sugeridos automaticamente
+                  Descritores MeSH <span className="text-base">{flags.usa}</span> e DeCS{' '}
+                  <span className="text-base">{flags.brazil} {flags.spain} {flags.usa} {flags.france}</span> são sugeridos automaticamente
                 </p>
               </div>
               <div className="flex items-start gap-3">
