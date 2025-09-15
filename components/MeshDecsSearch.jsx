@@ -48,116 +48,12 @@ import {
   Microscope,
   Stethoscope,
   Heart,
-  AlertTriangle,
+  AlertCircle,
   WifiOff,
+  RefreshCcw
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getElementLabel, getElementColor, getElementSigla } from '../lib/frameworkMappings';
-
-// Componente de Erro específico para DeCS
-const DecsErrorMessage = ({ isDark, onRetry }) => {
-  return (
-    <div className={cn(
-      "mt-6 rounded-xl overflow-hidden animate-fadeIn",
-      isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200",
-      "border shadow-lg"
-    )}>
-      {/* Header com gradiente verde */}
-      <div className="bg-gradient-to-r from-red-500 to-orange-500 p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <WifiOff className="w-6 h-6 text-white" />
-          </div>
-          <h3 className="text-lg font-bold text-white">
-            API DeCS Temporariamente Indisponível
-          </h3>
-        </div>
-      </div>
-      
-      {/* Conteúdo do erro */}
-      <div className="p-6">
-        <div className={cn(
-          "p-4 rounded-lg mb-4",
-          isDark ? "bg-red-900/20 border-red-800" : "bg-red-50 border-red-200",
-          "border"
-        )}>
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className={cn(
-                "font-medium mb-2",
-                isDark ? "text-red-100" : "text-red-900"
-              )}>
-                A API do DeCS está instável e não retornou os resultados
-              </p>
-              <p className={cn(
-                "text-sm",
-                isDark ? "text-red-200" : "text-red-700"
-              )}>
-                O serviço de Descritores em Ciências da Saúde (DeCS) está temporariamente indisponível. 
-                Por favor, tente novamente em alguns minutos.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Card informativo sobre o DeCS */}
-        <div className={cn(
-          "p-4 rounded-lg",
-          isDark ? "bg-gray-700/50" : "bg-green-50"
-        )}>
-          <div className="flex items-center gap-3 mb-3">
-            <Languages className="w-5 h-5 text-green-600" />
-            <span className="font-medium text-green-700 dark:text-green-400">
-              Sobre o DeCS
-            </span>
-            <div className="flex gap-1 ml-auto">
-              <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
-              <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
-              <Image src="/flags/us.svg" alt="English" width={20} height={15} />
-              <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
-            </div>
-          </div>
-          <p className="text-sm opacity-80">
-            O DeCS é um vocabulário multilíngue da BIREME/OPAS/OMS com mais de 36.000 termos 
-            em 4 idiomas, essencial para pesquisas em bases latino-americanas como LILACS e BVS.
-          </p>
-        </div>
-
-        {/* Botões de ação */}
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onRetry}
-            className={cn(
-              "flex-1 py-3 px-4 rounded-lg font-medium transition-all",
-              "bg-gradient-to-r from-green-500 to-green-600 text-white",
-              "hover:from-green-600 hover:to-green-700",
-              "flex items-center justify-center gap-2"
-            )}
-          >
-            <Languages className="w-4 h-4" />
-            Tentar Novamente
-          </button>
-          <a
-            href="https://decs.bvsalud.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "py-3 px-4 rounded-lg font-medium transition-all",
-              isDark 
-                ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700",
-              "flex items-center justify-center gap-2"
-            )}
-          >
-            Acessar DeCS
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Componente de Loading com animação
 const LoadingAnimation = ({ isLoading, type = 'mesh' }) => {
@@ -252,16 +148,6 @@ const LoadingAnimation = ({ isLoading, type = 'mesh' }) => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">
             Buscando {type === 'mesh' ? 'MeSH' : 'DeCS'}
           </h3>
-          
-          {/* Bandeiras para DeCS */}
-          {type === 'decs' && (
-            <div className="flex gap-2 mt-2">
-              <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
-              <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
-              <Image src="/flags/us.svg" alt="English" width={20} height={15} />
-              <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
-            </div>
-          )}
         </div>
 
         {/* Mensagem de status */}
@@ -314,6 +200,119 @@ const LoadingAnimation = ({ isLoading, type = 'mesh' }) => {
               : 'DeCS está disponível em 4 idiomas'}
           </p>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de erro específico para DeCS
+const DecsErrorMessage = ({ isDark, onRetry }) => {
+  return (
+    <div className={cn(
+      "mt-6 rounded-2xl overflow-hidden",
+      isDark ? "bg-gray-800" : "bg-white",
+      "border-2 border-red-200 dark:border-red-800"
+    )}>
+      {/* Header com gradiente */}
+      <div className="px-6 py-4 bg-gradient-to-r from-red-500 to-red-600">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <WifiOff className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-white">API DeCS Temporariamente Instável</h3>
+            <p className="text-white/90 text-sm mt-1">
+              O serviço de busca DeCS está temporariamente indisponível
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="p-6">
+        <div className={cn(
+          "p-4 rounded-lg mb-4",
+          isDark ? "bg-red-900/20" : "bg-red-50"
+        )}>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-red-900 dark:text-red-100">
+                A API do DeCS está instável e não retornou os resultados esperados. 
+                Este é um problema temporário do servidor da BIREME.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Informações sobre o DeCS */}
+        <div className={cn(
+          "p-4 rounded-lg",
+          isDark ? "bg-gray-700/50" : "bg-green-50"
+        )}>
+          <div className="flex items-center gap-2 mb-2">
+            <Languages className="w-5 h-5 text-green-600" />
+            <span className="font-medium text-green-900 dark:text-green-100">
+              Sobre o DeCS
+            </span>
+          </div>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            Descritores em Ciências da Saúde - Vocabulário multilíngue da BIREME/OPAS/OMS
+          </p>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium">Disponível em:</span>
+            <div className="flex gap-2">
+              <div className="flex items-center gap-1">
+                <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
+                <span className="text-xs">Português</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
+                <span className="text-xs">Español</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/us.svg" alt="English" width={20} height={15} />
+                <span className="text-xs">English</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
+                <span className="text-xs">Français</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sugestões */}
+        <div className="mt-4">
+          <p className="text-sm font-medium mb-3">O que você pode fazer:</p>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <span>Tente novamente em alguns minutos</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <span>Use a busca MeSH enquanto isso (funciona normalmente)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+              <span>Acesse diretamente: <a href="https://decs.bvsalud.org" target="_blank" rel="noopener noreferrer" className="underline">decs.bvsalud.org</a></span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Botão de retry */}
+        <button
+          onClick={onRetry}
+          className={cn(
+            "mt-6 w-full py-3 px-4 rounded-lg font-medium transition-all",
+            "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
+            "text-white flex items-center justify-center gap-2"
+          )}
+        >
+          <RefreshCcw className="w-4 h-4" />
+          Tentar Novamente
+        </button>
       </div>
     </div>
   );
@@ -436,6 +435,13 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
     setActiveView('decs');
 
     try {
+      // TEMPORÁRIO: Simular erro após 10 segundos
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          reject(new Error('API instável'));
+        }, 10000);
+      });
+
       const payload = {
         frameworkElements: researchData.elements.explicit,
         fullQuestion: researchData.question,
@@ -453,16 +459,11 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
       });
 
       if (!response.ok) {
-        throw new Error(`Erro na API DeCS: ${response.status}`);
+        throw new Error(`Erro na resposta: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('📥 Resposta da busca DeCS:', data);
-
-      // Verifica se a resposta está vazia ou inválida
-      if (!data || (!data.results && !data.allDecsTerms)) {
-        throw new Error('API DeCS não retornou dados válidos');
-      }
 
       setDecsResults(data.results);
       setAllDecsTerms(data.allDecsTerms);
@@ -470,7 +471,6 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
     } catch (error) {
       console.error('❌ Erro na busca DeCS:', error);
       setDecsError(true);
-      setActiveView('decs'); // Mantém na view do DeCS para mostrar o erro
     } finally {
       setDecsLoading(false);
     }
@@ -644,13 +644,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                                       {term.terms && Object.entries(term.terms).map(([lang, termText]) => (
                                         termText && (
                                           <div key={lang} className="flex items-center gap-2">
-                                            <Image 
-                                              src={`/flags/${lang === 'pt' ? 'br' : lang === 'en' ? 'us' : lang}.svg`} 
-                                              alt={getLanguageName(lang)} 
-                                              width={20} 
-                                              height={15} 
-                                              className="inline-block"
-                                            />
+                                            <span className="text-sm">{getFlagEmoji(lang)}</span>
                                             <span>{termText}</span>
                                           </div>
                                         )
@@ -668,17 +662,8 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                                   {Object.entries(term.definitions).map(([lang, def]) => (
                                     def && (
                                       <div key={lang} className="text-sm opacity-80">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <Image 
-                                            src={`/flags/${lang === 'pt' ? 'br' : lang === 'en' ? 'us' : lang}.svg`} 
-                                            alt={getLanguageName(lang)} 
-                                            width={16} 
-                                            height={12} 
-                                            className="inline-block"
-                                          />
-                                          <span className="font-medium">{getLanguageName(lang)}:</span>
-                                        </div>
-                                        <p className="mt-1 ml-6">{def}</p>
+                                        <span className="font-medium">{getFlagEmoji(lang)} {getLanguageName(lang)}:</span>
+                                        <p className="mt-1">{def}</p>
                                       </div>
                                     )
                                   ))}
@@ -902,7 +887,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                   Resultados MeSH
                 </button>
               )}
-              {(decsResults || decsError) && (
+              {decsResults && (
                 <button
                   onClick={() => setActiveView('decs')}
                   className={cn(
@@ -913,7 +898,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                   )}
                 >
                   <Languages className="w-4 h-4 inline mr-2" />
-                  {decsError ? 'Erro DeCS' : 'Resultados DeCS'}
+                  Resultados DeCS
                 </button>
               )}
             </div>
@@ -950,6 +935,14 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                   <p className="text-white/90 mb-4">
                     Medical Subject Headings
                   </p>
+                  
+                  {/* Bandeira do inglês */}
+                  <div className="flex justify-center mb-4">
+                    <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
+                      <Image src="/flags/us.svg" alt="English" width={20} height={15} />
+                      <span className="text-sm font-medium">English only</span>
+                    </div>
+                  </div>
                   
                   {/* Features */}
                   <div className="space-y-2 text-left">
@@ -1006,10 +999,10 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                   
                   {/* Bandeiras dos idiomas */}
                   <div className="flex justify-center gap-2 mb-4">
-                    <Image src="/flags/br.svg" alt="Português" width={24} height={18} />
-                    <Image src="/flags/es.svg" alt="Español" width={24} height={18} />
-                    <Image src="/flags/us.svg" alt="English" width={24} height={18} />
-                    <Image src="/flags/fr.svg" alt="Français" width={24} height={18} />
+                    <Image src="/flags/br.svg" alt="Português" width={24} height={18} title="Português" />
+                    <Image src="/flags/es.svg" alt="Español" width={24} height={18} title="Español" />
+                    <Image src="/flags/us.svg" alt="English" width={24} height={18} title="English" />
+                    <Image src="/flags/fr.svg" alt="Français" width={24} height={18} title="Français" />
                   </div>
                   
                   {/* Features */}
@@ -1038,7 +1031,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
             </div>
           )}
 
-          {/* Mensagem de erro para MeSH */}
+          {/* Mensagem de erro */}
           {error && error.type === 'mesh' && (
             <div className={cn(
               "mt-6 p-4 rounded-lg",
@@ -1055,7 +1048,10 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
                   </p>
                   <button
                     onClick={searchMeSH}
-                    className="mt-3 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700"
+                    className={cn(
+                      "mt-3 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors",
+                      "bg-blue-600 hover:bg-blue-700"
+                    )}
                   >
                     Tentar novamente
                   </button>
@@ -1066,6 +1062,11 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
         </CardContent>
       </Card>
 
+      {/* Erro específico do DeCS */}
+      {decsError && activeView === 'decs' && (
+        <DecsErrorMessage isDark={isDark} onRetry={searchDeCS} />
+      )}
+
       {/* Resultados MeSH */}
       {activeView === 'mesh' && meshResults && (
         <div className="space-y-6 animate-fadeIn">
@@ -1074,6 +1075,7 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <Globe className="w-6 h-6" />
                 Medical Subject Headings (MeSH)
+                <Image src="/flags/us.svg" alt="English" width={20} height={15} className="ml-2" />
               </h3>
               <p className="text-sm opacity-90 mt-1">
                 Vocabulário controlado da National Library of Medicine
@@ -1084,38 +1086,28 @@ const MeshDecsSearch = ({ researchData, isDark, conversations, finalResult, prel
         </div>
       )}
 
-      {/* Resultados DeCS ou Erro DeCS */}
-      {activeView === 'decs' && (
-        <>
-          {decsError ? (
-            <DecsErrorMessage isDark={isDark} onRetry={searchDeCS} />
-          ) : (
-            decsResults && (
-              <div className="space-y-6 animate-fadeIn">
-                <Card className={cn('overflow-hidden', isDark ? 'bg-gray-800 border-gray-700' : 'bg-white')}>
-                  <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Languages className="w-6 h-6" />
-                      Descritores em Ciências da Saúde (DeCS)
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm opacity-90">
-                        Vocabulário estruturado e multilíngue criado pela BIREME
-                      </p>
-                      <div className="flex gap-1 ml-auto">
-                        <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
-                        <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
-                        <Image src="/flags/us.svg" alt="English" width={20} height={15} />
-                        <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
-                      </div>
-                    </div>
-                  </div>
-                  <CardContent className="p-6">{renderResults(decsResults, true)}</CardContent>
-                </Card>
-              </div>
-            )
-          )}
-        </>
+      {/* Resultados DeCS */}
+      {activeView === 'decs' && decsResults && (
+        <div className="space-y-6 animate-fadeIn">
+          <Card className={cn('overflow-hidden', isDark ? 'bg-gray-800 border-gray-700' : 'bg-white')}>
+            <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Languages className="w-6 h-6" />
+                Descritores em Ciências da Saúde (DeCS)
+                <div className="flex gap-1 ml-2">
+                  <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
+                  <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
+                  <Image src="/flags/us.svg" alt="English" width={20} height={15} />
+                  <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
+                </div>
+              </h3>
+              <p className="text-sm opacity-90 mt-1">
+                Vocabulário estruturado e multilíngue criado pela BIREME
+              </p>
+            </div>
+            <CardContent className="p-6">{renderResults(decsResults, true)}</CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Estilos CSS para animações */}
