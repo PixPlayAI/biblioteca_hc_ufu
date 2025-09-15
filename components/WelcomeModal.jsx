@@ -112,6 +112,8 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
               </div>
 
               {/* Funcionalidade 3 - COM IMAGENS DE BANDEIRAS */}
+              
+{/* Funcionalidade 3 - COM IMAGENS DE BANDEIRAS */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -119,37 +121,59 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-sm mb-1">
-                      Busca em Bases Internacionais
+                      Descritores MeSH e DeCS com Pré-processamento Inteligente
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 mt-2 text-xs">
+                    <p className="text-xs opacity-80 mb-2">
+                      Nossa IA pré-processa sua ideia antes de buscar, aumentando significativamente 
+                      a precisão na identificação dos descritores mais relevantes para sua pesquisa.
+                    </p>
+                    <div className="space-y-2 text-xs">
                       {/* MeSH */}
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
-                        <div className="font-medium text-blue-600 dark:text-blue-400 mb-1">MeSH</div>
-                        <div className="opacity-80">
-                          <div className="flex items-center gap-1">
-                            <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
-                            <span>Inglês</span>
-                          </div>
-                          <div className="text-xs mt-1">30.000+ termos</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-blue-600 dark:text-blue-400">MeSH</span>
+                          <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                          <span className="text-xs opacity-75">Medical Subject Headings</span>
                         </div>
+                        <p className="opacity-80 text-xs">
+                          Vocabulário padrão mundial da National Library of Medicine com 30.000+ termos 
+                          hierarquizados. Essencial para PubMed e bases internacionais.
+                        </p>
                       </div>
                       {/* DeCS */}
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-green-50'}`}>
-                        <div className="font-medium text-green-600 dark:text-green-400 mb-1">DeCS</div>
-                        <div className="opacity-80">
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-green-600 dark:text-green-400">DeCS</span>
+                          <div className="flex gap-1">
                             <Image src="/flags/br.svg" alt="Português" width={16} height={12} className="inline-block" />
                             <Image src="/flags/es.svg" alt="Español" width={16} height={12} className="inline-block" />
                             <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
                             <Image src="/flags/fr.svg" alt="Français" width={16} height={12} className="inline-block" />
                           </div>
-                          <div className="text-xs mt-1">4 idiomas</div>
+                          <span className="text-xs opacity-75">Descritores em Ciências da Saúde</span>
                         </div>
+                        <p className="opacity-80 text-xs">
+                          Vocabulário da BIREME/OPAS com 36.000+ termos em 4 idiomas. 
+                          Fundamental para LILACS e bases latino-americanas.
+                        </p>
+                      </div>
+                      {/* Benefício */}
+                      <div className={`p-2 rounded border ${isDark ? 'border-gray-600 bg-gray-700/30' : 'border-blue-200 bg-blue-50/50'}`}>
+                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                          💡 Por que isso importa?
+                        </p>
+                        <p className="text-xs opacity-80 mt-1">
+                          Sem os descritores corretos, você pode perder até 70% dos artigos relevantes. 
+                          Nossa IA garante que você encontre os termos técnicos precisos que as bases de dados científicas exigem.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+
+
             </div>
           </div>
 
