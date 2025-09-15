@@ -1,6 +1,7 @@
 // components/IntelligentSearch.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import Image from 'next/image';
 import { Card, CardContent } from './ui/card';
 import { 
   Search, 
@@ -18,9 +19,125 @@ import {
   Lightbulb,
   Copy,
   CheckCheck,
-  Info
+  Info,
+  AlertTriangle,
+  WifiOff,
+  ArrowRight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+
+// Componente de Erro específico para DeCS
+const DecsErrorAlert = ({ isDark, onRetry }) => {
+  return (
+    <div className={cn(
+      "mt-6 rounded-xl overflow-hidden animate-fadeIn",
+      isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200",
+      "border shadow-lg"
+    )}>
+      {/* Header com gradiente vermelho/laranja */}
+      <div className="bg-gradient-to-r from-red-500 to-orange-500 p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <WifiOff className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-lg font-bold text-white">
+            API DeCS Temporariamente Indisponível
+          </h3>
+          <div className="flex gap-1 ml-auto">
+            <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
+            <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
+            <Image src="/flags/us.svg" alt="English" width={20} height={15} />
+            <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
+          </div>
+        </div>
+      </div>
+      
+      {/* Conteúdo do erro */}
+      <div className="p-6">
+        <div className={cn(
+          "p-4 rounded-lg mb-4",
+          isDark ? "bg-red-900/20 border-red-800" : "bg-red-50 border-red-200",
+          "border"
+        )}>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className={cn(
+                "font-medium mb-2",
+                isDark ? "text-red-100" : "text-red-900"
+              )}>
+                A API do DeCS está instável e não retornou os resultados
+              </p>
+              <p className={cn(
+                "text-sm",
+                isDark ? "text-red-200" : "text-red-700"
+              )}>
+                O serviço de busca dos Descritores em Ciências da Saúde está temporariamente indisponível. 
+                Por favor, tente novamente em alguns minutos.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Card informativo sobre o DeCS com bandeiras */}
+        <div className={cn(
+          "p-4 rounded-lg",
+          isDark ? "bg-gray-700/50" : "bg-green-50"
+        )}>
+          <div className="flex items-center gap-3 mb-3">
+            <Languages className="w-5 h-5 text-green-600" />
+            <span className="font-medium text-green-700 dark:text-green-400">
+              Sobre o DeCS
+            </span>
+          </div>
+          <p className="text-sm opacity-80 mb-3">
+            O DeCS é um vocabulário multilíngue da BIREME/OPAS/OMS com mais de 36.000 termos 
+            disponíveis em 4 idiomas, essencial para pesquisas em bases latino-americanas.
+          </p>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium">Idiomas disponíveis:</span>
+            <div className="flex gap-2">
+              <div className="flex items-center gap-1">
+                <Image src="/flags/br.svg" alt="Português" width={16} height={12} />
+                <span className="text-xs">PT</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/es.svg" alt="Español" width={16} height={12} />
+                <span className="text-xs">ES</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/us.svg" alt="English" width={16} height={12} />
+                <span className="text-xs">EN</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/flags/fr.svg" alt="Français" width={16} height={12} />
+                <span className="text-xs">FR</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Botões de ação */}
+        {onRetry && (
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={onRetry}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg font-medium transition-all",
+                "bg-gradient-to-r from-green-500 to-green-600 text-white",
+                "hover:from-green-600 hover:to-green-700",
+                "flex items-center justify-center gap-2"
+              )}
+            >
+              <Languages className="w-4 h-4" />
+              Tentar Buscar DeCS Novamente
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const IntelligentSearch = ({ isDark }) => {
   const [userInput, setUserInput] = useState('');
@@ -30,6 +147,7 @@ const IntelligentSearch = ({ isDark }) => {
   const [analysis, setAnalysis] = useState(null);
   const [meshResults, setMeshResults] = useState(null);
   const [decsResults, setDecsResults] = useState(null);
+  const [decsError, setDecsError] = useState(false);
   const [error, setError] = useState(null);
   const [searchType, setSearchType] = useState('both');
   const [copiedString, setCopiedString] = useState(null);
@@ -49,6 +167,7 @@ const IntelligentSearch = ({ isDark }) => {
     setAnalysis(null);
     setMeshResults(null);
     setDecsResults(null);
+    setDecsError(false);
 
     try {
       const response = await fetch('/api/intelligent-search', {
@@ -103,6 +222,7 @@ const IntelligentSearch = ({ isDark }) => {
     // Buscar DeCS usando a nova API
     if (type === 'decs' || type === 'both') {
       setIsSearchingDecs(true);
+      setDecsError(false);
       try {
         const decsResponse = await fetch('/api/intelligent-search-decs', {
           method: 'POST',
@@ -110,15 +230,31 @@ const IntelligentSearch = ({ isDark }) => {
           body: JSON.stringify({ searchTerms })
         });
         
-        if (decsResponse.ok) {
-          const decsData = await decsResponse.json();
-          setDecsResults(decsData);
+        if (!decsResponse.ok) {
+          throw new Error('API DeCS indisponível');
         }
+        
+        const decsData = await decsResponse.json();
+        
+        // Verifica se a resposta está vazia ou inválida
+        if (!decsData || (!decsData.allDecsTerms && !decsData.totalTerms)) {
+          throw new Error('API DeCS não retornou dados válidos');
+        }
+        
+        setDecsResults(decsData);
       } catch (error) {
         console.error('❌ Erro ao buscar DeCS:', error);
+        setDecsError(true);
+        setDecsResults(null);
       } finally {
         setIsSearchingDecs(false);
       }
+    }
+  };
+
+  const retryDecsSearch = () => {
+    if (analysis && analysis.searchTerms && analysis.searchTerms.length > 0) {
+      searchDescriptors(analysis.searchTerms, 'decs');
     }
   };
 
@@ -231,6 +367,12 @@ const IntelligentSearch = ({ isDark }) => {
                 >
                   <Languages className="w-4 h-4" />
                   DeCS
+                  <div className="flex gap-0.5 ml-1">
+                    <Image src="/flags/br.svg" alt="PT" width={12} height={9} />
+                    <Image src="/flags/es.svg" alt="ES" width={12} height={9} />
+                    <Image src="/flags/us.svg" alt="EN" width={12} height={9} />
+                    <Image src="/flags/fr.svg" alt="FR" width={12} height={9} />
+                  </div>
                 </button>
                 <button
                   onClick={() => setSearchType('both')}
@@ -389,7 +531,15 @@ const IntelligentSearch = ({ isDark }) => {
               {isSearchingDecs && (
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin text-green-500" />
-                  <span>Buscando DeCS...</span>
+                  <span className="flex items-center gap-1">
+                    Buscando DeCS
+                    <div className="flex gap-0.5">
+                      <Image src="/flags/br.svg" alt="PT" width={12} height={9} />
+                      <Image src="/flags/es.svg" alt="ES" width={12} height={9} />
+                      <Image src="/flags/us.svg" alt="EN" width={12} height={9} />
+                      <Image src="/flags/fr.svg" alt="FR" width={12} height={9} />
+                    </div>
+                  </span>
                 </div>
               )}
             </div>
@@ -470,17 +620,30 @@ const IntelligentSearch = ({ isDark }) => {
         </Card>
       )}
 
-      {/* Resultados DeCS */}
-      {decsResults && decsResults.allDecsTerms && decsResults.allDecsTerms.length > 0 && (
+      {/* Erro específico do DeCS */}
+      {decsError && (
+        <DecsErrorAlert isDark={isDark} onRetry={retryDecsSearch} />
+      )}
+
+      {/* Resultados DeCS (só mostra se não teve erro) */}
+      {!decsError && decsResults && decsResults.allDecsTerms && decsResults.allDecsTerms.length > 0 && (
         <Card className={cn(
           'mt-6 overflow-hidden',
           isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
         )}>
           <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <Languages className="w-6 h-6" />
-              Descritores DeCS Encontrados ({decsResults.totalTerms})
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Languages className="w-6 h-6" />
+                Descritores DeCS Encontrados ({decsResults.totalTerms})
+              </h3>
+              <div className="flex gap-1">
+                <Image src="/flags/br.svg" alt="Português" width={20} height={15} />
+                <Image src="/flags/es.svg" alt="Español" width={20} height={15} />
+                <Image src="/flags/us.svg" alt="English" width={20} height={15} />
+                <Image src="/flags/fr.svg" alt="Français" width={20} height={15} />
+              </div>
+            </div>
           </div>
           <CardContent className="p-6">
             <div className="space-y-3">
@@ -495,20 +658,26 @@ const IntelligentSearch = ({ isDark }) => {
                         <div className="space-y-1">
                           {term.terms.pt && (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">🇧🇷</span>
+                              <Image src="/flags/br.svg" alt="Português" width={16} height={12} />
                               <span className="font-semibold">{term.terms.pt}</span>
                             </div>
                           )}
                           {term.terms.en && (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">🇺🇸</span>
+                              <Image src="/flags/us.svg" alt="English" width={16} height={12} />
                               <span>{term.terms.en}</span>
                             </div>
                           )}
                           {term.terms.es && (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">🇪🇸</span>
+                              <Image src="/flags/es.svg" alt="Español" width={16} height={12} />
                               <span>{term.terms.es}</span>
+                            </div>
+                          )}
+                          {term.terms.fr && (
+                            <div className="flex items-center gap-2">
+                              <Image src="/flags/fr.svg" alt="Français" width={16} height={12} />
+                              <span>{term.terms.fr}</span>
                             </div>
                           )}
                         </div>
@@ -556,6 +725,24 @@ const IntelligentSearch = ({ isDark }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Estilos CSS para animações */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
