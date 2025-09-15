@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { Play, Brain, CheckCircle2, Globe, Languages, Sparkles, Search, BookOpen, Users, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 
 const WelcomeModal = ({ isOpen, onStart, isDark }) => {
   if (!isOpen) return null;
@@ -110,7 +111,7 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 </div>
               </div>
 
-              {/* Funcionalidade 3 - COM BADGES DE TEXTO */}
+              {/* Funcionalidade 3 - COM IMAGENS DE BANDEIRAS */}
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}>
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-green-500 rounded-lg">
@@ -125,8 +126,10 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
                         <div className="font-medium text-blue-600 dark:text-blue-400 mb-1">MeSH</div>
                         <div className="opacity-80">
-                          <span className="inline-block px-1.5 py-0.5 bg-blue-500 text-white rounded text-xs font-bold mr-1">EN</span>
-                          <span>Inglês</span>
+                          <div className="flex items-center gap-1">
+                            <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                            <span>Inglês</span>
+                          </div>
                           <div className="text-xs mt-1">30.000+ termos</div>
                         </div>
                       </div>
@@ -134,11 +137,11 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                       <div className={`p-2 rounded ${isDark ? 'bg-gray-700/50' : 'bg-green-50'}`}>
                         <div className="font-medium text-green-600 dark:text-green-400 mb-1">DeCS</div>
                         <div className="opacity-80">
-                          <div className="flex flex-wrap gap-1">
-                            <span className="inline-block px-1.5 py-0.5 bg-green-600 text-white rounded text-xs font-bold">PT</span>
-                            <span className="inline-block px-1.5 py-0.5 bg-yellow-600 text-white rounded text-xs font-bold">ES</span>
-                            <span className="inline-block px-1.5 py-0.5 bg-blue-600 text-white rounded text-xs font-bold">EN</span>
-                            <span className="inline-block px-1.5 py-0.5 bg-purple-600 text-white rounded text-xs font-bold">FR</span>
+                          <div className="flex items-center gap-1">
+                            <Image src="/flags/br.svg" alt="Português" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/es.svg" alt="Español" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                            <Image src="/flags/fr.svg" alt="Français" width={16} height={12} className="inline-block" />
                           </div>
                           <div className="text-xs mt-1">4 idiomas</div>
                         </div>
@@ -161,9 +164,9 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   1
                 </span>
-                <p>
+                <p className="flex items-center gap-1">
                   Você compartilha sua ideia de pesquisa em português 
-                  <span className="inline-block ml-1 px-1.5 py-0.5 bg-green-600 text-white rounded text-xs font-bold">BR</span>
+                  <Image src="/flags/br.svg" alt="Brasil" width={16} height={12} className="inline-block" />
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -182,14 +185,14 @@ const WelcomeModal = ({ isOpen, onStart, isDark }) => {
                 <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   4
                 </span>
-                <p>
+                <p className="flex items-center gap-1 flex-wrap">
                   Descritores MeSH 
-                  <span className="inline-block mx-1 px-1.5 py-0.5 bg-blue-500 text-white rounded text-xs font-bold">EN</span> 
+                  <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
                   e DeCS 
-                  <span className="inline-block ml-1 px-1 py-0.5 bg-green-600 text-white rounded text-xs font-bold">PT</span>
-                  <span className="inline-block ml-0.5 px-1 py-0.5 bg-yellow-600 text-white rounded text-xs font-bold">ES</span>
-                  <span className="inline-block ml-0.5 px-1 py-0.5 bg-blue-600 text-white rounded text-xs font-bold">EN</span>
-                  <span className="inline-block ml-0.5 px-1 py-0.5 bg-purple-600 text-white rounded text-xs font-bold">FR</span>
+                  <Image src="/flags/br.svg" alt="Português" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/es.svg" alt="Español" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/us.svg" alt="English" width={16} height={12} className="inline-block" />
+                  <Image src="/flags/fr.svg" alt="Français" width={16} height={12} className="inline-block" />
                   são sugeridos automaticamente
                 </p>
               </div>
